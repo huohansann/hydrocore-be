@@ -1,4 +1,4 @@
-# kiln-intelligent-control 项目说明
+# siact-kiln 项目说明
 
 ## 项目简介
 
@@ -84,36 +84,3 @@ com.siact.KilnApplication
 1. **私有依赖**：部分依赖（如 `siact-common-code`、`siact-sec-api-feign`）需从公司私有 Nexus 仓库下载，外部环境可能无法直接构建。
 2. **Nacos 配置**：需保证 Nacos 服务可用，且相关配置文件已上传至对应命名空间。
 3. **数据库与Redis**：请根据实际环境配置数据库与Redis连接信息。
-
----
-
-## 参考配置片段
-
-**bootstrap.yml**
-```yaml
-spring:
-  application:
-    name: kiln-intelligent-control
-  profiles:
-    active: uat
-```
-
-**bootstrap-dev.yml**
-```yaml
-spring:
-  cloud:
-    nacos:
-      server-addr: 192.100.4.26:8848
-      namespace: ylkz
-      # 其他配置...
-```
-
----
-
-## 联系方式
-
-如需技术支持或有疑问，请联系项目负责人或相关开发同事。
-
----
-
-如需进一步补充详细模块介绍、接口文档或部署说明，请告知！ 
