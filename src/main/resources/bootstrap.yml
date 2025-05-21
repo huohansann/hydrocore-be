@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: kiln-intelligent-control
+  profiles:
+    active: uat
+
+
+
+
