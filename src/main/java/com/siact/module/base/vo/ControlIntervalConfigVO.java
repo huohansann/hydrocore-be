@@ -1,0 +1,27 @@
+package com.siact.module.base.vo;
+
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+
+@Data
+public class ControlIntervalConfigVO {
+    /**
+     * 主键
+     */
+    @ApiModelProperty(value = "主键")
+    private Long id;
+
+
+    /**
+     * 测点，温度中有MC1-10
+     */
+    @ApiModelProperty(value = "测点：MC1-10")
+    private String measurePoint;
+
+    /**
+     * 测点类型，暂时预留一下
+     */
+    @ApiModelProperty(value = "测点类型：temperature、liquidLevel、pressure")
+    private String pointType;
+
+}
