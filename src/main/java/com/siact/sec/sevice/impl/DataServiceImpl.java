@@ -6,11 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.common.utils.MD5Utils;
 import com.siact.api.common.api.vo.common.InfoListQueryVo;
 import com.siact.api.common.api.vo.common.R;
-import com.siact.api.common.api.vo.prop.NodePropValQueryVo;
-import com.siact.api.common.api.vo.prop.PropRtValVo;
-import com.siact.api.common.api.vo.prop.PropValFMResultVo;
-import com.siact.api.common.api.vo.prop.PropValQuerySVo;
-import com.siact.api.common.api.vo.prop.PropValTimeVo;
+import com.siact.api.common.api.vo.prop.*;
 import com.siact.api.feign.api.ins.PropService;
 import com.siact.common.constant.ConstantNum;
 import com.siact.common.constant.ConstantSymbol;
@@ -52,14 +48,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -440,6 +429,27 @@ public class DataServiceImpl implements DataService {
         }
 
         return resultList;
+    }
+
+    @Override
+    public List<IntervalDataDto> queryForecastIntervalVal(NodePropFutureValQueryVo vo) {
+        List<IntervalDataDto> dataDtoList = new ArrayList<>();
+        log.info("查询等时间间隔的量,request params:{}", JSONObject.toJSONString(vo));
+
+        try {
+            log.info("查询等时间间隔的量, 请求数字孪生参数:{}", JSONObject.toJSONString(vo));
+            R<List<PropValFMResultVo>> propData = propService.nodeFuture(vo);
+            List<PropValFMResultVo> propDataDataList = analysisSiactSecData(propData);
+
+            propDataDataList.forEach(itemData -> {
+                String dataCode = itemData.getDataCode();
+                analysisRequestData(dataDtoList, itemData, dataCode);
+            });
+        } catch (ActiveException e) {
+            log.error("请求数字孪生查询节点下属性等时间间隔的量发生异常", e);
+        }
+
+        return dataDtoList;
     }
 
     private void calQoqData(List<CumulativeDataDTO> resultList, BigDecimal zero, JSONObject qoqDataJson) {
