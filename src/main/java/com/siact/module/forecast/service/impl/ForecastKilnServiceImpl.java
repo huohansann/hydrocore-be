@@ -15,6 +15,8 @@ import com.siact.module.forecast.service.ForecastKilnService;
 import com.siact.module.forecast.vo.ForecastKilnDetailVO;
 import com.siact.module.forecast.vo.ForecastKilnLineChartVO;
 import com.siact.module.forecast.vo.ForecastKilnMenuVO;
+import com.siact.module.predicted.dto.PredictedDataDTO;
+import com.siact.module.predicted.service.PredictedDataService;
 import com.siact.sec.dto.CommonChartParamsDto;
 import com.siact.sec.dto.IntervalDataDto;
 import com.siact.sec.dto.IntervalValParamsDto;
@@ -49,6 +51,9 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
     @Autowired
     private TplService tplService;
 
+    @Autowired
+    private PredictedDataService predictedDataService;
+
     /**
      * 通过tplcode获取菜单信息
      *
@@ -80,17 +85,22 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         // 查询预测数据
         // 预测数据从当前时刻算起
         params.setStartTime(now);
-        Map<Integer, List<IntervalDataDto>> predictionIntervalDataMap = getForecastIntervalDataVal(params);
-        List<IntervalDataDto> singlePredictionDataList = predictionIntervalDataMap.get(1);
-        List<IntervalDataDto> multiPredictionDataList = predictionIntervalDataMap.get(2);
+        // 获取预测数据
+        Map<Integer, List<PredictedDataDTO>> predictedData = predictedDataService.getPredictedData(Arrays.asList(1, 2), params.getStartTime(), params.getEndTime());
+        List<IntervalDataDto> singlePredictionDataList = ConvertUtils.sourceToTarget(predictedData.get(1), IntervalDataDto.class);
+        List<IntervalDataDto> multiPredictionDataList = ConvertUtils.sourceToTarget(predictedData.get(2), IntervalDataDto.class);
+
         // 封装数据
-        CommonChartParamsDto commonChartParamsDto = ConvertUtils.sourceToTarget(params, CommonChartParamsDto.class);
+        CommonChartParamsDto acturalParamsDto = ConvertUtils.sourceToTarget(params01, CommonChartParamsDto.class);
         // 组装历史数据
-        ColumnChartDTO historyData = CommonHandle.getColumnChartDTO(commonChartParamsDto, intervalDataDtos);
+        ColumnChartDTO historyData = CommonHandle.buildColumnChartDTO(acturalParamsDto, intervalDataDtos);
+
+        // 组装预测数据
+        CommonChartParamsDto commonChartParamsDto = ConvertUtils.sourceToTarget(params, CommonChartParamsDto.class);
         // 组装单步预测数据
-        ColumnChartDTO singlePredictionData = CommonHandle.getColumnChartDTO(commonChartParamsDto, singlePredictionDataList);
+        ColumnChartDTO singlePredictionData = CommonHandle.buildColumnChartDTO(commonChartParamsDto, singlePredictionDataList);
         // 组装多步预测数据
-        ColumnChartDTO multiPredictionData = CommonHandle.getColumnChartDTO(commonChartParamsDto, multiPredictionDataList);
+        ColumnChartDTO multiPredictionData = CommonHandle.buildColumnChartDTO(commonChartParamsDto, multiPredictionDataList);
         // 组装结果
         return buildForecastKilnResult(historyData, singlePredictionData, multiPredictionData);
     }
@@ -152,8 +162,9 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
     public Map<Integer, List<IntervalDataDto>> getForecastIntervalDataVal(CommonChartParamsVo vo) {
         log.info("查询柱状图、折线图等图表数据(量), params:{}", com.alibaba.fastjson2.JSON.toJSONString(vo));
         // TODO 查询数据:此处需要替换成预测数据
-        List<IntervalDataDto> historyIntervalDataVal1 = getHistoryIntervalDataVal(vo);
-        List<IntervalDataDto> historyIntervalDataVal2 = historyIntervalDataVal1;
+        Map<Integer, List<PredictedDataDTO>> predictedData = predictedDataService.getPredictedData(Arrays.asList(1, 2), vo.getStartTime(), vo.getEndTime());
+        List<IntervalDataDto> historyIntervalDataVal1 = ConvertUtils.sourceToTarget(predictedData.get(1), IntervalDataDto.class);
+        List<IntervalDataDto> historyIntervalDataVal2 = ConvertUtils.sourceToTarget(predictedData.get(2), IntervalDataDto.class);
         Map<Integer, List<IntervalDataDto>> resultMap = new HashMap<>(2);
         resultMap.put(1, historyIntervalDataVal1);
         resultMap.put(2, historyIntervalDataVal2);

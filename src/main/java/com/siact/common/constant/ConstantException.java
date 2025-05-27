@@ -15,4 +15,6 @@ public interface ConstantException {
 
 
     String querySecNoDataException = "查询数字孪生无数据";
+
+    String timeFormatException = "时间解析失败";
 }

@@ -11,7 +11,12 @@ import org.apache.commons.lang3.StringUtils;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -127,6 +132,130 @@ public class IntervalTimeUtil {
             throw new CustomException(ConstantException.timeException);
         }
     }
+
+    /**
+     * 等时间间隔时间集合
+     *
+     * @param startTime 开始时间，格式 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss
+     * @param endTime   结束时间，格式 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss
+     * @param tsUnit    时间单位: Y(年), M(月), D(日), H(小时), MIN(分), S(秒)
+     * @param ts        时间步长
+     * @param formatVal 输出时间格式，如 HH:mm:ss, yyyy-MM-dd HH:mm:ss
+     * @return 时间字符串列表
+     */
+    public static List<String> getIntervalTimeList(String startTime, String endTime, String tsUnit, Integer ts, String formatVal) {
+        try {
+            if (StringUtils.isBlank(startTime) || StringUtils.isBlank(endTime)
+                    || StringUtils.isBlank(tsUnit) || ts == null || StringUtils.isBlank(formatVal)) {
+                throw new CustomException(ConstantException.argumentException);
+            }
+
+            tsUnit = tsUnit.trim().toUpperCase();
+
+            DateTimeFormatter inputDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            DateTimeFormatter inputDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            TemporalAccessor startTA = parseTemporal(startTime, inputDateFormatter, inputDateTimeFormatter);
+            TemporalAccessor endTA = parseTemporal(endTime, inputDateFormatter, inputDateTimeFormatter);
+
+            boolean isStartDateTime = startTime.contains(":");
+            boolean isEndDateTime = endTime.contains(":");
+
+            Temporal start;
+            Temporal end;
+
+            if (!isStartDateTime && !isEndDateTime) {
+                start = LocalDate.from(startTA);
+                end = LocalDate.from(endTA);
+            } else {
+                start = LocalDateTime.from(startTA);
+                end = LocalDateTime.from(endTA);
+            }
+
+            if (((Comparable) start).compareTo(end) > 0) {
+                throw new CustomException("开始时间不能晚于结束时间");
+            }
+
+            List<String> timeList = new ArrayList<>();
+            Temporal current = start;
+
+            // 第一次截断（保证从整点/整分等开始）
+            if (current instanceof LocalDateTime) {
+                current = truncateToUnit((LocalDateTime) current, tsUnit);
+            }
+
+            while (((Comparable) current).compareTo(end) <= 0) {
+                // 先添加当前时间点
+                if (current instanceof LocalDateTime) {
+                    timeList.add(((LocalDateTime) current).format(DateTimeFormatter.ofPattern(formatVal)));
+                } else {
+                    timeList.add(((LocalDate) current).format(DateTimeFormatter.ofPattern(formatVal)));
+                }
+
+                // 再增加步长
+                switch (tsUnit) {
+                    case "S":
+                        current = ((LocalDateTime) current).plusSeconds(ts);
+                        break;
+                    case "MIN":
+                        current = ((LocalDateTime) current).plusMinutes(ts);
+                        break;
+                    case "H":
+                        current = ((LocalDateTime) current).plusHours(ts);
+                        break;
+                    case "D":
+                        current = current.plus(ts, ChronoUnit.DAYS);
+                        break;
+                    case "M":
+                        current = current.plus(ts, ChronoUnit.MONTHS);
+                        break;
+                    case "Y":
+                        current = current.plus(ts, ChronoUnit.YEARS);
+                        break;
+                    default:
+                        throw new CustomException("传入时间参数错误!! 支持单位：S/MIN/H/D/M/Y");
+                }
+
+                // 每次增加后再次截断
+                if (current instanceof LocalDateTime) {
+                    current = truncateToUnit((LocalDateTime) current, tsUnit);
+                }
+            }
+
+            return timeList;
+        } catch (DateTimeParseException e) {
+            log.error("时间解析失败", e);
+            throw new CustomException(ConstantException.timeFormatException);
+        } catch (Exception e) {
+            log.error("等时间间隔时间截取出错--->", e);
+            throw new CustomException(ConstantException.timeException);
+        }
+    }
+
+    private static LocalDateTime truncateToUnit(LocalDateTime time, String unit) {
+        switch (unit) {
+            case "Y": return time.withDayOfYear(1).with(LocalTime.MIN);
+            case "M": return time.withDayOfMonth(1).with(LocalTime.MIN);
+            case "D": return time.toLocalDate().atStartOfDay();
+            case "H": return time.withMinute(0).withSecond(0).withNano(0);
+            case "MIN": return time.withSecond(0).withNano(0);
+            case "S": return time.withNano(0);
+            default: return time;
+        }
+    }
+
+    private static TemporalAccessor parseTemporal(String timeStr, DateTimeFormatter dateFmt, DateTimeFormatter dateTimeFmt) {
+        try {
+            if (timeStr.contains(":")) {
+                return dateTimeFmt.parse(timeStr);
+            } else {
+                return dateFmt.parse(timeStr);
+            }
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("非法时间格式: " + timeStr);
+        }
+    }
+
 
 
     /**
