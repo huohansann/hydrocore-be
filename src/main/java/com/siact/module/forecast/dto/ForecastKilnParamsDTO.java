@@ -40,4 +40,7 @@ public class ForecastKilnParamsDTO {
     @StringContains(limitValues = {"AVG", "MAX", "MIN", "LAST", "FIRST", "TOTAL", "INC", "SUM", "COUNT"},message = "计算类型不正确")
     @ApiModelProperty(value = "计算类型(AVG:均值;MAX:最大值;MIN:最小值;LAST:最新值;FIRST:最早值;SUM:累加;INC:增量;COUNT:数量)")
     private String calcType;
+
+    @ApiModelProperty(value = "名称")
+    List<String> names;
 }

@@ -13,7 +13,7 @@ import java.util.List;
  */
 @ApiModel(description = "窑炉预测数据查询参数")
 @Data
-public class ForecastKilnDetailVO {
+public class KilnForecastDetailVO {
     @ApiModelProperty(value = "参数code")
     private String dataCode;
 
@@ -23,9 +23,6 @@ public class ForecastKilnDetailVO {
     @ApiModelProperty(value = "参数单位")
     private String unit;
 
-    @ApiModelProperty(value = "实际值")
-    private List<Object[]> actualValueList;
-
     @ApiModelProperty(value = "单步预测值")
     private List<Object[]> singleStepForecastValueList;
 
@@ -33,5 +30,5 @@ public class ForecastKilnDetailVO {
     private List<Object[]> MultiStepForecastValueList;
 
     @ApiModelProperty(value = "时间轴")
-    private List<Object[]> timeList;
+    private List<String> timeList;
 }

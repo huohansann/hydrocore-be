@@ -195,7 +195,6 @@ public class CommonHandle {
 
         // 生成完整的X轴时间刻度列表（包含所有可能的时间点）
        List<String> timeList = IntervalTimeUtil.getIntervalTimeList(vo.getStartTime(), vo.getEndTime(), vo.getTsUnit(), vo.getTs(), vo.getFormatVal());
-        //List<String> timeList = IntervalTimeUtil.queryIntervalTimeList(vo.getStartTime(), vo.getEndTime(), vo.getTsUnit(), vo.getTs(), vo.getFormatVal());
 
         // 标准化原始数据：统一时间字段格式
         List<IntervalDataDto> intervalDataDtoList = DataServerUtils.intervalDataFormat(dataDtoList, vo.getFormatVal());

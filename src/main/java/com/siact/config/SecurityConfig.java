@@ -27,7 +27,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 /* 配置请求授权规则 */
                 .authorizeRequests()
                 /* 允许/login端点匿名访问 */
-                .antMatchers("/auth/login").permitAll()
+                //.antMatchers("/auth/login").permitAll()
                 // 所有地址均可通过
                 .antMatchers("/**").permitAll()
                 /* 其他所有请求需要认证 */

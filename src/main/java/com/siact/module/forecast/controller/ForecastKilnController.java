@@ -5,8 +5,12 @@ import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.siact.common.R;
 import com.siact.module.forecast.dto.ForecastKilnParamsDTO;
 import com.siact.module.forecast.service.ForecastKilnService;
-import com.siact.module.forecast.vo.ForecastKilnLineChartVO;
+import com.siact.module.forecast.vo.KilnForecastLineChartVO;
 import com.siact.module.forecast.vo.ForecastKilnMenuVO;
+import com.siact.module.forecast.vo.KilnLineChartVO;
+import com.siact.module.forecast.vo.LineChartVO;
+import com.siact.sec.dto.CommonChartParamsDto;
+import com.siact.sec.vo.CommonChartParamsVo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
@@ -15,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 /**
@@ -24,10 +27,9 @@ import java.util.List;
  * @create: 2025-05-26 10:28
  */
 @Api(tags = "窑炉预测")
-@Validated
-@RestController
 @Slf4j
-@RequestMapping("/kiln")
+@RestController
+@RequestMapping("/forecast")
 public class ForecastKilnController {
 
     @Autowired
@@ -35,9 +37,8 @@ public class ForecastKilnController {
 
     @ApiOperationSupport(order = 1)
     @ApiOperation("查询窑炉预测对应的菜单")
-    @ApiImplicitParam(name = "tpl", value = "模板", required = true)
-    @GetMapping("/queryForecastKilnMenu")
-    public R<List<ForecastKilnMenuVO>> queryForecastKilnMenu(String tpl) {
+    @GetMapping("/queryForecastKilnMenu/{tpl}")
+    public R<List<ForecastKilnMenuVO>> queryForecastKilnMenu(@PathVariable("tpl")String tpl) {
         R r;
         try {
             r = R.data(forecastKilnService.queryForecastKilnMenu(tpl));
@@ -49,9 +50,9 @@ public class ForecastKilnController {
     }
 
     @ApiOperationSupport(order = 2)
-    @ApiOperation("查询属性的实时数据")
+    @ApiOperation("查询窑炉属性数据(实时+预测)")
     @PostMapping("/queryForecastInfo")
-    public R<ForecastKilnLineChartVO> queryForecastInfo(@RequestBody @Validated ForecastKilnParamsDTO dto) {
+    public R<KilnLineChartVO> queryForecastInfo(@RequestBody @Validated ForecastKilnParamsDTO dto) {
         R r;
         try {
             r = R.data(forecastKilnService.queryForecastInfo(dto));
@@ -62,4 +63,31 @@ public class ForecastKilnController {
         return r;
     }
 
+    @ApiOperationSupport(order = 2)
+    @ApiOperation("查询窑炉属性数据(实时+预测)")
+    @PostMapping("/queryForecastInfo1")
+    public R<List<LineChartVO>> queryForecastInfo1(@RequestBody @Validated ForecastKilnParamsDTO dto) {
+        R r;
+        try {
+            r = R.data(forecastKilnService.queryForecastInfo1(dto));
+        } catch (Exception e) {
+            log.error("查询属性的实时数据失败", e);
+            r = R.fail(e.getMessage());
+        }
+        return r;
+    }
+
+    @ApiOperationSupport(order = 2)
+    @ApiOperation("查询窑炉属性数据(预测)")
+    @PostMapping("/queryKilnForecastInfo")
+    public R<KilnForecastLineChartVO> queryKilnForecastInfo(@RequestBody @Validated CommonChartParamsDto dto) {
+        R r;
+        try {
+            r = R.data(forecastKilnService.queryKilnForecastInfo(dto));
+        } catch (Exception e) {
+            log.error("查询属性的实时数据失败", e);
+            r = R.fail(e.getMessage());
+        }
+        return r;
+    }
 }

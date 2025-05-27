@@ -2,6 +2,7 @@ package com.siact.sec.sevice;
 
 import com.alibaba.fastjson.JSONObject;
 import com.siact.api.common.api.vo.prop.NodePropFutureValQueryVo;
+import com.siact.api.common.api.vo.prop.PropRtValVo;
 import com.siact.sec.dto.*;
 import com.siact.sec.vo.CommonChartParamsVo;
 import com.siact.sec.vo.CumulativeDataVO;
@@ -9,6 +10,8 @@ import com.siact.sec.vo.ExportCommonChartParamsVO;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public interface DataService {
 
@@ -58,6 +61,7 @@ public interface DataService {
      */
     JSONObject queryRealValue(String dataCodes);
 
+
     /**
      * 查询节点下属性某个时间段的量 --> AVG:均值;MAX:最大值;MIN:最小值;LAST:最新值;FIRST:最早值;SUM:累加;INC:增量;COUNT:数量
      *
@@ -86,6 +90,13 @@ public interface DataService {
      */
     void exportIntervalInstantData(HttpServletResponse response, ExportCommonChartParamsVO vo);
 
+
+    /**
+     * 查询累计值
+     *
+     * @param vo
+     * @return
+     */
     List<CumulativeDataDTO> queryCumulativeData(CumulativeDataVO vo);
 
     /**

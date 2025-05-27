@@ -1,6 +1,5 @@
 package com.siact.module.forecast.vo;
 
-import com.siact.module.base.dto.BasicDataDTO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -14,9 +13,9 @@ import java.util.List;
  */
 @Data
 @ApiModel(description = "柱状图数据")
-public class ForecastKilnLineChartVO {
+public class KilnForecastLineChartVO {
     @ApiModelProperty(value = "数据")
-    private List<ForecastKilnDetailVO> data;
+    private List<KilnForecastDetailVO> data;
 
     @ApiModelProperty(value = "x轴")
     private List<String> xAxis;
