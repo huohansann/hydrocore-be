@@ -8,9 +8,7 @@ import com.siact.module.base.dto.BasicDataDTO;
 import com.siact.module.base.dto.ColumnChartDTO;
 import com.siact.module.base.service.TplService;
 import com.siact.module.base.vo.TplVO;
-import com.siact.module.forecast.dto.AttributeParametersDTO;
 import com.siact.module.forecast.dto.ForecastKilnParamsDTO;
-import com.siact.module.forecast.dto.PredictionTplDTO;
 import com.siact.module.forecast.service.ForecastKilnService;
 import com.siact.module.forecast.vo.ForecastKilnDetailVO;
 import com.siact.module.forecast.vo.ForecastKilnLineChartVO;
@@ -26,8 +24,6 @@ import com.siact.sec.utils.CommonHandle;
 import com.siact.sec.vo.CommonChartParamsVo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -86,7 +82,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         // 预测数据从当前时刻算起
         params.setStartTime(now);
         // 获取预测数据
-        Map<Integer, List<PredictedDataDTO>> predictedData = predictedDataService.getPredictedData(Arrays.asList(1, 2), params.getStartTime(), params.getEndTime());
+        Map<Integer, List<PredictedDataDTO>> predictedData = predictedDataService.getPredictedDataByTypes(projectPropVO.getDataCodes(), Arrays.asList(1, 2), params.getStartTime(), params.getEndTime());
         List<IntervalDataDto> singlePredictionDataList = ConvertUtils.sourceToTarget(predictedData.get(1), IntervalDataDto.class);
         List<IntervalDataDto> multiPredictionDataList = ConvertUtils.sourceToTarget(predictedData.get(2), IntervalDataDto.class);
 
@@ -162,7 +158,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
     public Map<Integer, List<IntervalDataDto>> getForecastIntervalDataVal(CommonChartParamsVo vo) {
         log.info("查询柱状图、折线图等图表数据(量), params:{}", com.alibaba.fastjson2.JSON.toJSONString(vo));
         // TODO 查询数据:此处需要替换成预测数据
-        Map<Integer, List<PredictedDataDTO>> predictedData = predictedDataService.getPredictedData(Arrays.asList(1, 2), vo.getStartTime(), vo.getEndTime());
+        Map<Integer, List<PredictedDataDTO>> predictedData = predictedDataService.getPredictedDataByTypes(vo.getDataCodes(), Arrays.asList(1, 2), vo.getStartTime(), vo.getEndTime());
         List<IntervalDataDto> historyIntervalDataVal1 = ConvertUtils.sourceToTarget(predictedData.get(1), IntervalDataDto.class);
         List<IntervalDataDto> historyIntervalDataVal2 = ConvertUtils.sourceToTarget(predictedData.get(2), IntervalDataDto.class);
         Map<Integer, List<IntervalDataDto>> resultMap = new HashMap<>(2);

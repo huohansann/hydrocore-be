@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.siact.module.predicted.mapper.PredictedDataMapper">
+
+    <select id="getPredictedDataByTypes" resultType="com.siact.module.predicted.entity.PredictedDataEntity">
+        SELECT
+        data_code ,
+        predicted_type,
+        predicted_type_code,
+        `time`,
+        item_val,
+        unit,
+        create_time,
+        rn
+        FROM
+        (
+            SELECT
+            data_code ,
+            predicted_type,
+            predicted_type_code,
+            `time`,
+            item_val,
+            unit,
+            create_time,
+            ROW_NUMBER() OVER ( PARTITION BY data_code,predicted_type,`time` ORDER BY create_time DESC ) AS rn
+            FROM predicted_data
+            WHERE
+            data_code in
+            <foreach collection="dataCodeList" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+            <if test="predictedTypeList != null and predictedTypeList.size > 0">
+                AND predicted_type in
+                <foreach collection="predictedTypeList" item="item" separator="," open="(" close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != '' ">
+                and time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != '' ">
+                and time &lt;= #{endTime}
+            </if>
+        ) t
+        WHERE
+        rn = 1
+    </select>
+</mapper>

@@ -9,6 +9,8 @@ import java.util.Map;
 
 public interface PredictedDataService extends IService<PredictedDataEntity> {
 
-    Map<Integer, List<PredictedDataDTO>> getPredictedData(List<Integer> predictedTypes,String startTime,String endTime);
+    void handleMqttMessage(String topic, String message);
+
+    Map<Integer, List<PredictedDataDTO>> getPredictedDataByTypes(List<String> dataCodeList, List<Integer> predictedTypeList, String startTime, String endTime);
 
 }

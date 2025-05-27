@@ -14,6 +14,7 @@ public class PredictedRecordEntity {
     private Long id;
     private String dataCode;
     private Integer predictedType;
+    private String predictedTypeCode;
     private Date time;
     private String itemVal;
     private String unit;

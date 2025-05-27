@@ -12,4 +12,19 @@ public enum PredictedTypeEnum {
         this.type = type;
         this.code = code;
     }
+
+    /**
+     * 根据code获取type
+     *
+     * @param typeCode
+     * @return
+     */
+    public static Integer getTypeByCode(String typeCode) {
+        for (PredictedTypeEnum typeEnum : PredictedTypeEnum.values()) {
+            if (typeEnum.code.equals(typeCode)) {
+                return typeEnum.type;
+            }
+        }
+        return null;
+    }
 }

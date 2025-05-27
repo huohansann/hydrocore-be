@@ -204,6 +204,13 @@
             <version>${jep.version}</version>
         </dependency>
 
+        <!-- mqtt -->
+        <dependency>
+            <groupId>com.siact</groupId>
+            <artifactId>mqtt-spring-boot-starter</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
     <dependencyManagement>
