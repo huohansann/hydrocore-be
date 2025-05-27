@@ -11,7 +11,7 @@ import java.util.Date;
 @Data
 public class MqttRecordEntity {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
-    private String id;
+    private Long id;
     private String topic;
     private String message;
     private Date createTime;
