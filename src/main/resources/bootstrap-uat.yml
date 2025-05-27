@@ -35,8 +35,9 @@ spring:
             refresh: true
           - data-id: sec-knife4j.yml
             refresh: true
+          - data-id: mqtt.yml
+            refresh: true
 
 jwt:
   secret: 5K8264ILTBkK1Rfwu1+7JIh8SLfHau5a5LzZqqkd7PpHdYc=
   expiration: 86400000  # 24小时
-
