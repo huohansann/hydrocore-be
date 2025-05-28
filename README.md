@@ -26,7 +26,7 @@
 
 ## 主要功能模块
 
-- **数字孪生**：集成 `siact-common-code` 与 `siact-sec-api-feign`，实现窑炉数字孪生相关业务。
+- **数字孪生**：集成 `siact-sec-api-feign`，实现窑炉数字孪生相关业务。
 - **权限管理**：基于 Spring Security，支持用户、角色、菜单、组织等权限体系。
 - **数据采集与展示**：通过 MyBatis-Plus、Redis 实现高效数据存储与缓存。
 - **API 文档**：集成 Knife4j，自动生成接口文档，便于前后端联调。
@@ -81,6 +81,6 @@ com.siact.KilnApplication
 
 ## 注意事项
 
-1. **私有依赖**：部分依赖（如 `siact-common-code`、`siact-sec-api-feign`）需从公司私有 Nexus 仓库下载，外部环境可能无法直接构建。
+1. **私有依赖**：部分依赖（如 `siact-sec-api-feign`）需从公司私有 Nexus 仓库下载，外部环境可能无法直接构建。
 2. **Nacos 配置**：需保证 Nacos 服务可用，且相关配置文件已上传至对应命名空间。
 3. **数据库与Redis**：请根据实际环境配置数据库与Redis连接信息。

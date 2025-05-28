@@ -21,9 +21,9 @@ public class KilnInfoDTO implements Serializable {
     private BigDecimal gasCalc;
     /** 天然气设定值 */
     private BigDecimal gasVal;
-    /** 助燃风计算值 */
+    /** 风气比设定值 */
     private BigDecimal windCalc;
-    /** 助燃风设定值 */
+    /** 风气比调整值 */
     private BigDecimal windVal;
     /** 天然气流量设定值上限 */
     private BigDecimal gasValUp;
