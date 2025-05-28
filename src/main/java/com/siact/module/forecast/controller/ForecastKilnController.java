@@ -49,23 +49,23 @@ public class ForecastKilnController {
         return r;
     }
 
-    @ApiOperationSupport(order = 2)
-    @ApiOperation("查询窑炉属性数据(实时+预测)")
-    @PostMapping("/queryForecastInfo")
-    public R<KilnLineChartVO> queryForecastInfo(@RequestBody @Validated ForecastKilnParamsDTO dto) {
-        R r;
-        try {
-            r = R.data(forecastKilnService.queryForecastInfo(dto));
-        } catch (Exception e) {
-            log.error("查询属性的实时数据失败", e);
-            r = R.fail(e.getMessage());
-        }
-        return r;
-    }
+//    @ApiOperationSupport(order = 2)
+//    @ApiOperation("查询窑炉属性数据(实时+预测)")
+//    @PostMapping("/queryForecastInfo")
+//    public R<KilnLineChartVO> queryForecastInfo(@RequestBody @Validated ForecastKilnParamsDTO dto) {
+//        R r;
+//        try {
+//            r = R.data(forecastKilnService.queryForecastInfo(dto));
+//        } catch (Exception e) {
+//            log.error("查询属性的实时数据失败", e);
+//            r = R.fail(e.getMessage());
+//        }
+//        return r;
+//    }
 
     @ApiOperationSupport(order = 2)
     @ApiOperation("查询窑炉属性数据(实时+预测)")
-    @PostMapping("/queryForecastInfo1")
+    @PostMapping("/queryForecastInfo")
     public R<List<LineChartVO>> queryForecastInfo1(@RequestBody @Validated ForecastKilnParamsDTO dto) {
         R r;
         try {

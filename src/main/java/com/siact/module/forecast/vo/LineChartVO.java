@@ -12,6 +12,9 @@ import lombok.Data;
 @Data
 @ApiModel(description = "折线图数据")
 public class LineChartVO {
+    @ApiModelProperty(value = "参数Code")
+    private String dataCode;
+
     @ApiModelProperty(value = "名称")
     private String name;
 

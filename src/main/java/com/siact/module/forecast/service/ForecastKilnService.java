@@ -31,5 +31,10 @@ public interface ForecastKilnService {
      */
     KilnForecastLineChartVO queryKilnForecastInfo(CommonChartParamsDto dto);
 
+    /**
+     * 查询窑炉预测信息
+     * @param dto
+     * @return
+     */
     List<LineChartVO> queryForecastInfo1(ForecastKilnParamsDTO dto);
 }

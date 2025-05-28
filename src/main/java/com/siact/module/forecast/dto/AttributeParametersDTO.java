@@ -10,5 +10,6 @@ import lombok.Data;
 @Data
 public class AttributeParametersDTO {
     private String  dataCode;
+    private String  name;
     private String  forecastCode;
 }

@@ -24,6 +24,7 @@ import com.siact.sec.vo.CommonChartParamsVo;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -174,15 +175,17 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
 
         List<LineChartVO> lineChartVOList = new ArrayList<>();
         for (int i = 0; i < dataCodeList.size(); i++) {
+            String dataCode = dataCodeList.get(i);
             LineChartVO lineChartVO = new LineChartVO();
             String dataName = dataNameList != null && dataNameList.size() > i ? dataNameList.get(i) : null;
-            lineChartVO.setName(dataName);
+            lineChartVO.setName(StringUtils.isNotBlank(dataName) ?dataName+"趋势":null);
+            lineChartVO.setDataCode(dataCode);
             LineChartDataVO lineChartDataVO = new LineChartDataVO();
             lineChartDataVO.setXData(timeList);
             SeriesDataVO seriesDataVO = new SeriesDataVO();
-            seriesDataVO.setActual(parseAttributeInfo(historyData, dataName));
-            seriesDataVO.setSingleForecast(parseAttributeInfo(singlePredictionData, dataName));
-            seriesDataVO.setMultiForecast(parseAttributeInfo(multiPredictionData, dataName));
+            seriesDataVO.setActual(parseAttributeInfo(acturalDataMap.get(dataCode), StringUtils.isNotBlank(dataName) ?"实际"+dataName:null));
+            seriesDataVO.setSingleForecast(parseAttributeInfo(singlePredictionDataMap.get(dataCode), StringUtils.isNotBlank(dataName) ?"单步预测"+dataName:null));
+            seriesDataVO.setMultiForecast(parseAttributeInfo(multiPredictionDataMap.get(dataCode), StringUtils.isNotBlank(dataName) ?"多步预测"+dataName:null));
             lineChartDataVO.setSeriesData(seriesDataVO);
             lineChartVO.setData(lineChartDataVO);
             lineChartVOList.add(lineChartVO);
@@ -190,9 +193,11 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         return lineChartVOList;
     }
 
-    private AttributeInfoVO parseAttributeInfo(ColumnChartDTO historyData, String dataName) {
-
-        return null;
+    private AttributeInfoVO parseAttributeInfo(List<Object[]> data, String dataName) {
+        AttributeInfoVO attributeInfoVO = new AttributeInfoVO();
+        attributeInfoVO.setName(dataName);
+        attributeInfoVO.setValue(data);
+        return attributeInfoVO;
     }
 
     @Override
