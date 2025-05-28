@@ -130,7 +130,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         // 获取总的时间轴
         List<String> timeList = IntervalTimeUtil.getIntervalTimeList(projectPropVO.getStartTime(), projectPropVO.getEndTime(), projectPropVO.getTsUnit(), projectPropVO.getTs(), projectPropVO.getFormatVal());
         // 组装结果
-        return buildLineChartVO(projectPropVO, null, singlePredictionData, multiPredictionData, timeList);
+        return buildKilnForecastInfoVO(projectPropVO, null, singlePredictionData, multiPredictionData, timeList);
     }
 
 
@@ -182,6 +182,55 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         }
         return lineChartVOList;
     }
+
+    /**
+     * 组装结果
+     *
+     * @param historyData
+     * @param singlePredictionData
+     * @param multiPredictionData
+     * @param timeList
+     * @return
+     */
+    private List<LineChartVO> buildKilnForecastInfoVO(ForecastKilnParamsDTO projectPropVO, ColumnChartDTO historyData, ColumnChartDTO singlePredictionData, ColumnChartDTO multiPredictionData, List<String> timeList) {
+        // 组装结果
+        // 获取dataCode
+        List<String> dataCodeList = projectPropVO.getDataCodes();
+        // 获取dataCode对应的属性名称
+        List<String> dataNameList = projectPropVO.getNames();
+
+        // 获取参数属性
+        // 获取单步预测属性信息
+        List<BasicDataDTO> acturalDataList = historyData != null && historyData.getData() != null ? historyData.getData() : Collections.emptyList();
+        Map<String, List<Object[]>> acturalDataMap = acturalDataList.stream().collect(Collectors.toMap(BasicDataDTO::getDataCode, BasicDataDTO::getData, (v1, v2) -> v1));
+
+        // 获取单步预测属性信息
+        List<BasicDataDTO> singlePredictionDataList = singlePredictionData.getData();
+        Map<String, List<Object[]>> singlePredictionDataMap = singlePredictionDataList.stream().collect(Collectors.toMap(BasicDataDTO::getDataCode, BasicDataDTO::getData, (v1, v2) -> v1));
+
+        // 获取多步预测属性信息
+        List<BasicDataDTO> multiBasicDataDTOList = multiPredictionData.getData();
+        Map<String, List<Object[]>> multiPredictionDataMap = multiBasicDataDTOList.stream().collect(Collectors.toMap(BasicDataDTO::getDataCode, BasicDataDTO::getData, (v1, v2) -> v1));
+
+        List<LineChartVO> lineChartVOList = new ArrayList<>();
+        for (int i = 0; i < dataCodeList.size(); i++) {
+            String dataCode = dataCodeList.get(i);
+            LineChartVO lineChartVO = new LineChartVO();
+            String dataName = dataNameList != null && dataNameList.size() > i ? dataNameList.get(i) : null;
+            lineChartVO.setName(dataName);
+            lineChartVO.setDataCode(dataCode);
+            LineChartDataVO lineChartDataVO = new LineChartDataVO();
+            lineChartDataVO.setXData(timeList);
+            SeriesDataVO seriesDataVO = new SeriesDataVO();
+            seriesDataVO.setSingleForecast(parseAttributeInfo(singlePredictionDataMap.get(dataCode),  "单步" ));
+            seriesDataVO.setMultiForecast(parseAttributeInfo(multiPredictionDataMap.get(dataCode),  "多步" ));
+            lineChartDataVO.setSeriesData(seriesDataVO);
+            lineChartVO.setData(lineChartDataVO);
+            lineChartVOList.add(lineChartVO);
+        }
+        return lineChartVOList;
+    }
+
 
     private AttributeInfoVO parseAttributeInfo(List<Object[]> data, String dataName) {
         AttributeInfoVO attributeInfoVO = new AttributeInfoVO();
