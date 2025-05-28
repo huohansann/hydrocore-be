@@ -7,12 +7,9 @@ import com.siact.module.forecast.dto.ForecastKilnParamsDTO;
 import com.siact.module.forecast.service.ForecastKilnService;
 import com.siact.module.forecast.vo.KilnForecastLineChartVO;
 import com.siact.module.forecast.vo.ForecastKilnMenuVO;
-import com.siact.module.forecast.vo.KilnLineChartVO;
 import com.siact.module.forecast.vo.LineChartVO;
 import com.siact.sec.dto.CommonChartParamsDto;
-import com.siact.sec.vo.CommonChartParamsVo;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,27 +46,14 @@ public class ForecastKilnController {
         return r;
     }
 
-//    @ApiOperationSupport(order = 2)
-//    @ApiOperation("查询窑炉属性数据(实时+预测)")
-//    @PostMapping("/queryForecastInfo")
-//    public R<KilnLineChartVO> queryForecastInfo(@RequestBody @Validated ForecastKilnParamsDTO dto) {
-//        R r;
-//        try {
-//            r = R.data(forecastKilnService.queryForecastInfo(dto));
-//        } catch (Exception e) {
-//            log.error("查询属性的实时数据失败", e);
-//            r = R.fail(e.getMessage());
-//        }
-//        return r;
-//    }
 
     @ApiOperationSupport(order = 2)
     @ApiOperation("查询窑炉属性数据(实时+预测)")
     @PostMapping("/queryForecastInfo")
-    public R<List<LineChartVO>> queryForecastInfo1(@RequestBody @Validated ForecastKilnParamsDTO dto) {
+    public R<List<LineChartVO>> queryForecastInfo(@RequestBody @Validated ForecastKilnParamsDTO dto) {
         R r;
         try {
-            r = R.data(forecastKilnService.queryForecastInfo1(dto));
+            r = R.data(forecastKilnService.queryForecastInfo(dto));
         } catch (Exception e) {
             log.error("查询属性的实时数据失败", e);
             r = R.fail(e.getMessage());
@@ -77,10 +61,11 @@ public class ForecastKilnController {
         return r;
     }
 
-    @ApiOperationSupport(order = 2)
+
+    @ApiOperationSupport(order = 3)
     @ApiOperation("查询窑炉属性数据(预测)")
     @PostMapping("/queryKilnForecastInfo")
-    public R<KilnForecastLineChartVO> queryKilnForecastInfo(@RequestBody @Validated CommonChartParamsDto dto) {
+    public R<List<LineChartVO>> queryKilnForecastInfo(@RequestBody @Validated ForecastKilnParamsDTO dto) {
         R r;
         try {
             r = R.data(forecastKilnService.queryKilnForecastInfo(dto));
