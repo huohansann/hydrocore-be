@@ -11,7 +11,9 @@ import com.siact.module.base.vo.ControlIntervalConfigVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,6 +30,19 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         wrapper.eq(StringUtils.isNoneBlank(configVO.getMeasurePoint()),ControlIntervalConfigEntity::getMeasurePoint, configVO.getMeasurePoint());
         wrapper.eq(StringUtils.isNoneBlank(configVO.getPointType()),ControlIntervalConfigEntity::getPointType, configVO.getPointType());
         // 没有条件就默认查询全部
+        List<ControlIntervalConfigEntity> controlIntervalConfigEntities = baseMapper.selectList(wrapper);
+        return ConvertUtils.sourceToTarget(controlIntervalConfigEntities, ControlIntervalConfigDTO.class);
+    }
+
+    @Override
+    public List<ControlIntervalConfigDTO> selectListByDataCodeList(List<String> dataCodeList) {
+        if (ObjectUtils.isEmpty(dataCodeList)) {
+            return new ArrayList<>();
+        }
+
+        LambdaQueryWrapper<ControlIntervalConfigEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(ControlIntervalConfigEntity::getDataCode, dataCodeList);
+
         List<ControlIntervalConfigEntity> controlIntervalConfigEntities = baseMapper.selectList(wrapper);
         return ConvertUtils.sourceToTarget(controlIntervalConfigEntities, ControlIntervalConfigDTO.class);
     }

@@ -27,6 +27,12 @@ public class ControlIntervalConfigEntity {
     private String measurePoint;
 
     /**
+     * 孪生dataCode
+     */
+    @TableField("data_code")
+    private String dataCode;
+
+    /**
      * 测点类型，暂时预留一下
      */
     @TableField("point_type")
@@ -55,4 +61,7 @@ public class ControlIntervalConfigEntity {
      */
     @TableField("low_alarm")
     private String lowAlarm;
+
+    @TableField("temperature_set")
+    private String temperatureSet;
 }

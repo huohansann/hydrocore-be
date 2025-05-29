@@ -8,9 +8,12 @@ import java.util.List;
 public interface ControlIntervalConfigService {
     List<ControlIntervalConfigDTO> selectListByCondition(ControlIntervalConfigVO configVO);
 
+    List<ControlIntervalConfigDTO> selectListByDataCodeList(List<String> dataCodeList);
+
     void add(ControlIntervalConfigDTO configDTO);
 
     void updateConfig(ControlIntervalConfigDTO configDTO);
 
     ControlIntervalConfigDTO get(ControlIntervalConfigVO configVO);
+
 }

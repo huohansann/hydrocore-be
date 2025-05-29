@@ -15,6 +15,11 @@ public class ControlIntervalConfigDTO {
     private String measurePoint;
 
     /**
+     * 孪生dataCode
+     */
+    private String dataCode;
+
+    /**
      * 测点code，暂时预留一下
      */
     private String pointType;
@@ -38,4 +43,9 @@ public class ControlIntervalConfigDTO {
      * 下告警值
      */
     private String lowAlarm;
+
+    /**
+     * 温度设定值
+     */
+    private String temperatureSet;
 }
