@@ -1,5 +1,7 @@
 package com.siact.module.base.service.impl;
 
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
@@ -13,7 +15,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,7 +73,23 @@ public class TplServiceImpl extends ServiceImpl<TplMapper, Tpl> implements TplSe
         List<Tpl> list = this.list(wrapper);
         return list.stream().map(this::convertToVO).collect(Collectors.toList());
     }
-    
+
+    @Override
+    public <T> List<T> getListByCode(String code, Class<T> clazz) {
+        TplVO tpl = selectTplByCode(code);
+        if (tpl == null) {
+            return Collections.emptyList();
+        }
+        String tplContent = tpl.getTplContent();
+        List<T> tplList = new ArrayList<>();
+        if (tplContent.startsWith("[")) {
+            tplList = JSONArray.parseArray(tplContent, clazz);
+        } else {
+            tplList.add(JSONObject.parseObject(tplContent, clazz));
+        }
+        return tplList;
+    }
+
     @Override
     public List<TplVO> selectTplByType(String tplType) {
         LambdaQueryWrapper<Tpl> wrapper = new LambdaQueryWrapper<>();
