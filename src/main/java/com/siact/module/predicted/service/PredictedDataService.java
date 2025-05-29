@@ -13,4 +13,7 @@ public interface PredictedDataService extends IService<PredictedDataEntity> {
 
     Map<Integer, List<PredictedDataDTO>> getPredictedDataByTypes(List<String> dataCodeList, List<Integer> predictedTypeList, String startTime, String endTime);
 
+
+    Map<Integer, Map<String,List<PredictedDataDTO>>> getPredictedDataByTypesCoverBtStep(List<String> dataCodeList, List<Integer> predictedTypeList, String startTime, String endTime);
+
 }

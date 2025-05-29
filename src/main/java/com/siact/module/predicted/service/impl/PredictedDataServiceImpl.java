@@ -1,8 +1,13 @@
 package com.siact.module.predicted.service.impl;
 
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson2.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.siact.common.constant.ConstantTime;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.module.mqtt.entity.MqttRecordEntity;
 import com.siact.module.mqtt.service.MqttRecordService;
@@ -14,6 +19,7 @@ import com.siact.module.predicted.mapper.PredictedDataMapper;
 import com.siact.module.predicted.service.PredictedDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -64,11 +70,11 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
 
         // 3:更新数据表(同时间点进行覆盖  单步覆盖单步  多步覆盖多步  即 根据typeCode进行 和 time进行覆盖)
         for (PredictedDataEntity entity : dataEntityList) {
-            LambdaUpdateWrapper<PredictedDataEntity> updateWrapper = new LambdaUpdateWrapper<>();
-            updateWrapper.eq(PredictedDataEntity::getDataCode, entity.getDataCode());
-            updateWrapper.eq(PredictedDataEntity::getPredictedTypeCode, entity.getPredictedTypeCode());
-            updateWrapper.eq(PredictedDataEntity::getTime, entity.getTime());
-            saveOrUpdate(entity, updateWrapper);
+            LambdaQueryWrapper<PredictedDataEntity> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(PredictedDataEntity::getDataCode, entity.getDataCode());
+            queryWrapper.eq(PredictedDataEntity::getPredictedTypeCode, entity.getPredictedTypeCode());
+            queryWrapper.eq(PredictedDataEntity::getTime, entity.getTime());
+            saveOrUpdate(entity, queryWrapper);
         }
 
     }
@@ -76,6 +82,7 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
     /**
      * 根据dataCodes 和 types 获取预测数据 (只有单步和多步的两个类型)
      * 逻辑:查询单步和多步类型的数据(同时间点的不同typeCode(如T20,T40...),取最后更新时间的最后一条数据)
+     *
      * @param dataCodeList
      * @param predictedTypeList
      * @param startTime
@@ -84,12 +91,100 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
      */
     @Override
     public Map<Integer, List<PredictedDataDTO>> getPredictedDataByTypes(List<String> dataCodeList, List<Integer> predictedTypeList, String startTime, String endTime) {
-        // 这里要处理 是根据 typeCode进行分组的
-        List<PredictedDataEntity> predictedDataDTOList = baseMapper.getPredictedDataByTypes(dataCodeList, predictedTypeList, startTime, endTime);
+//        // 这里要处理 是根据 typeCode进行分组的
+//        List<PredictedDataEntity> predictedDataDTOList = baseMapper.getPredictedDataByTypes(dataCodeList, predictedTypeList, startTime, endTime);
+//
+//        List<PredictedDataDTO> dataDTOList = ConvertUtils.sourceToTarget(predictedDataDTOList, PredictedDataDTO.class);
+//        Map<Integer, List<PredictedDataDTO>> rtnMap = dataDTOList.stream().collect(Collectors.groupingBy(PredictedDataDTO::getPredictedType));
+//
+//        return rtnMap;
 
-        List<PredictedDataDTO> dataDTOList = ConvertUtils.sourceToTarget(predictedDataDTOList, PredictedDataDTO.class);
-        Map<Integer, List<PredictedDataDTO>> rtnMap = dataDTOList.stream().collect(Collectors.groupingBy(PredictedDataDTO::getPredictedType));
+        Map<Integer, Map<String, List<PredictedDataDTO>>> resultMap = getPredictedDataByTypesCoverBtStep(dataCodeList, predictedTypeList, startTime, endTime);
+
+        Map<Integer, List<PredictedDataDTO>> rtnMap = new HashMap<>();
+        for (Map.Entry<Integer, Map<String, List<PredictedDataDTO>>> entry : resultMap.entrySet()) {
+            rtnMap.put(entry.getKey(), entry.getValue().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+        }
+        return rtnMap;
+    }
+
+    /**
+     * 数据格式
+     * Map<type , Map<dataCode, List<timeDataList> > >
+     * @param dataCodeList
+     * @param predictedTypeList
+     * @param startTime
+     * @param endTime
+     * @return
+     */
+    @Override
+    public Map<Integer, Map<String,List<PredictedDataDTO>>> getPredictedDataByTypesCoverBtStep(List<String> dataCodeList, List<Integer> predictedTypeList, String startTime, String endTime) {
+        // 1:先查出所有predictedType的相关数据
+        List<PredictedDataEntity> allTypeDataList = queryPredictedDataByDataCodeAndTypeList(dataCodeList, predictedTypeList, startTime, endTime);
+
+        Map<Integer, List<PredictedDataEntity>> allTypeDataMap = allTypeDataList.stream().collect(Collectors.groupingBy(PredictedDataEntity::getPredictedType));
+
+        // 处理单步数据
+        List<PredictedDataEntity> singleTypeDataList = allTypeDataMap.getOrDefault(PredictedTypeEnum.singleType(), new ArrayList<>());
+        // 有多个dataCode
+        // 根据dataCode分组后 再根据time进行分组
+        Map<String, Map<String, PredictedDataEntity>> singleDataCodeTimeMap = singleTypeDataList.stream().collect(Collectors.groupingBy(PredictedDataEntity::getDataCode, Collectors.collectingAndThen(Collectors.toList(),
+                list -> list.stream().collect(Collectors.toMap(PredictedDataEntity::getTime, o -> o, (o1, o2) ->{
+                    if (o1.getPredictedTypeCode().compareTo(o2.getPredictedTypeCode()) > 0) {
+                        // o1大于o2 证明 o1的步长大于o2的步长  需要用o2覆盖o1
+                        return o2;
+                    }
+                    return o1;
+                })))));
+
+        Map<String,List<PredictedDataDTO>> singleDataCodeTimeDTOMap = new HashMap<>();
+        for (Map.Entry<String, Map<String, PredictedDataEntity>> entry : singleDataCodeTimeMap.entrySet()) {
+            String dataCode = entry.getKey();
+            ArrayList<PredictedDataEntity> curDataCodeTimeList = new ArrayList<>(entry.getValue().values());
+
+            List<PredictedDataDTO> curDataTimeList = singleDataCodeTimeDTOMap.getOrDefault(dataCode, new ArrayList<>());
+            curDataTimeList.addAll(ConvertUtils.sourceToTarget(curDataCodeTimeList, PredictedDataDTO.class));
+            singleDataCodeTimeDTOMap.put(dataCode, curDataTimeList);
+        }
+
+        // 处理多步数据
+        List<PredictedDataEntity> multiTypeDataList = allTypeDataMap.getOrDefault(PredictedTypeEnum.multiType(),  new ArrayList<>());
+        Map<String, Map<String, PredictedDataEntity>> multiDataCodeTimeEntity = multiTypeDataList.stream().collect(Collectors.groupingBy(PredictedDataEntity::getDataCode, Collectors.collectingAndThen(Collectors.toList(),
+                list -> list.stream().collect(Collectors.toMap(PredictedDataEntity::getTime, o -> o)))));
+
+        Map<String,List<PredictedDataDTO>> multiDataCodeTimeDTOMap = new HashMap<>();
+        for (Map.Entry<String, Map<String, PredictedDataEntity>> entry : multiDataCodeTimeEntity.entrySet()) {
+            String dataCode = entry.getKey();
+            ArrayList<PredictedDataEntity> curDataCodeTimeList = new ArrayList<>(entry.getValue().values());
+
+            List<PredictedDataDTO> curDataTimeList = multiDataCodeTimeDTOMap.getOrDefault(dataCode, new ArrayList<>());
+            curDataTimeList.addAll(ConvertUtils.sourceToTarget(curDataCodeTimeList, PredictedDataDTO.class));
+            multiDataCodeTimeDTOMap.put(dataCode, curDataTimeList);
+        }
+
+
+        Map<Integer, Map<String, List<PredictedDataDTO>>> rtnMap = new HashMap<>();
+        rtnMap.put(PredictedTypeEnum.singleType(), singleDataCodeTimeDTOMap);
+        rtnMap.put(PredictedTypeEnum.multiType(), multiDataCodeTimeDTOMap);
 
         return rtnMap;
+    }
+
+    /**
+     * 根据dataCode 和 predictedType 查找时间范围内的数据
+     *
+     * @param dataCodeList
+     * @param predictedTypeList
+     * @param startTime
+     * @param endTime
+     * @return
+     */
+    private List<PredictedDataEntity> queryPredictedDataByDataCodeAndTypeList(List<String> dataCodeList, List<Integer> predictedTypeList, String startTime, String endTime) {
+        LambdaQueryWrapper<PredictedDataEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(PredictedDataEntity::getDataCode, dataCodeList);
+        queryWrapper.in(PredictedDataEntity::getPredictedType, predictedTypeList);
+        queryWrapper.between(PredictedDataEntity::getTime, startTime, endTime);
+
+        return baseMapper.selectList(queryWrapper);
     }
 }

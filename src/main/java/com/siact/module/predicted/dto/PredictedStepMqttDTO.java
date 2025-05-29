@@ -4,6 +4,8 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @ApiModel("Mqtt预测值步长数据(包含单步和多步,通过type进行区分)")
 public class PredictedStepMqttDTO {
@@ -14,7 +16,7 @@ public class PredictedStepMqttDTO {
     @ApiModelProperty("预测的数据时间")
     private String time;
     @ApiModelProperty("预测值")
-    private String itemVal;
+    private BigDecimal itemVal;
     @ApiModelProperty("单位")
     private String unit;
 }

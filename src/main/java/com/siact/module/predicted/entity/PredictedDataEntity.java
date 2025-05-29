@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
@@ -20,7 +21,7 @@ public class PredictedDataEntity {
     private Integer predictedType;
     private String predictedTypeCode;
     private String time;
-    private String itemVal;
+    private BigDecimal itemVal;
     private String unit;
     private Date createTime;
 }
