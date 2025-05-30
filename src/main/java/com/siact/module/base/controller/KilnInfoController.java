@@ -30,7 +30,7 @@ public class KilnInfoController {
 
     @ApiOperation("查询炉子信息列表")
     @PostMapping("/list")
-    public R list(@RequestBody KilnInfoQuery query) {
+    public R<List<KilnInfoVO>> list(@RequestBody KilnInfoQuery query) {
         List<KilnInfoVO> list = kilnInfoService.selectKilnInfoList(query);
         return R.data(list);
     }

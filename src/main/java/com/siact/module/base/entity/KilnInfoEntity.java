@@ -51,16 +51,22 @@ public class KilnInfoEntity {
     private BigDecimal gasVal;
 
     /**
-     * 风气比设定值
+     * 助燃风计算值
      */
     @TableField("wind_calc")
     private BigDecimal windCalc;
 
     /**
-     * 风气比调整值
+     * 助燃风设定值
      */
     @TableField("wind_val")
     private BigDecimal windVal;
+
+    /**
+     * 风气比
+     */
+    @TableField("wind_gas_rate")
+    private BigDecimal windGasRate;
 
     /**
      * 天然气流量设定值上限

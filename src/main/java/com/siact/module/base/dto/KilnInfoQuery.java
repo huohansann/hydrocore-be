@@ -1,5 +1,6 @@
 package com.siact.module.base.dto;
 
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 /**
@@ -7,9 +8,12 @@ import lombok.Data;
  */
 @Data
 public class KilnInfoQuery {
+    @ApiModelProperty(value = "炉子编号")
     private String number; // 炉子编号
+    @ApiModelProperty(value = "炉子编码")
     private String code;   // 炉子编码
+    @ApiModelProperty(value = "状态")
     private Boolean state; // 状态
-    private Integer pageSize;    // 分页大小
-    private Integer pageNum;     // 当前页数
+//    private Integer pageSize;    // 分页大小
+//    private Integer pageNum;     // 当前页数
 } 
