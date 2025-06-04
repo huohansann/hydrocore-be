@@ -9,6 +9,8 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Api(tags = "配置字段存储")
 @RestController
 @RequestMapping("/configFieldStore")
@@ -35,9 +37,9 @@ public class ConfigFieldStoreController {
     }
 
     @ApiOperation("修改配置")
-    @PostMapping
-    public R edit(@RequestBody ConfigFieldStoreDTO dto) {
-        return R.data(configFieldStoreService.updateConfigFieldStore(dto));
+    @PostMapping("/batchEdit")
+    public R edit(@RequestBody List<ConfigFieldStoreDTO> dtoList) {
+        return R.data(configFieldStoreService.updateConfigFieldStore(dtoList));
     }
 
     @ApiOperation("删除配置")

@@ -50,9 +50,10 @@ public class ConfigFieldStoreServiceImpl extends ServiceImpl<ConfigFieldStoreMap
     }
 
     @Override
-    public int updateConfigFieldStore(ConfigFieldStoreDTO dto) {
-        ConfigFieldStoreEntity entity = ConvertUtils.sourceToTarget(dto, ConfigFieldStoreEntity.class);
-        return this.updateById(entity) ? 1 : 0;
+    public int updateConfigFieldStore(List<ConfigFieldStoreDTO> dtoList) {
+        List<ConfigFieldStoreEntity> entities =
+                ConvertUtils.sourceToTarget(dtoList, ConfigFieldStoreEntity.class);
+        return this.updateBatchById(entities) ? 1 : 0;
     }
 
     @Override
