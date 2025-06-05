@@ -82,9 +82,12 @@ public class JepUtils {
         Map<String, BigDecimal> param2Vals = new HashMap<>();
         param2Vals.put("curVal", new BigDecimal(4));   // 现查
         param2Vals.put("val", new BigDecimal(795)); // 入参
-        // 增加 8-15
+        // 增加 8-15  炉子比较
         String formula = "(curVal + 8 <= val) && (val <= curVal + 15)";
         boolean calc = (Boolean)calc(formula, param2Vals, 2, true, null);
+
+        // 区间比较
+        String formula1 = "(lowVal <= val) && (val <= upLow)";
         System.out.println(calc);
     }
 
