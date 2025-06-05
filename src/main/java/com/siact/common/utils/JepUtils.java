@@ -4,6 +4,7 @@ import com.singularsys.jep.EvaluationException;
 import com.singularsys.jep.Jep;
 import com.singularsys.jep.JepException;
 import com.singularsys.jep.ParseException;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -77,6 +78,19 @@ public class JepUtils {
         }
         return null;
     }
+
+    public static BigDecimal calcBigDecimal(String formula, Map<String, BigDecimal> param2Vals, int scale, boolean nullCalc,
+                               BigDecimal nullVal) throws ParseException, EvaluationException {
+        Object result = calc(formula, param2Vals, scale, nullCalc, nullVal);
+        return result == null ? null : new BigDecimal(result.toString()).setScale(scale, BigDecimal.ROUND_HALF_UP);
+    }
+
+    public static Boolean calcBoolean(String formula, Map<String, BigDecimal> param2Vals, int scale, boolean nullCalc,
+                                       BigDecimal nullVal) throws ParseException, EvaluationException {
+        Object result = calc(formula, param2Vals, scale, nullCalc, nullVal);
+        return result == null ? null : Boolean.valueOf(result.toString());
+    }
+
 
     public static void main(String[] args) throws ParseException, EvaluationException {
         Map<String, BigDecimal> param2Vals = new HashMap<>();
