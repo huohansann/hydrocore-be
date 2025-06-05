@@ -60,9 +60,4 @@ public class ConfigFieldStoreServiceImpl extends ServiceImpl<ConfigFieldStoreMap
     public int deleteConfigFieldStoreByIds(Long[] ids) {
         return this.removeByIds(java.util.Arrays.asList(ids)) ? 1 : 0;
     }
-
-    @Override
-    public int deleteConfigFieldStoreById(Long id) {
-        return this.removeById(id) ? 1 : 0;
-    }
 } 

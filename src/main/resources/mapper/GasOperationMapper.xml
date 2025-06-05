@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.siact.module.base.mapper.GasOperationMapper">
+
+    <insert id="insertBatch">
+        insert into gas_operation
+        (rule_code, furnace_code, operation, low_val, up_val)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.ruleCode},
+                #{item.furnaceCode},
+                #{item.operation},
+                #{item.lowVal},
+                #{item.upVal}
+            )
+        </foreach>
+    </insert>
+
+</mapper> 
