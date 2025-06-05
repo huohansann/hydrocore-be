@@ -367,3 +367,23 @@ CREATE TABLE `tpl`  (
 INSERT INTO `tpl` VALUES (3, '窑炉预测菜单', 'kilnPrediction', '{\r\n	\"temperaturePrediction\": [\r\n		{\r\n			\"tabName\": \"温度趋势预测\",\r\n			\"tabCode\": \"temperatureTrendPrediction\",\r\n			\"curve\": [\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"MC1\"\r\n				},\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"MC5\"\r\n				},\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"MC10\"\r\n				}\r\n			]\r\n		},\r\n		{\r\n			\"tabName\": \"MC2-MC4历史曲线\",\r\n			\"tabCode\": \"mc2ToMc4HistoryCurve\",\r\n			\"curve\": [\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"MC2\"\r\n				},\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"MC3\"\r\n				},\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"MC4\"\r\n				}\r\n			]\r\n		},\r\n		{\r\n			\"tabName\": \"MC6-MC9历史曲线\",\r\n			\"tabCode\": \"mc6ToMc9HistoryCurve\",\r\n			\"curve\": [\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"MC6\"\r\n				},\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"MC7\"\r\n				},\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"MC8\"\r\n				},\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"MC9\"\r\n				}\r\n			]\r\n		}\r\n	],\r\n	\"liquidLevelPrediction\": [\r\n		{\r\n			\"tabName\": \"液位\",\r\n			\"tabCode\": \"waterLeve\",\r\n			\"curve\": [\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"wl\"\r\n				}\r\n			]\r\n		}\r\n	],\r\n	\"pressurePrediction\": [\r\n		{\r\n			\"tabName\": \"压力\",\r\n			\"tabCode\": \"yali\",\r\n			\"curve\": [\r\n				{\r\n					\"dataCode\": \"数字孪生属性code\",\r\n					\"forecastCode\": \"wl\"\r\n				}\r\n			]\r\n		}\r\n	]\r\n}', '', '窑炉预测模块菜单tab页配置', '2025-05-21 16:23:13', '2025-05-21 16:21:45', NULL, NULL, 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ----------------------------
+-- Table structure for process_log
+-- ----------------------------
+DROP TABLE IF EXISTS `process_log`;
+CREATE TABLE `process_log`  (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `start_time` DATETIME NOT NULL COMMENT '开始日期',
+    `end_time` DATETIME NOT NULL COMMENT '结束日期',
+    `product_line_num` varchar(50) NOT NULL COMMENT '产线数量(Ⅲ\Ⅳ)',
+    `fire_cycle` INT NOT NULL COMMENT '换火周期(单位min)',
+    `defoam_system` char(2) NOT NULL COMMENT '除泡系统 Y:有 X:无',
+    `replace_machine` TINYINT NOT NULL COMMENT '更换设备 1:正常 2:换机',
+    `operating_code` varchar(50) NOT NULL COMMENT '工况编码',
+    `binary_code` varchar(50) NOT NULL COMMENT '二进制编码',
+    `operator` VARCHAR(64) NOT NULL COMMENT '操作员',
+    `operation_date` DATETIME NOT NULL COMMENT '操作日期',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '工艺日志表';
+

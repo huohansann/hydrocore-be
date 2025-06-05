@@ -2,7 +2,7 @@ package com.siact.module.process.vo;
 
 import lombok.Data;
 import java.util.Date;
-import com.siact.module.process.enums.DefoamingSystemEnum;
+import com.siact.module.process.enums.DefoamSystemEnum;
 import com.siact.module.process.enums.ReplaceMachineEnum;
 
 /**
@@ -11,12 +11,12 @@ import com.siact.module.process.enums.ReplaceMachineEnum;
 @Data
 public class ProcessLogVO {
     private Long id;
-    private Date startTime;
-    private Date endTime;
+    private String startTime;
+    private String endTime;
     private Integer productLineNum;
     private Integer fireCycle;
-    private DefoamingSystemEnum defoamingSystem;
+    private DefoamSystemEnum defoamSystem;
     private ReplaceMachineEnum replaceMachine;
     private String operator;
-    private Date operationDate;
+    private String operationDate;
 } 

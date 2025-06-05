@@ -2,6 +2,8 @@ package com.siact.module.process.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.siact.module.permission.vo.PageVO;
+import com.siact.module.process.dto.ProcessLogPageDTO;
 import com.siact.module.process.entity.ProcessLogEntity;
 import com.siact.module.process.dto.ProcessLogDTO;
 import com.siact.module.process.vo.ProcessLogVO;
@@ -11,10 +13,51 @@ import java.util.List;
  * 工艺日志Service接口
  */
 public interface IProcessLogService extends IService<ProcessLogEntity> {
-    IPage<ProcessLogVO> pageQuery(int pageNum, int pageSize, ProcessLogDTO queryDTO);
+    /**
+     * 分页查询
+     * @param queryDTO
+     * @return
+     */
+    PageVO<ProcessLogEntity> pageQuery(ProcessLogPageDTO queryDTO);
+
+    /**
+     * 条件查询
+     * @param queryDTO
+     * @return
+     */
     List<ProcessLogVO> listAll(ProcessLogDTO queryDTO);
+    /**
+     * 根据id查询
+     * @param id
+     * @return
+     */
     ProcessLogVO getById(Long id);
+
+    /**
+     * 新增
+     * @param dto
+     * @return
+     */
     boolean add(ProcessLogDTO dto);
+
+    /**
+     * 修改
+     * @param dto
+     * @return
+     */
     boolean update(ProcessLogDTO dto);
+
+    /**
+     * 删除
+     * @param id
+     * @return
+     */
     boolean delete(Long id);
-} 
+
+    /**
+     * 根据日期查询
+     * @param queryDate
+     * @return
+     */
+    ProcessLogVO queryByDate(String queryDate);
+}
