@@ -1,5 +1,6 @@
 package com.siact.module.base.service;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.siact.module.base.dto.RuleAddDTO;
 import com.siact.module.base.vo.RuleDetailVO;
 
@@ -33,4 +34,5 @@ public interface IRuleService {
      */
     RuleDetailVO detail(String ruleCode);
 
+    JSONObject table();
 }

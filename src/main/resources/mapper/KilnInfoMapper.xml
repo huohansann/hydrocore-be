@@ -25,12 +25,12 @@
                 </foreach>
             </trim>
 
-            <!-- 更新 wind_calc -->
+            <!-- 更新 wind_calc
             <trim prefix="wind_calc = CASE" suffix="END,">
                 <foreach collection="list" item="item">
                     WHEN id = #{item.id} THEN #{item.windCalc}
                 </foreach>
-            </trim>
+            </trim> -->
 
             <!-- 更新 wind_val -->
             <trim prefix="wind_val = CASE" suffix="END,">

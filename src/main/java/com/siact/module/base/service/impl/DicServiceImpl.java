@@ -53,6 +53,10 @@ public class DicServiceImpl extends ServiceImpl<DicMapper, Dic> implements IDicS
         if (StringUtils.hasText(query.getCode())) {
             wrapper.like(Dic::getCode, query.getCode());
         }
+
+        if (StringUtils.hasText(query.getTag())) {
+            wrapper.eq(Dic::getTag, query.getTag());
+        }
         
         if (StringUtils.hasText(query.getStatus())) {
             wrapper.eq(Dic::getStatus, query.getStatus());

@@ -28,6 +28,12 @@ public class RuleController {
         return R.data(ruleService.listRules());
     }
 
+    @ApiOperation("查询条规列表(带表头)")
+    @GetMapping("/table")
+    public R table() {
+        return R.data(ruleService.table());
+    }
+
     @ApiOperation("详情")
     @GetMapping("/detail/{ruleCode}")
     public R detail(@PathVariable @NotBlank(message = "规则编码不能为空") String ruleCode) {

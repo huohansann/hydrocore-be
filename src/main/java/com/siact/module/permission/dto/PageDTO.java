@@ -34,6 +34,6 @@ public class PageDTO {
     @ApiModelProperty(value = "角色ID", example = "1")
     private String roleId;
 
-
-
+    @ApiModelProperty(value = "角色名称（模糊匹配）", example = "管理")
+    private String roleName;
 } 

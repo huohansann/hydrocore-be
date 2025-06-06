@@ -1,6 +1,9 @@
 package com.siact.module.base.service.impl;
 
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.siact.common.constant.ConstantField;
 import com.siact.common.exception.CustomException;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.module.base.dto.GasOperationDTO;
@@ -13,7 +16,9 @@ import com.siact.module.base.mapper.GasOperationMapper;
 import com.siact.module.base.mapper.RuleMetaMapper;
 import com.siact.module.base.mapper.TempConditionMapper;
 import com.siact.module.base.service.IRuleService;
+import com.siact.module.base.service.TplService;
 import com.siact.module.base.vo.RuleDetailVO;
+import com.siact.module.base.vo.TplVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +40,9 @@ public class RuleServiceImpl implements IRuleService {
     private TempConditionMapper tempConditionMapper;
     @Autowired
     private GasOperationMapper gasOperationMapper;
+
+    @Autowired
+    private TplService tplService;
 
     @Override
     public List<RuleDetailVO> listRules() {
@@ -142,5 +150,18 @@ public class RuleServiceImpl implements IRuleService {
                 gasOperationMapper.selectList(new LambdaQueryWrapper<GasOperationEntity>().eq(GasOperationEntity::getRuleCode, ruleCode));
         vo.setGasOperations(ConvertUtils.sourceToTarget(gasList, GasOperationDTO.class));
         return vo;
+    }
+
+    @Override
+    public JSONObject table() {
+        TplVO tplVO = tplService.selectTplByCode(ConstantField.RULES_HEADERS);
+        if (tplVO == null) {
+            throw new CustomException("表头模板不存在");
+        }
+        JSONArray jsonArray = JSONArray.parseArray(tplVO.getTplContent());
+        JSONObject result = new JSONObject();
+        result.put(ConstantField.HEADERS, jsonArray);
+        result.put(ConstantField.DATALIST, listRules());
+        return result;
     }
 } 

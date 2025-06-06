@@ -121,11 +121,14 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
         Page<RoleEntity> page = new Page<>(request.getPageNum(), request.getPageSize());
         
         LambdaQueryWrapper<RoleEntity> queryWrapper = new LambdaQueryWrapper<>();
-        
+
+        if (StrUtil.isNotBlank(request.getRoleName())) {
+            queryWrapper.like(RoleEntity::getName, request.getRoleName());
+        }
+
         // 关键字查询
         if (StrUtil.isNotBlank(request.getKeyword())) {
-            queryWrapper.like(RoleEntity::getName, request.getKeyword())
-                    .or().like(RoleEntity::getCode, request.getKeyword())
+            queryWrapper.like(RoleEntity::getCode, request.getKeyword())
                     .or().like(RoleEntity::getDescription, request.getKeyword());
         }
         

@@ -5,6 +5,9 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
+/**
+ * 炉子下发数据
+ */
 @Data
 public class KilnInfoDistributeDTO extends KilnInfoBase {
     /** 状态：是否自动状态（1是 0否） */

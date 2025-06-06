@@ -7,7 +7,6 @@ import com.siact.module.base.dto.KilnInfoDTO;
 import com.siact.module.base.dto.KilnInfoDistributeDTO;
 import com.siact.module.base.dto.KilnInfoGasFlowDTO;
 import com.siact.module.base.dto.KilnInfoQuery;
-import com.siact.module.base.dto.KilnInfoTotalWindDTO;
 import com.siact.module.base.dto.KilnInfoWindDisDTO;
 import com.siact.module.base.entity.KilnInfoEntity;
 import com.siact.module.base.mapper.KilnInfoMapper;
@@ -105,10 +104,4 @@ public class KilnInfoServiceImpl extends ServiceImpl<KilnInfoMapper, KilnInfoEnt
         return kilnInfoEntities.size();
     }
 
-    @Override
-    public int updateTotalWind(List<KilnInfoTotalWindDTO> list) {
-        List<KilnInfoEntity> kilnInfoEntities = ConvertUtils.sourceToTarget(list, KilnInfoEntity.class);
-        baseMapper.updateTotalWindBatch(kilnInfoEntities);
-        return kilnInfoEntities.size();
-    }
 } 

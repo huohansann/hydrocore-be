@@ -4,9 +4,9 @@ import com.siact.module.base.dto.KilnInfoDTO;
 import com.siact.module.base.dto.KilnInfoDistributeDTO;
 import com.siact.module.base.dto.KilnInfoGasFlowDTO;
 import com.siact.module.base.dto.KilnInfoQuery;
-import com.siact.module.base.dto.KilnInfoTotalWindDTO;
 import com.siact.module.base.dto.KilnInfoWindDisDTO;
 import com.siact.module.base.vo.KilnInfoVO;
+
 import java.util.List;
 
 /**
@@ -27,5 +27,4 @@ public interface IKilnInfoService {
 
     int updateWindDis(List<KilnInfoWindDisDTO> list);
 
-    int updateTotalWind(List<KilnInfoTotalWindDTO> list);
 }
