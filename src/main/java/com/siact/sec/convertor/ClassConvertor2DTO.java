@@ -10,11 +10,12 @@ import com.siact.sec.dto.EqDypropInsDTO;
 import com.siact.sec.dto.EqStpropInsDTO;
 import com.siact.sec.dto.InsTreeDTO;
 import com.siact.sec.dto.TMInsSimpleDTO;
+import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
-
+@Mapper
 public interface ClassConvertor2DTO {
     ClassConvertor2DTO INSTANCE = Mappers.getMapper(ClassConvertor2DTO.class);
 
