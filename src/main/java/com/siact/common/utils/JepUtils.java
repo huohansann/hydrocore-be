@@ -1,10 +1,11 @@
 package com.siact.common.utils;
 
+import com.alibaba.fastjson.JSON;
+import com.siact.common.exception.CustomException;
 import com.singularsys.jep.EvaluationException;
 import com.singularsys.jep.Jep;
 import com.singularsys.jep.JepException;
 import com.singularsys.jep.ParseException;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -80,14 +81,24 @@ public class JepUtils {
     }
 
     public static BigDecimal calcBigDecimal(String formula, Map<String, BigDecimal> param2Vals, int scale, boolean nullCalc,
-                               BigDecimal nullVal) throws ParseException, EvaluationException {
-        Object result = calc(formula, param2Vals, scale, nullCalc, nullVal);
+                               BigDecimal nullVal)  {
+        Object result = null;
+        try {
+            result = calc(formula, param2Vals, scale, nullCalc, nullVal);
+        } catch (ParseException | EvaluationException e) {
+            throw new CustomException("当前计算公式" + formula + ",计算时出现异常,参数:" + JSON.toJSONString(param2Vals), e.getMessage(), e);
+        }
         return result == null ? null : new BigDecimal(result.toString()).setScale(scale, BigDecimal.ROUND_HALF_UP);
     }
 
     public static Boolean calcBoolean(String formula, Map<String, BigDecimal> param2Vals, int scale, boolean nullCalc,
-                                       BigDecimal nullVal) throws ParseException, EvaluationException {
-        Object result = calc(formula, param2Vals, scale, nullCalc, nullVal);
+                                       BigDecimal nullVal) {
+        Object result = null;
+        try {
+            result = calc(formula, param2Vals, scale, nullCalc, nullVal);
+        } catch (ParseException | EvaluationException e) {
+            throw new CustomException("当前计算公式" + formula + ",计算时出现异常,参数:" + JSON.toJSONString(param2Vals), e.getMessage(), e);
+        }
         return result == null ? null : Boolean.valueOf(result.toString());
     }
 
