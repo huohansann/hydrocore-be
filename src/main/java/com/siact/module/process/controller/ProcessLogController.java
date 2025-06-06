@@ -12,6 +12,7 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.List;
  */
 @Api(tags = "工艺日志管理")
 @RestController
+@Validated
 @RequestMapping("/process/log")
 public class ProcessLogController {
     @Autowired
@@ -46,7 +48,7 @@ public class ProcessLogController {
 
     @ApiOperation("新增工艺日志")
     @PostMapping("/add")
-    public R<Boolean> add(@RequestBody ProcessLogDTO dto) {
+    public R<Boolean> add(@RequestBody @Validated ProcessLogDTO dto) {
         return R.data(processLogService.add(dto));
     }
 
