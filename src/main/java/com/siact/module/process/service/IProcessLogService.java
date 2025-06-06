@@ -60,4 +60,11 @@ public interface IProcessLogService extends IService<ProcessLogEntity> {
      * @return
      */
     ProcessLogVO queryByDate(String queryDate);
+
+    /**
+     * 批量删除
+     * @param idList
+     * @return
+     */
+    Boolean deleteBatch(List<Long> idList);
 }

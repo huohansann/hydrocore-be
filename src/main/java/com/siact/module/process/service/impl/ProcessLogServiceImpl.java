@@ -166,6 +166,11 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
     }
 
     @Override
+    public Boolean deleteBatch(List<Long> idList) {
+        return removeByIds(idList);
+    }
+
+    @Override
     public ProcessLogVO queryByDate(String queryDate) {
         LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.le(ProcessLogEntity::getStartTime, queryDate);

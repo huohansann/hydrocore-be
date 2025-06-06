@@ -56,10 +56,16 @@ public class ProcessLogController {
         return R.data(processLogService.update(dto));
     }
 
-    @ApiOperation("删除工艺日志")
+    @ApiOperation("根据Id删除工艺日志")
     @DeleteMapping("/delete")
     public R<Boolean> delete(@RequestParam(value = "id") Long id) {
         return R.data(processLogService.delete(id));
+    }
+
+    @ApiOperation("根据idList批量删除工艺日志")
+    @PostMapping("/deleteBatch")
+    public R<Boolean> deleteBatch(@RequestBody List<Long> idList) {
+        return R.data(processLogService.deleteBatch(idList));
     }
 
     @ApiOperation("根据期日查找工艺日志")
