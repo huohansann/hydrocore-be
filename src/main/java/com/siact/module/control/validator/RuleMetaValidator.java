@@ -1,10 +1,8 @@
 package com.siact.module.control.validator;
 
 import com.alibaba.fastjson.JSONObject;
-import com.siact.common.constant.ConstantBase;
 import com.siact.common.exception.CustomException;
 import com.siact.common.utils.JepUtils;
-import com.siact.common.utils.TimeUtil;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.dto.GasOperationDTO;
 import com.siact.module.base.dto.KilnInfoDistributeDTO;
@@ -15,14 +13,13 @@ import com.siact.module.base.vo.RuleDetailVO;
 import com.siact.module.control.dto.RuleFormulaDetailDTO;
 import com.siact.sec.sevice.DataService;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
 import java.math.BigDecimal;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +34,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Order(2)
 @Component
+@ConditionalOnProperty(name = "rule.validator.meta.enable", havingValue = "true", matchIfMissing = true)
 public class RuleMetaValidator implements RuleValidator {
 
     @Autowired
@@ -181,10 +179,8 @@ public class RuleMetaValidator implements RuleValidator {
         ArrayList<String> querySecAllDataCode = new ArrayList<>();
         querySecAllDataCode.addAll(tempConditionsDataCodeList);
         querySecAllDataCode.addAll(gasOperationDataCodeList);
-        // 查询起止时间范围内的 last瞬时值
-        String startTime = TimeUtil.getNow(); // 开始为当前时间
-        String endTime = TimeUtil.timeSut(startTime, 1, ChronoUnit.MINUTES);// 结束为当前时间+1分钟
-        return dataService.queryBetweenVal(String.join(",", querySecAllDataCode), startTime, endTime, ConstantBase.LAST);
+        // 查询最后一包数据
+        return dataService.queryRealValue(String.join(",", querySecAllDataCode));
     }
 
     /**

@@ -26,6 +26,8 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAdjusters;
@@ -43,7 +45,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -2477,18 +2478,31 @@ public class TimeUtil {
         return list;
     }
 
+
+    private static final DateTimeFormatter CUSTOM_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM[-dd[ HH:mm:ss]]")
+            .withResolverStyle(ResolverStyle.STRICT);
+
     /**
      * 时间相减
      */
-    public static String timeSut(String time, Integer number, TemporalUnit field){
-        String pattern = "(\\d{4}-\\d{2}-\\d{2})\\s([0-2][0-3]:[0-5][0-9]:[0-5][0-9])";
-        if(!Pattern.compile(pattern).matcher(time).matches()){
-            time = time+"-01 00:00:00";
-        }
-        LocalDateTime s = LocalDateTime.parse(time, ConstantUtil.DATE_TIME_FORMATTER);
-        LocalDateTime result = offset(s, number, field);
+    public static String timeSut(String time, Integer number, TemporalUnit field) {
+        LocalDateTime parsedTime = parseTime(time);
+
+        // 进行偏移处理
+        LocalDateTime result = offset(parsedTime, number, field);
+
+        // 返回标准格式
         return result.format(ConstantUtil.DATE_TIME_FORMATTER);
     }
+
+    public static LocalDateTime parseTime(String time) {
+        try {
+            return LocalDateTime.parse(time, CUSTOM_FORMATTER);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("不支持的时间格式: " + time, e);
+        }
+    }
+
 
     /**
      * 时间偏移
