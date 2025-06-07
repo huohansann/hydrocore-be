@@ -1,10 +1,12 @@
 package com.siact.module.base.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.siact.module.base.dto.KilnInfoDTO;
 import com.siact.module.base.dto.KilnInfoDistributeDTO;
 import com.siact.module.base.dto.KilnInfoGasFlowDTO;
 import com.siact.module.base.dto.KilnInfoQuery;
 import com.siact.module.base.dto.KilnInfoWindDisDTO;
+import com.siact.module.base.entity.KilnInfoEntity;
 import com.siact.module.base.vo.KilnInfoVO;
 
 import java.util.List;
@@ -12,7 +14,7 @@ import java.util.List;
 /**
  * 炉子基本信息配置 服务接口
  */
-public interface IKilnInfoService {
+public interface IKilnInfoService extends IService<KilnInfoEntity> {
     KilnInfoVO selectKilnInfoById(Long id);
     List<KilnInfoVO> selectKilnInfoList(KilnInfoQuery query);
     int insertKilnInfo(KilnInfoDTO dto);
