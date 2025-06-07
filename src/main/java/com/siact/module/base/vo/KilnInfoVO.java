@@ -2,6 +2,7 @@ package com.siact.module.base.vo;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 
@@ -27,9 +28,6 @@ public class KilnInfoVO implements Serializable {
     /** 天然气设定值 */
     @ApiModelProperty(value = "天然气设定值")
     private BigDecimal gasVal;
-//    /** 助燃风计算值 */
-//    @ApiModelProperty(value = "助燃风计算值")
-//    private BigDecimal windCalc;
     /** 助燃风设定值 */
     @ApiModelProperty(value = "助燃风设定值")
     private BigDecimal windVal;
