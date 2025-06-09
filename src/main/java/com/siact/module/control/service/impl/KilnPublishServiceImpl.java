@@ -1,6 +1,6 @@
 package com.siact.module.control.service.impl;
 
-import com.siact.common.exception.CustomException;
+import com.siact.common.R;
 import com.siact.module.base.dto.KilnInfoDistributeDTO;
 import com.siact.module.base.service.IKilnInfoService;
 import com.siact.module.control.service.KilnPublishService;
@@ -29,7 +29,7 @@ public class KilnPublishServiceImpl implements KilnPublishService {
     private List<RuleValidator> validators;
 
     @Override
-    public void publish(List<KilnInfoDistributeDTO> list) {
+    public R publish(List<KilnInfoDistributeDTO> list) {
         // 1. 更新下发参数
         kilnInfoService.updateDistribute(list);
 
@@ -38,11 +38,11 @@ public class KilnPublishServiceImpl implements KilnPublishService {
         for (RuleValidator validator : validators) {
             RuleValidateResult result = validator.validate(list);
             if (!result.isPass()) {
-                // todo 暂时抛出异常
-                throw new CustomException(result.getMessage());
+                return R.fail(result.getMessage(), result.getErrors());
             }
         }
 
         // 3. 下发 暂时不开发
+        return R.success();
     }
 }

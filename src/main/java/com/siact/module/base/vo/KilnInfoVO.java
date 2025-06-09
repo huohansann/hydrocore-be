@@ -1,7 +1,10 @@
 package com.siact.module.base.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.siact.common.config.BigDecimalTrimmingConverter;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 
@@ -23,32 +26,35 @@ public class KilnInfoVO implements Serializable {
     private Boolean state;
     /** 天然气计算值 */
     @ApiModelProperty(value = "天然气计算值")
+    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
     private BigDecimal gasCalc;
     /** 天然气设定值 */
     @ApiModelProperty(value = "天然气设定值")
+    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
     private BigDecimal gasVal;
-//    /** 助燃风计算值 */
-//    @ApiModelProperty(value = "助燃风计算值")
-//    private BigDecimal windCalc;
     /** 助燃风设定值 */
     @ApiModelProperty(value = "助燃风设定值")
+    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
     private BigDecimal windVal;
     /** 风气比 */
     @ApiModelProperty(value = "风气比")
+    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
     private BigDecimal windGasRate;
     /** 天然气流量设定值上限 */
     @ApiModelProperty(value = "天然气流量设定值上限")
+    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
     private BigDecimal gasValUp;
     /** 天然气流量设定值下限 */
     @ApiModelProperty(value = "天然气流量设定值下限")
+    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
     private BigDecimal gasValLow;
     /** 气量分布上限 */
     @ApiModelProperty(value = "气量分布上限")
+    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
     private BigDecimal windDisUp;
     /** 气量分布下限 */
     @ApiModelProperty(value = "气量分布下限")
+    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
     private BigDecimal windDisLow;
-    /** 总气量 */
-    @ApiModelProperty(value = "总气量")
-    private BigDecimal totalWindVal;
+
 } 

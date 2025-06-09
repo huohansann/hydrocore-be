@@ -25,7 +25,6 @@ public class KilnPublishController {
     @ApiOperation("天然气与风气值下发")
     @PostMapping("/publish")
     public R publish(@RequestBody List<KilnInfoDistributeDTO> list) {
-        kilnPublishService.publish(list);
-        return R.success();
+        return kilnPublishService.publish(list);
     }
 }

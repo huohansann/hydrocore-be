@@ -98,7 +98,6 @@ CREATE TABLE `kiln_info`  (
                               `state` tinyint(1) NULL DEFAULT NULL COMMENT '是否自动状态（1是 0否）',
                               `gas_calc` decimal(10, 2) NULL DEFAULT NULL COMMENT '天然气计算值',
                               `gas_val` decimal(10, 2) NULL DEFAULT NULL COMMENT '天然气设定值',
-                              `wind_calc` decimal(10, 2) NULL DEFAULT NULL COMMENT '助燃风计算值',
                               `wind_val` decimal(10, 2) NULL DEFAULT NULL COMMENT '助燃风设定值',
                               `gas_val_up` decimal(10, 2) NULL DEFAULT NULL COMMENT '天然气流量设定值上限',
                               `gas_val_low` decimal(10, 2) NULL DEFAULT NULL COMMENT '天然气流量设定值下限',
