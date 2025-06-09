@@ -39,7 +39,7 @@ public class UserDTO {
     @ApiModelProperty(value = "性别（0未知 1男 2女）", example = "1")
     private Integer gender;
 
-    @ApiModelProperty(value = "状态（1正常 0停用）", example = "true")
+    @ApiModelProperty(value = "用户账号", example = "true")
     private String account;
 
     @ApiModelProperty(value = "角色ID列表", example = "[1, 2, 3]")
@@ -48,7 +48,7 @@ public class UserDTO {
     @ApiModelProperty(value = "关联组织id", example = "[1, 2, 3]")
     private List<Long> orgIds;
 
-    @ApiModelProperty(value = "状态", example = "true")
+    @ApiModelProperty(value = "状态（true:正常 false:停用）", example = "true")
     private Boolean status;
 
 }

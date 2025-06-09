@@ -5,6 +5,7 @@ import cn.afterturn.easypoi.excel.entity.ImportParams;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.pinyin.PinyinUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -74,12 +75,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
             return false;
         }
 
-        if (StrUtil.isNotBlank(request.getPassword())) {
+        if (StrUtil.isBlank(request.getPassword())) {
             // 默认密码,可以nacos配置
             request.setPassword("123456");
         }
 
         UserEntity user = ConvertUtils.sourceToTarget(request, UserEntity.class);
+        // account为根据用户名拼音字母
+        user.setAccount(PinyinUtil.getPinyin(user.getUsername(), ""));
 
         // 密码加密
         String password = passwordEncoder.encode(request.getPassword());
