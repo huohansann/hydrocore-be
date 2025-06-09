@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.siact.common.exception.CustomException;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.module.permission.dto.AssignPermissionsDTO;
 import com.siact.module.permission.dto.PageDTO;
@@ -230,11 +231,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
             userIdList = userOrganizationEntities.stream().map(UserOrganizationEntity::getUserId).distinct().collect(Collectors.toList());
         }
 
-        if (ObjectUtils.isEmpty(userIdList)) {
-            log.info("当前组织:{}下没有人员信息", request.getOrgId());
-            return new PageVO<>();
-        }
-
         // 组织查询下对应的人员信息
         queryWrapper.in(CollectionUtils.isNotEmpty(userIdList), UserEntity::getId, userIdList);
         IPage<UserEntity> result = page(page, queryWrapper);
@@ -248,6 +244,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         LambdaQueryWrapper<UserOrganizationEntity> userOrgWrapper = new LambdaQueryWrapper<>();
         userOrgWrapper.in(CollectionUtils.isNotEmpty(userId), UserOrganizationEntity::getUserId, userId);
         List<UserOrganizationEntity> userOrgEntitieList = userOrganizationMapper.selectList(userOrgWrapper);
+        if (ObjectUtils.isEmpty(userOrgEntitieList)) {
+            log.error("用户组织信息不存在,userId:{}", userId);
+            throw new CustomException("用户组织信息不存在,userId:{}" + userId);
+        }
         // 获取所有用户的组织id信息
         List<Long> orgIds = CollectionUtils.isNotEmpty(userOrgEntitieList) ? userOrgEntitieList.stream().map(UserOrganizationEntity::getOrgId).collect(Collectors.toList()) : Collections.EMPTY_LIST;
         List<OrganizationEntity> orgList = organizationMapper.selectBatchIds(orgIds);
@@ -259,6 +259,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         LambdaQueryWrapper<UserRoleEntity> userRoleWrapper = new LambdaQueryWrapper<>();
         userRoleWrapper.in(CollectionUtils.isNotEmpty(userId), UserRoleEntity::getUserId, userId);
         List<UserRoleEntity> userRoleEntitieList = userRoleMapper.selectList(userRoleWrapper);
+        if (ObjectUtils.isEmpty(userRoleEntitieList)) {
+            log.error("用户角色信息不存在,userId:{}", userId);
+            throw new CustomException("用户角色信息不存在,userId:{}" + userId);
+        }
         // 获取所有的角色信息
         List<Long> roleIds = CollectionUtils.isNotEmpty(userRoleEntitieList) ? userRoleEntitieList.stream().map(UserRoleEntity::getRoleId).collect(Collectors.toList()) : Collections.EMPTY_LIST;
         List<RoleEntity> roleEntities = this.roleMapper.selectBatchIds(roleIds);
