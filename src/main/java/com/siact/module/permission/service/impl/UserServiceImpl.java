@@ -13,22 +13,14 @@ import com.siact.common.utils.ConvertUtils;
 import com.siact.module.permission.dto.AssignPermissionsDTO;
 import com.siact.module.permission.dto.PageDTO;
 import com.siact.module.permission.dto.UserDTO;
-import com.siact.module.permission.entity.OrganizationEntity;
-import com.siact.module.permission.entity.RoleEntity;
-import com.siact.module.permission.entity.UserEntity;
-import com.siact.module.permission.entity.UserExcelEntity;
-import com.siact.module.permission.entity.UserOrganizationEntity;
-import com.siact.module.permission.entity.UserRoleEntity;
-import com.siact.module.permission.mapper.OrganizationMapper;
-import com.siact.module.permission.mapper.RoleMapper;
-import com.siact.module.permission.mapper.UserMapper;
-import com.siact.module.permission.mapper.UserOrganizationMapper;
-import com.siact.module.permission.mapper.UserRoleMapper;
+import com.siact.module.permission.entity.*;
+import com.siact.module.permission.mapper.*;
 import com.siact.module.permission.service.UserService;
 import com.siact.module.permission.vo.PageVO;
 import com.siact.module.permission.vo.UserVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -187,6 +179,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         return removeById(id);
     }
 
+    @Override
+    public boolean deleteUserByIdList(List<Long> idList) {
+        // 删除用户角色关联
+        userRoleMapper.delete(new LambdaQueryWrapper<UserRoleEntity>()
+                .in(UserRoleEntity::getUserId, idList));
+
+        // 删除用户组织关联
+        userOrganizationMapper.delete(new LambdaQueryWrapper<UserOrganizationEntity>()
+                .in(UserOrganizationEntity::getUserId, idList));
+
+        // 删除用户
+        return removeByIds(idList);
+    }
+
     /**
      * 分页查询用户信息
      *
@@ -219,6 +225,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
             orgMapper.eq(StringUtils.isNotBlank(request.getOrgId()), UserOrganizationEntity::getOrgId, request.getOrgId());
             List<UserOrganizationEntity> userOrganizationEntities = userOrganizationMapper.selectList(orgMapper);
             userIdList = userOrganizationEntities.stream().map(UserOrganizationEntity::getUserId).distinct().collect(Collectors.toList());
+        }
+
+        if (ObjectUtils.isEmpty(userIdList)) {
+            log.info("当前组织:{}下没有人员信息", request.getOrgId());
+            return new PageVO<>();
         }
 
         // 组织查询下对应的人员信息

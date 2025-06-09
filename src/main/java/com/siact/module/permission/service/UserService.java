@@ -44,6 +44,14 @@ public interface UserService extends IService<UserEntity> {
     boolean deleteUser(Long id);
 
     /**
+     * 批量删除用户
+     *
+     * @param idList 用户ID列表
+     * @return 是否成功
+     */
+    boolean deleteUserByIdList(List<Long> idList);
+
+    /**
      * 分页查询用户
      *
      * @param request 分页请求DTO
@@ -91,4 +99,5 @@ public interface UserService extends IService<UserEntity> {
     UserDetails loadUserByUsername(String username);
 
     void importUsers(MultipartFile file) throws Exception;
+
 }

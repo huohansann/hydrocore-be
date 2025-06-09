@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * 用户Controller
@@ -71,6 +72,14 @@ public class UserController {
     @GetMapping("/delete/{id}")
     public R<Boolean> delete(@PathVariable Long id) {
         boolean result = userService.deleteUser(id);
+        return R.data(result);
+    }
+
+    @ApiOperation("批量删除用户")
+    @ApiImplicitParam(name = "id", value = "用户ID", required = true, dataType = "Long", paramType = "path")
+    @PostMapping("/deleteList")
+    public R<Boolean> delete(@RequestBody List<Long> idList) {
+        boolean result = userService.deleteUserByIdList(idList);
         return R.data(result);
     }
 
