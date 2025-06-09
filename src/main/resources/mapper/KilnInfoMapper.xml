@@ -79,18 +79,4 @@
         </foreach>
     </update>
 
-    <update id="updateTotalWindBatch" parameterType="list">
-        UPDATE kiln_info
-        <trim prefix="SET" suffixOverrides=",">
-            <trim prefix="total_wind_val = CASE" suffix="END,">
-                <foreach collection="list" item="item">
-                    WHEN id = #{item.id} THEN #{item.totalWindVal}
-                </foreach>
-            </trim>
-        </trim>
-        WHERE id IN
-        <foreach item="item" collection="list" open="(" separator="," close=")">
-            #{item.id}
-        </foreach>
-    </update>
 </mapper>

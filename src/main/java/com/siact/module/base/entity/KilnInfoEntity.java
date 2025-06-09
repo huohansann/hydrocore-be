@@ -86,9 +86,4 @@ public class KilnInfoEntity {
     @TableField("wind_dis_low")
     private BigDecimal windDisLow;
 
-    /**
-     * 总气量
-     */
-    @TableField("total_wind_val")
-    private BigDecimal totalWindVal;
 }

@@ -17,5 +17,4 @@ public interface KilnInfoMapper extends BaseMapper<KilnInfoEntity> {
 
     void updateWindDisBatch(List<KilnInfoEntity> list);
 
-    void updateTotalWindBatch(List<KilnInfoEntity> list);
 }
