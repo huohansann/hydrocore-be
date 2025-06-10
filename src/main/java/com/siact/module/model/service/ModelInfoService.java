@@ -1,6 +1,7 @@
 package com.siact.module.model.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.siact.module.model.dto.ModelAssessChartDTO;
 import com.siact.module.model.dto.ModelInfoDTO;
 import com.siact.module.model.entity.ModelInfoEntity;
 import com.siact.module.model.vo.SendModelVO;
@@ -26,4 +27,11 @@ public interface ModelInfoService extends IService<ModelInfoEntity> {
      * @param sendModelVoList
      */
     void publishModel(List<SendModelVO> sendModelVoList);
+
+    /**
+     * 根据模型id 查询指标评价数据
+     * @param modelIdList
+     * @return
+     */
+    ModelAssessChartDTO queryModelAssessChart(List<Long> modelIdList);
 }

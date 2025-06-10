@@ -24,5 +24,7 @@ public class ModelConfigParamEntity {
     // 算法参数配置(页面配置json)
     private String algorithmSetting;
     private Date createTime;
+    // 自定义模型名称
+    private String customModelName;
 
 }

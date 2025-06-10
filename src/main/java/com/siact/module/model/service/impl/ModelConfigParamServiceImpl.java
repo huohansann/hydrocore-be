@@ -2,11 +2,14 @@ package com.siact.module.model.service.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.module.base.service.TplService;
 import com.siact.module.enmus.ModelStatusEnum;
+import com.siact.module.model.dto.ModelConfigParamDTO;
 import com.siact.module.model.dto.ModelConfigParamDetailDTO;
 import com.siact.module.model.dto.ModelConfigParamRtnDTO;
 import com.siact.module.model.dto.ModelInfoDTO;
@@ -55,11 +58,22 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         queryWrapper.eq(ModelConfigParamEntity::getDataCode, dataCode);
         queryWrapper.eq(ModelConfigParamEntity::getPredictedTypeCode, predictedTypeCode);
         ModelConfigParamEntity configParamEntity = baseMapper.selectOne(queryWrapper);
+        if (ObjectUtils.isEmpty(configParamEntity)) {
+            ModelConfigParamRtnDTO rtnDTO = new ModelConfigParamRtnDTO();
+            // 公共设置
+            ModelConfigParamDTO publicSetting = tplService.getByCode("modelSettingPublicParam", ModelConfigParamDTO.class);
+            // 算法设置
+            List<ModelConfigParamDetailDTO> algorithmSetting = tplService.getListByCode("modelSettingAlgorithmParam", ModelConfigParamDetailDTO.class);
+
+            rtnDTO.setPublicSetting(publicSetting);
+            rtnDTO.setAlgorithmSetting(algorithmSetting);
+            return rtnDTO;
+        }
 
         ModelConfigParamRtnDTO rtnDTO = ConvertUtils.sourceToTarget(configParamEntity, ModelConfigParamRtnDTO.class);
         // 将数据库当中的json数据转化为对象
-        rtnDTO.setPublicSetting(ConvertUtils.sourceToTarget(rtnDTO.getPublicSetting(), ModelConfigParamDetailDTO.class));
-        rtnDTO.setAlgorithmSetting(ConvertUtils.sourceToTarget(rtnDTO.getAlgorithmSetting(), ModelConfigParamDetailDTO.class));
+        rtnDTO.setPublicSetting(JSONObject.parseObject(configParamEntity.getPublicSetting(), ModelConfigParamDTO.class));
+        rtnDTO.setAlgorithmSetting(JSONArray.parseArray(configParamEntity.getAlgorithmSetting(), ModelConfigParamDetailDTO.class));
 
         return rtnDTO;
     }
@@ -68,7 +82,14 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
     @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdateParam(ModelConfigParamSaveVO configParamSaveVo) {
         ModelConfigParamEntity entity = new ModelConfigParamEntity();
-        entity.setId(configParamSaveVo.getId());
+        // 新增或修改 设置id
+        if (ObjectUtils.isEmpty(configParamSaveVo.getId())) {
+            Long uuid = IdWorker.getId(entity);
+            entity.setId(uuid);
+        } else {
+            entity.setId(configParamSaveVo.getId());
+        }
+
         entity.setDataCode(configParamSaveVo.getDataCode());
         entity.setPredictedType(configParamSaveVo.getPredictedType());
         entity.setPredictedTypeCode(configParamSaveVo.getPredictedTypeCode());
@@ -76,6 +97,9 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         entity.setAlgorithmSetting(JSON.toJSONString(configParamSaveVo.getAlgorithmSetting()));
 
         saveOrUpdate(entity);
+
+        // 调用算法  生成model
+        sendParamById(entity.getId());
     }
 
     @Override
@@ -109,6 +133,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         modelInfoDTO.setDataCode(entity.getDataCode());
         modelInfoDTO.setPredictedType(entity.getPredictedType());
         modelInfoDTO.setPredictedTypeCode(entity.getPredictedTypeCode());
+        modelInfoDTO.setCustomModelName(entity.getCustomModelName());
         modelInfoDTO.setStatus(ModelStatusEnum.RUNNING.getValue());
 
         modelInfoService.saveModelInfo(modelInfoDTO);
@@ -130,16 +155,16 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         HashMap<String, String> sendParamMap = new HashMap<>();
         // 处理公共配置
         String publicSetting = entity.getPublicSetting();
-        List<ModelConfigParamDetailDTO> publicParamDtoList = JSONArray.parseArray(publicSetting, ModelConfigParamDetailDTO.class);
+        ModelConfigParamDTO publicParamDtoList = JSONObject.parseObject(publicSetting, ModelConfigParamDTO.class);
 
-        getParamMapByDto(publicParamDtoList, 0, sendParamMap);
+//        getParamMapByDto(publicParamDtoList, 0, sendParamMap);
 
 
         // 处理算法配置
         String algorithmSetting = entity.getAlgorithmSetting();
         List<ModelConfigParamDetailDTO> algorithmParamDtoList = JSONArray.parseArray(algorithmSetting, ModelConfigParamDetailDTO.class);
 
-        getParamMapByDto(algorithmParamDtoList, 0, sendParamMap);
+//        getParamMapByDto(algorithmParamDtoList, 0, sendParamMap);
 
         return sendParamMap;
     }
@@ -164,7 +189,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         // 设置值
         sendParamMap.put(paramCode, value);
 
-        List<ModelConfigParamDetailDTO> childrenList = curDto.getChildren();
+        List<ModelConfigParamDetailDTO> childrenList = curDto.getParamList();
         if (ObjectUtils.isNotEmpty(childrenList)) {
             // 递归子集
             getParamMapByDto(childrenList, index, sendParamMap);

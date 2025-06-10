@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.module.enmus.PublishStatusEnum;
+import com.siact.module.model.dto.ModelAssessChartDTO;
 import com.siact.module.model.dto.ModelInfoDTO;
 import com.siact.module.model.entity.ModelInfoEntity;
 import com.siact.module.model.entity.ModelPublishRecordEntity;
@@ -70,6 +71,43 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
         modelPublishRecordService.saveModelPublishRecord(publishRecordList);
     }
 
+    @Override
+    public ModelAssessChartDTO queryModelAssessChart(List<Long> modelIdList) {
+        // 获取生效中的model
+        List<ModelInfoEntity> modelEntityList = baseMapper.selectBatchIds(modelIdList);
+        modelEntityList.sort((o1, o2) -> {
+            if (o1.getPredictedTypeCode().compareTo(o2.getPredictedTypeCode()) == 0) {
+                return o1.getCreateTime().compareTo(o2.getCreateTime());
+            } else {
+                return o1.getPredictedTypeCode().compareTo(o2.getPredictedTypeCode());
+            }
+        });
+
+        ModelAssessChartDTO chartDTO = new ModelAssessChartDTO();
+
+        List<String> xAxis = new ArrayList<>(Arrays.asList("决定系数", "MSE均方误差", "MAE平均绝对误差", "Accuracy精度"));
+        List<Object[]> dataList = new ArrayList<>();
+
+        for (String xKey : xAxis) {
+            for (ModelInfoEntity info : modelEntityList) {
+                String modelName = info.getModelName();
+                String customModelName = info.getCustomModelName();
+                String modelCode = info.getModelCode();
+                // 决定系数
+                String determination = info.getDetermination();
+                // MSE均方误差
+                String mse = info.getMse();
+                // MAE平均绝对误差
+                String mae = info.getMae();
+                // Accuracy精度
+                String accuracy = info.getAccuracy();
+            }
+        }
+
+
+        return chartDTO;
+    }
+
     /**
      * 根据 dataCode 和 predictedTypeCodeList 查询模型信息
      *
@@ -83,7 +121,9 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
         }
         LambdaQueryWrapper<ModelInfoEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ModelInfoEntity::getDataCode, dataCode);
-        queryWrapper.in(ModelInfoEntity::getPredictedTypeCode, predictedTypeCodeList);
+        if (ObjectUtils.isNotEmpty(predictedTypeCodeList)) {
+            queryWrapper.in(ModelInfoEntity::getPredictedTypeCode, predictedTypeCodeList);
+        }
 
         return baseMapper.selectList(queryWrapper);
     }

@@ -37,6 +37,15 @@ public interface TplService {
      * @param <T>
      */
     <T> List<T> getListByCode(String code, Class<T> clazz);
+
+    /**
+     * 根据模板编码查询模板
+     * @param code
+     * @param clazz
+     * @return
+     * @param <T>
+     */
+    <T> T getByCode(String code, Class<T> clazz);
     
     /**
      * 根据模板类型查询模板

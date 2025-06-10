@@ -1,13 +1,9 @@
 package com.siact.module.predicted.service.impl;
 
-import cn.hutool.core.date.DateField;
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.siact.common.constant.ConstantTime;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.module.mqtt.entity.MqttRecordEntity;
 import com.siact.module.mqtt.service.MqttRecordService;
@@ -19,7 +15,6 @@ import com.siact.module.predicted.mapper.PredictedDataMapper;
 import com.siact.module.predicted.service.PredictedDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -111,6 +106,7 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
     /**
      * 数据格式
      * Map<type , Map<dataCode, List<timeDataList> > >
+     *
      * @param dataCodeList
      * @param predictedTypeList
      * @param startTime
@@ -118,7 +114,7 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
      * @return
      */
     @Override
-    public Map<Integer, Map<String,List<PredictedDataDTO>>> getPredictedDataByTypesCoverBtStep(List<String> dataCodeList, List<Integer> predictedTypeList, String startTime, String endTime) {
+    public Map<Integer, Map<String, List<PredictedDataDTO>>> getPredictedDataByTypesCoverBtStep(List<String> dataCodeList, List<Integer> predictedTypeList, String startTime, String endTime) {
         // 1:先查出所有predictedType的相关数据
         List<PredictedDataEntity> allTypeDataList = queryPredictedDataByDataCodeAndTypeList(dataCodeList, predictedTypeList, startTime, endTime);
 
@@ -129,7 +125,7 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
         // 有多个dataCode
         // 根据dataCode分组后 再根据time进行分组
         Map<String, Map<String, PredictedDataEntity>> singleDataCodeTimeMap = singleTypeDataList.stream().collect(Collectors.groupingBy(PredictedDataEntity::getDataCode, Collectors.collectingAndThen(Collectors.toList(),
-                list -> list.stream().collect(Collectors.toMap(PredictedDataEntity::getTime, o -> o, (o1, o2) ->{
+                list -> list.stream().collect(Collectors.toMap(PredictedDataEntity::getTime, o -> o, (o1, o2) -> {
                     if (o1.getPredictedTypeCode().compareTo(o2.getPredictedTypeCode()) > 0) {
                         // o1大于o2 证明 o1的步长大于o2的步长  需要用o2覆盖o1
                         return o2;
@@ -137,7 +133,7 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
                     return o1;
                 })))));
 
-        Map<String,List<PredictedDataDTO>> singleDataCodeTimeDTOMap = new HashMap<>();
+        Map<String, List<PredictedDataDTO>> singleDataCodeTimeDTOMap = new HashMap<>();
         for (Map.Entry<String, Map<String, PredictedDataEntity>> entry : singleDataCodeTimeMap.entrySet()) {
             String dataCode = entry.getKey();
             ArrayList<PredictedDataEntity> curDataCodeTimeList = new ArrayList<>(entry.getValue().values());
@@ -148,11 +144,11 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
         }
 
         // 处理多步数据
-        List<PredictedDataEntity> multiTypeDataList = allTypeDataMap.getOrDefault(PredictedTypeEnum.multiType(),  new ArrayList<>());
+        List<PredictedDataEntity> multiTypeDataList = allTypeDataMap.getOrDefault(PredictedTypeEnum.multiType(), new ArrayList<>());
         Map<String, Map<String, PredictedDataEntity>> multiDataCodeTimeEntity = multiTypeDataList.stream().collect(Collectors.groupingBy(PredictedDataEntity::getDataCode, Collectors.collectingAndThen(Collectors.toList(),
                 list -> list.stream().collect(Collectors.toMap(PredictedDataEntity::getTime, o -> o)))));
 
-        Map<String,List<PredictedDataDTO>> multiDataCodeTimeDTOMap = new HashMap<>();
+        Map<String, List<PredictedDataDTO>> multiDataCodeTimeDTOMap = new HashMap<>();
         for (Map.Entry<String, Map<String, PredictedDataEntity>> entry : multiDataCodeTimeEntity.entrySet()) {
             String dataCode = entry.getKey();
             ArrayList<PredictedDataEntity> curDataCodeTimeList = new ArrayList<>(entry.getValue().values());
@@ -168,6 +164,21 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
         rtnMap.put(PredictedTypeEnum.multiType(), multiDataCodeTimeDTOMap);
 
         return rtnMap;
+    }
+
+    @Override
+    public List<JSONObject> getAllTypeList() {
+        List<JSONObject> rtnList = new ArrayList<>();
+
+        PredictedTypeEnum[] typeEnums = PredictedTypeEnum.values();
+        for (PredictedTypeEnum typeEnum : typeEnums) {
+            JSONObject typeEnumObj = new JSONObject();
+            typeEnumObj.put("type", typeEnum.getType());
+            typeEnumObj.put("code", typeEnum.getCode());
+            typeEnumObj.put("step", typeEnum.getStep());
+            rtnList.add(typeEnumObj);
+        }
+        return rtnList;
     }
 
     /**

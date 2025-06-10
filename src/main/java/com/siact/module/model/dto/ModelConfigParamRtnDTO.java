@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @ApiModel("参数设置Dto")
@@ -21,10 +22,10 @@ public class ModelConfigParamRtnDTO {
     private String predictedTypeCode;
 
     @ApiModelProperty(value = "公共参数配置(页面配置json)")
-    private ModelConfigParamDetailDTO publicSetting;
+    private ModelConfigParamDTO publicSetting;
 
     @ApiModelProperty(value = "算法参数配置(页面配置json)")
-    private ModelConfigParamDetailDTO algorithmSetting;
+    private List<ModelConfigParamDetailDTO> algorithmSetting;
 
     @ApiModelProperty(value = "创建时间")
     private Date createTime;

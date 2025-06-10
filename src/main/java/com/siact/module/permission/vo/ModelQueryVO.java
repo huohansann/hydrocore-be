@@ -1,0 +1,16 @@
+package com.siact.module.permission.vo;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+@ApiModel("查询模型")
+public class ModelQueryVO {
+    @ApiModelProperty("模型dataCode")
+    private String dataCode;
+    @ApiModelProperty("预测类型列表,T20/T40....")
+    private List<String> predictedTypeCodeList;
+}

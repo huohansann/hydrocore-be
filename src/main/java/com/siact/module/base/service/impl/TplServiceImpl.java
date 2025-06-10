@@ -11,6 +11,7 @@ import com.siact.module.base.entity.Tpl;
 import com.siact.module.base.mapper.TplMapper;
 import com.siact.module.base.service.TplService;
 import com.siact.module.base.vo.TplVO;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -88,6 +89,19 @@ public class TplServiceImpl extends ServiceImpl<TplMapper, Tpl> implements TplSe
             tplList.add(JSONObject.parseObject(tplContent, clazz));
         }
         return tplList;
+    }
+
+    @Override
+    public <T> T getByCode(String code, Class<T> clazz) {
+        TplVO tpl = selectTplByCode(code);
+        if (tpl == null) {
+            return null;
+        }
+        String tplContent = tpl.getTplContent();
+        if (ObjectUtils.isEmpty(tplContent)) {
+            return null;
+        }
+        return JSONObject.parseObject(tplContent, clazz);
     }
 
     @Override

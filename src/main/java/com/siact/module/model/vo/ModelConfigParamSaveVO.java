@@ -1,5 +1,6 @@
 package com.siact.module.model.vo;
 
+import com.siact.module.model.dto.ModelConfigParamDTO;
 import com.siact.module.model.dto.ModelConfigParamDetailDTO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -23,8 +24,10 @@ public class ModelConfigParamSaveVO {
     private String predictedTypeCode;
     // 公共参数配置(页面配置json)
     @ApiModelProperty(value = "公共参数配置(页面配置json)")
-    private List<ModelConfigParamDetailDTO> publicSetting;
+    private ModelConfigParamDTO publicSetting;
     // 算法参数配置(页面配置json)
     @ApiModelProperty(value = "算法参数配置(页面配置json)")
     private List<ModelConfigParamDetailDTO> algorithmSetting;
+    @ApiModelProperty(value = "自定义模型名称")
+    private String customModelName;
 }

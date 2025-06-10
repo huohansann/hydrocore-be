@@ -23,6 +23,8 @@ public class ModelInfoEntity {
     private Integer status;
     // 算法响应的参数(择到另一张表,可能是mqtt或者是回调接口,主要是记录)
     private String algorithmResp;
+    // 自定义模型名称
+    private String customModelName;
     // 模型名称
     private String modelName;
     // 模型Code

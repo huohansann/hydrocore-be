@@ -1,12 +1,14 @@
 package com.siact.module.model.controller;
 
 import com.siact.common.R;
+import com.siact.module.model.dto.ModelAssessChartDTO;
 import com.siact.module.model.dto.ModelConfigParamRtnDTO;
 import com.siact.module.model.dto.ModelInfoDTO;
 import com.siact.module.model.service.ModelConfigParamService;
 import com.siact.module.model.service.ModelInfoService;
 import com.siact.module.model.vo.ModelConfigParamSaveVO;
 import com.siact.module.model.vo.SendModelVO;
+import com.siact.module.permission.vo.ModelQueryVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +37,7 @@ public class ModelConfigController {
 
     @ApiOperation(value = "查询当前模型对应时间步长的参数配置")
     @GetMapping("/queryParam")
-    public R<ModelConfigParamRtnDTO> queryParamByDataCodeAndPredictedTypeCode(String dataCode, String predictedTypeCode) {
+    public R<ModelConfigParamRtnDTO> queryParamByDataCodeAndPredictedTypeCode(@RequestParam String dataCode,@RequestParam String predictedTypeCode) {
         // 获取参数模板
         return R.success(modelConfigParamService.queryParamByDataCodeAndPredictedTypeCode(dataCode, predictedTypeCode));
     }
@@ -55,9 +57,16 @@ public class ModelConfigController {
     }
 
     @ApiOperation(value = "查询当前模型对应时间步长的所有模型(包含指标评价)")
-    @GetMapping("/queryModel")
-    public R<Map<String, List<ModelInfoDTO>>> queryModelByDataCodeGroupByPredictedTypeCodes(String dataCode, List<String> predictedTypeCodeList) {
-        Map<String, List<ModelInfoDTO>> rtnDTOMap = modelInfoService.queryModelByDataCodeGroupByPredictedTypeCodes(dataCode, predictedTypeCodeList);
+    @PostMapping("/queryModel")
+    public R<Map<String, List<ModelInfoDTO>>> queryModelByDataCodeGroupByPredictedTypeCodes(@RequestBody ModelQueryVO modelQueryVO) {
+        Map<String, List<ModelInfoDTO>> rtnDTOMap = modelInfoService.queryModelByDataCodeGroupByPredictedTypeCodes(modelQueryVO.getDataCode(), modelQueryVO.getPredictedTypeCodeList());
+        return R.success(rtnDTOMap);
+    }
+
+    @ApiOperation(value = "根据模型id,获取指标评价的柱状图")
+    @GetMapping("/queryModelAssessChart")
+    public R<ModelAssessChartDTO> queryModelAssessChart(@RequestBody List<Long> modelIdList) {
+        ModelAssessChartDTO rtnDTOMap = modelInfoService.queryModelAssessChart(modelIdList);
         return R.success(rtnDTOMap);
     }
 
