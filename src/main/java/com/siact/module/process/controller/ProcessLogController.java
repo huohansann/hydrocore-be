@@ -16,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 工艺日志Controller
@@ -77,5 +78,15 @@ public class ProcessLogController {
     )
     public R<ProcessLogVO> queryByDate(String queryDate) {
         return R.data(processLogService.queryByDate(queryDate));
+    }
+
+    @ApiOperation("根据期起止日期查找工艺日志")
+    @GetMapping("/queryByDateRange")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "startTime", value = "开始日期,格式yyyy-MM-dd HH:mm:ss", required = true),
+            @ApiImplicitParam(name = "endTime", value = "结束日期,格式yyyy-MM-dd HH:mm:ss", required = true)
+    })
+    public R<Map<String,List<ProcessLogVO>>> queryByDateRange(String startTime, String endTime) {
+        return R.data(processLogService.queryByDateRange(startTime,endTime));
     }
 } 

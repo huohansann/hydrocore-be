@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.siact.common.constant.ConstantTime;
 import com.siact.common.exception.CustomException;
+import com.siact.common.utils.ConvertUtils;
 import com.siact.module.permission.vo.PageVO;
 import com.siact.module.process.dto.ProcessLogDTO;
 import com.siact.module.process.dto.ProcessLogPageDTO;
@@ -15,12 +17,15 @@ import com.siact.module.process.enums.ProductLineEnum;
 import com.siact.module.process.mapper.ProcessLogMapper;
 import com.siact.module.process.service.IProcessLogService;
 import com.siact.module.process.vo.ProcessLogVO;
+import com.siact.sec.utils.IntervalTimeUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -168,6 +173,24 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
     @Override
     public Boolean deleteBatch(List<Long> idList) {
         return removeByIds(idList);
+    }
+
+    @Override
+    public Map<String,List<ProcessLogVO>> queryByDateRange(String startTime, String endTime) {
+        List<ProcessLogEntity> processLogEntity = getByTimeRange(startTime, endTime);
+        List<ProcessLogVO> processLogVOList = processLogEntity == null ? null : ConvertUtils.sourceToTarget(processLogEntity, ProcessLogVO.class);
+        if (ObjectUtils.isEmpty(processLogVOList)) {
+            return new HashMap<>();
+        }
+        return processLogVOList.stream().collect(Collectors.groupingBy(o-> IntervalTimeUtil.dateFormat(o.getOperationDate(), ConstantTime.DATE_FORMAT)));
+    }
+
+    private List<ProcessLogEntity> getByTimeRange(String startTime, String endTime) {
+        LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.ge(ProcessLogEntity::getStartTime, startTime);
+        wrapper.le(ProcessLogEntity::getEndTime, endTime);
+
+        return baseMapper.selectList(wrapper);
     }
 
     @Override

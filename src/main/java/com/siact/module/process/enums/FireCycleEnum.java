@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum FireCycleEnum {
     TWENTY("20", "1", "20MIN"),
-    TWENTY_SEVEN("27", "0", "27MIN");
+    TWENTY_SEVEN("24", "0", "24MIN");
     private final String code;
     private final String binaryCode;
     private final String desc;

@@ -14,9 +14,9 @@ public class ProcessLogVO {
     private String startTime;
     private String endTime;
     private Integer productLineNum;
-    private Integer fireCycle;
-    private DefoamSystemEnum defoamSystem;
-    private ReplaceMachineEnum replaceMachine;
+    private String fireCycle;
+    private String defoamSystem;
+    private Integer replaceMachine;
     private String operator;
     private String operationDate;
 } 

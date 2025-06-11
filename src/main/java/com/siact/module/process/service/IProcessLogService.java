@@ -8,6 +8,7 @@ import com.siact.module.process.entity.ProcessLogEntity;
 import com.siact.module.process.dto.ProcessLogDTO;
 import com.siact.module.process.vo.ProcessLogVO;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 工艺日志Service接口
@@ -67,4 +68,12 @@ public interface IProcessLogService extends IService<ProcessLogEntity> {
      * @return
      */
     Boolean deleteBatch(List<Long> idList);
+
+    /**
+     * 查询时间段内的数据
+     * @param startTime
+     * @param endTime
+     * @return
+     */
+    Map<String,List<ProcessLogVO>> queryByDateRange(String startTime, String endTime);
 }
