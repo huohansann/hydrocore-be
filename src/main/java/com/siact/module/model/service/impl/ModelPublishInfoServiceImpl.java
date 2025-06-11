@@ -1,5 +1,6 @@
 package com.siact.module.model.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.module.model.entity.ModelPublishInfoEntity;
 import com.siact.module.model.mapper.ModelPublishInfoMapper;
@@ -10,4 +11,15 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class ModelPublishInfoServiceImpl extends ServiceImpl<ModelPublishInfoMapper, ModelPublishInfoEntity> implements ModelPublishInfoService {
+    @Override
+    public ModelPublishInfoEntity queryLastPublishInfoByDataCode(String dataCode) {
+
+        LambdaQueryWrapper<ModelPublishInfoEntity> queryWrapper = new LambdaQueryWrapper<>();
+
+        queryWrapper.eq(ModelPublishInfoEntity::getDataCode, dataCode);
+        queryWrapper.orderByDesc(ModelPublishInfoEntity::getCreateTime);
+        queryWrapper.last("limit 1");
+
+        return baseMapper.selectOne(queryWrapper);
+    }
 }

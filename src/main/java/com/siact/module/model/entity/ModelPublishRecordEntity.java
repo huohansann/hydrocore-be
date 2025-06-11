@@ -15,6 +15,8 @@ public class ModelPublishRecordEntity {
     private Long id;
     // 模型数据的dataCode
     private String dataCode;
+    // 模型发布信息id
+    private Long publishInfoId;
     // 预测类型 1:单步预测 2:多步预测
     private Integer predictedType;
     // 预测类型Code,单步如:T20,T40,多步:MULTI

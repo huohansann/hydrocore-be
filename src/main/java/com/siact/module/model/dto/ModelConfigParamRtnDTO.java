@@ -27,6 +27,6 @@ public class ModelConfigParamRtnDTO {
     @ApiModelProperty(value = "算法参数配置(页面配置json)")
     private List<ModelConfigParamDetailDTO> algorithmSetting;
 
-    @ApiModelProperty(value = "创建时间")
-    private Date createTime;
+//    @ApiModelProperty(value = "创建时间")
+//    private Date createTime;
 }

@@ -15,6 +15,8 @@ public class ModelInfoEntity {
     private Long id;
     // 模型数据的dataCode
     private String dataCode;
+    // 算法code
+    private String algorithmCode;
     // 预测类型 1:单步预测 2:多步预测
     private Integer predictedType;
     // 预测类型Code,单步如:T20,T40,多步:MULTI
@@ -37,6 +39,8 @@ public class ModelInfoEntity {
     private String mae;
     // Accuracy精度
     private String accuracy;
+    // 状态1:有效,0:无效
+    private Integer valid;
     private Date createTime;
     private Date updateTime;
 

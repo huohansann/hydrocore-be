@@ -3,11 +3,11 @@ package com.siact.module.model.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.siact.module.model.dto.ModelAssessChartDTO;
 import com.siact.module.model.dto.ModelInfoDTO;
+import com.siact.module.model.dto.ModelOutputSelectRtnDTO;
 import com.siact.module.model.entity.ModelInfoEntity;
-import com.siact.module.model.vo.SendModelVO;
+import com.siact.module.model.vo.PublishModelVO;
 
 import java.util.List;
-import java.util.Map;
 
 public interface ModelInfoService extends IService<ModelInfoEntity> {
     void saveModelInfo(ModelInfoDTO modelInfoDTO);
@@ -20,16 +20,18 @@ public interface ModelInfoService extends IService<ModelInfoEntity> {
      * @param predictedTypeCodeList
      * @return
      */
-    Map<String, List<ModelInfoDTO>> queryModelByDataCodeGroupByPredictedTypeCodes(String dataCode, List<String> predictedTypeCodeList);
+    ModelOutputSelectRtnDTO queryModelByDataCodeGroupByPredictedTypeCodes(String dataCode, List<String> predictedTypeCodeList);
 
     /**
-     * 下发模型
-     * @param sendModelVoList
+     * 下发模型 调用设备下发参数
+     *
+     * @param publishModelVO
      */
-    void publishModel(List<SendModelVO> sendModelVoList);
+    void publishModel(PublishModelVO publishModelVO);
 
     /**
      * 根据模型id 查询指标评价数据
+     *
      * @param modelIdList
      * @return
      */

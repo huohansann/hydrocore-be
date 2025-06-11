@@ -4,8 +4,11 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.siact.common.enums.StatusEnum;
+import com.siact.common.exception.CustomException;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.module.base.service.TplService;
 import com.siact.module.enmus.ModelStatusEnum;
@@ -18,6 +21,7 @@ import com.siact.module.model.mapper.ModelConfigParamMapper;
 import com.siact.module.model.service.ModelConfigParamService;
 import com.siact.module.model.service.ModelInfoService;
 import com.siact.module.model.vo.ModelConfigParamSaveVO;
+import com.siact.module.predicted.enums.PredictedTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,11 +57,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
     @Override
     public ModelConfigParamRtnDTO queryParamByDataCodeAndPredictedTypeCode(String dataCode, String predictedTypeCode) {
-
-        LambdaQueryWrapper<ModelConfigParamEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ModelConfigParamEntity::getDataCode, dataCode);
-        queryWrapper.eq(ModelConfigParamEntity::getPredictedTypeCode, predictedTypeCode);
-        ModelConfigParamEntity configParamEntity = baseMapper.selectOne(queryWrapper);
+        ModelConfigParamEntity configParamEntity = getValidParamEntity(dataCode, predictedTypeCode);
         if (ObjectUtils.isEmpty(configParamEntity)) {
             ModelConfigParamRtnDTO rtnDTO = new ModelConfigParamRtnDTO();
             // 公共设置
@@ -78,6 +78,23 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         return rtnDTO;
     }
 
+    /**
+     * 查询有效的参数配置
+     * @param dataCode
+     * @param predictedTypeCode
+     * @return
+     */
+    private ModelConfigParamEntity getValidParamEntity(String dataCode, String predictedTypeCode) {
+        // 查询有效的参数配置
+        LambdaQueryWrapper<ModelConfigParamEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ModelConfigParamEntity::getDataCode, dataCode);
+        queryWrapper.eq(ModelConfigParamEntity::getPredictedTypeCode, predictedTypeCode);
+        queryWrapper.eq(ModelConfigParamEntity::getValid, StatusEnum.VALID.getCode());
+
+        ModelConfigParamEntity configParamEntity = baseMapper.selectOne(queryWrapper);
+        return configParamEntity;
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdateParam(ModelConfigParamSaveVO configParamSaveVo) {
@@ -90,11 +107,16 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
             entity.setId(configParamSaveVo.getId());
         }
 
+        // 失效之前的数据 同一个dataCode  和 predictedTypeCode 不能重复
+        invalidStatusByDataCodeAndPredictedTypeCode(configParamSaveVo.getDataCode(), configParamSaveVo.getPredictedTypeCode());
+
         entity.setDataCode(configParamSaveVo.getDataCode());
-        entity.setPredictedType(configParamSaveVo.getPredictedType());
+        entity.setCustomModelName(configParamSaveVo.getCustomModelName());
         entity.setPredictedTypeCode(configParamSaveVo.getPredictedTypeCode());
+        entity.setPredictedType(PredictedTypeEnum.getTypeByCode(configParamSaveVo.getPredictedTypeCode()));
         entity.setPublicSetting(JSON.toJSONString(configParamSaveVo.getPublicSetting()));
         entity.setAlgorithmSetting(JSON.toJSONString(configParamSaveVo.getAlgorithmSetting()));
+        entity.setValid(StatusEnum.VALID.getCode());
 
         saveOrUpdate(entity);
 
@@ -102,7 +124,24 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         sendParamById(entity.getId());
     }
 
+    /**
+     * 失效之前的数据(软删除)
+     * @param dataCode
+     * @param predictedTypeCode
+     */
+    private void invalidStatusByDataCodeAndPredictedTypeCode(String dataCode, String predictedTypeCode) {
+
+        LambdaUpdateWrapper<ModelConfigParamEntity> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(ModelConfigParamEntity::getDataCode, dataCode);
+        updateWrapper.eq(ModelConfigParamEntity::getPredictedTypeCode, predictedTypeCode);
+        updateWrapper.eq(ModelConfigParamEntity::getValid, StatusEnum.VALID.getCode());
+
+        updateWrapper.set(ModelConfigParamEntity::getValid, StatusEnum.INVALID.getCode());
+        baseMapper.update(null, updateWrapper);
+    }
+
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void sendParamById(Long id) {
         if (ObjectUtils.isEmpty(id)) {
             log.error("sendParamById. id is null");
@@ -126,15 +165,23 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
     private void sendParamForModel(ModelConfigParamEntity entity) {
         HashMap<String, String> sendParamMap = buildSendParamForModel(entity);
 
+
         // TODO 调用算法接口 生成模型 (需要把id给算法  后续异步回调更新modelInfo的状态及其他数据信息)
 
+        // 解析出算法code
+        String algorithmCode = null;
+        if (sendParamMap != null) {
+            algorithmCode = sendParamMap.get("algorithmCode");
+        }
         // 初始化 创建模型任务id
         ModelInfoDTO modelInfoDTO = new ModelInfoDTO();
         modelInfoDTO.setDataCode(entity.getDataCode());
+        modelInfoDTO.setAlgorithmCode(algorithmCode);
         modelInfoDTO.setPredictedType(entity.getPredictedType());
         modelInfoDTO.setPredictedTypeCode(entity.getPredictedTypeCode());
         modelInfoDTO.setCustomModelName(entity.getCustomModelName());
         modelInfoDTO.setStatus(ModelStatusEnum.RUNNING.getValue());
+        modelInfoDTO.setValid(StatusEnum.VALID.getCode());
 
         modelInfoService.saveModelInfo(modelInfoDTO);
     }
@@ -164,6 +211,12 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         String algorithmSetting = entity.getAlgorithmSetting();
         List<ModelConfigParamDetailDTO> algorithmParamDtoList = JSONArray.parseArray(algorithmSetting, ModelConfigParamDetailDTO.class);
 
+        ModelConfigParamDetailDTO selectedAlgorithmConfig = algorithmParamDtoList.stream().filter(ModelConfigParamDetailDTO::getSelected).findFirst().orElse(null);
+        if (ObjectUtils.isEmpty(selectedAlgorithmConfig)) {
+            throw new CustomException("未选择算法," + entity.getPredictedTypeCode());
+        }
+
+        sendParamMap.put("algorithmCode", selectedAlgorithmConfig.getParamCode());
 //        getParamMapByDto(algorithmParamDtoList, 0, sendParamMap);
 
         return sendParamMap;

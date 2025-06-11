@@ -16,6 +16,9 @@ public class ModelInfoDTO {
     @ApiModelProperty("模型数据的dataCode")
     private String dataCode;
 
+    @ApiModelProperty("算法Code")
+    private String algorithmCode;
+
     @ApiModelProperty("预测类型 1:单步预测 2:多步预测")
     private Integer predictedType;
 
@@ -46,9 +49,15 @@ public class ModelInfoDTO {
     @ApiModelProperty("Accuracy精度")
     private String accuracy;
 
+    @ApiModelProperty("是否有效 1:有效,0:无效")
+    private Integer valid;
+
     @ApiModelProperty("创建时间")
     private Date createTime;
 
     @ApiModelProperty("更新时间")
     private Date updateTime;
+
+    @ApiModelProperty("当前模型是否选中")
+    private Boolean selected;
 }

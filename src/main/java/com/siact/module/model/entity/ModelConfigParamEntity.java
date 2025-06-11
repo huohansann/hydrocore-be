@@ -23,8 +23,11 @@ public class ModelConfigParamEntity {
     private String publicSetting;
     // 算法参数配置(页面配置json)
     private String algorithmSetting;
-    private Date createTime;
     // 自定义模型名称
     private String customModelName;
+    // 状态1:有效,0:无效
+    private Integer valid;
+    private Date createTime;
+    private Date updateTime;
 
 }
