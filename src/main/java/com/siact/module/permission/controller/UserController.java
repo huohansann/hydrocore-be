@@ -4,6 +4,7 @@ import com.siact.common.result.R;
 import com.siact.module.permission.dto.AssignPermissionsDTO;
 import com.siact.module.permission.dto.PageDTO;
 import com.siact.module.permission.dto.UserDTO;
+import com.siact.module.permission.dto.UserUpdateDTO;
 import com.siact.module.permission.entity.UserEntity;
 import com.siact.module.permission.service.UserService;
 import com.siact.module.permission.vo.PageVO;
@@ -59,7 +60,7 @@ public class UserController {
 
     @ApiOperation("修改用户")
     @PostMapping("update")
-    public R<Boolean> update(@RequestBody @Validated UserDTO request) {
+    public R<Boolean> update(@RequestBody @Validated UserUpdateDTO request) {
         boolean result = userService.updateUser(request);
         if (!result) {
             return R.fail("修改失败，可能用户名已存在");
@@ -98,11 +99,11 @@ public class UserController {
         return R.data(user);
     }
 
-    @ApiOperation("根据用户名获取用户信息")
-    @ApiImplicitParam(name = "username", value = "用户名", required = true, dataType = "String", paramType = "path")
-    @GetMapping("/username/{username}")
-    public R<UserEntity> getByUsername(@PathVariable String username) {
-        UserEntity user = userService.getUserByUsername(username);
+    @ApiOperation("根据账号获取用户信息")
+    @ApiImplicitParam(name = "account", value = "用户名", required = true, dataType = "String", paramType = "path")
+    @GetMapping("/username/{account}")
+    public R<UserEntity> getByAccount(@PathVariable String account) {
+        UserEntity user = userService.getUserByAccount(account);
         return R.data(user);
     }
 

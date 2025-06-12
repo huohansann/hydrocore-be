@@ -1,7 +1,8 @@
-package com.siact.module.permission.service;
+package com.siact.module.permission.service.impl;
 
 import com.siact.module.permission.cache.RedisUserCache;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import com.siact.module.permission.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -9,23 +10,24 @@ import org.springframework.stereotype.Service;
 import lombok.Setter; // 引入 Lombok 的 Setter
 
 @Service
-public class UserDetailsServiceImpl implements UserDetailsService {
+public class UserDetailsService {
 
-    private final UserService userService;
+    @Autowired
+    private UserService userService;
 
     @Setter // 使用 Lombok 自动生成 setter 方法
     private RedisUserCache userCache;
 
-    public UserDetailsServiceImpl( RedisUserCache userCache,UserService userServic) {
+    public UserDetailsService( RedisUserCache userCache,UserService userServic) {
         this.userCache = userCache;
         this.userService = userServic;
     }
 
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-//        UserDetails user = this.userCache.getUserFromCache(username);
+
+    public UserDetails loadUserByAccount(String account) throws UsernameNotFoundException {
+//        UserDetails user = this.userCache.getUserFromCache(account);
 //        if (user == null) {
-            return getUserDetailsAndRedis(username);
+            return getUserDetailsAndRedis(account);
 //        }
 //        return user;
     }
@@ -33,14 +35,14 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     /**
      * 从数据库中获取用户信息并缓存到 Redis
      *
-     * @param username 用户名
+     * @param account 账号
      * @return 用户信息
      */
-    public UserDetails getUserDetailsAndRedis(String username) {
+    public UserDetails getUserDetailsAndRedis(String account) {
         UserDetails user;
-        user = this.userService.loadUserByUsername(username);
+        user = this.userService.loadUserByAccount(account);
         if (user==null) {
-            throw new UsernameNotFoundException("用户不存在");
+            throw new UsernameNotFoundException("用户名或密码错误!");
         }
         this.userCache.putUserInCache(user);
         return user;

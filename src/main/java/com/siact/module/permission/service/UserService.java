@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.siact.module.permission.dto.AssignPermissionsDTO;
 import com.siact.module.permission.dto.PageDTO;
 import com.siact.module.permission.dto.UserDTO;
+import com.siact.module.permission.dto.UserUpdateDTO;
 import com.siact.module.permission.vo.PageVO;
 import com.siact.module.permission.entity.UserEntity;
 import com.siact.module.permission.vo.UserVO;
@@ -33,7 +34,7 @@ public interface UserService extends IService<UserEntity> {
      * @param request 用户请求DTO
      * @return 是否成功
      */
-    boolean updateUser(UserDTO request);
+    boolean updateUser(UserUpdateDTO request);
 
     /**
      * 删除用户
@@ -68,12 +69,12 @@ public interface UserService extends IService<UserEntity> {
     UserVO getUserById(Long id);
 
     /**
-     * 根据用户名获取用户信息
+     * 根据账号获取用户信息
      *
-     * @param username 用户名
+     * @param account 账号
      * @return 用户信息
      */
-    UserEntity getUserByUsername(String username);
+    UserEntity getUserByAccount(String account);
 
     /**
      * 分配权限：角色，组织机构
@@ -91,12 +92,12 @@ public interface UserService extends IService<UserEntity> {
     List<UserDetails> loadAllUsers();
 
     /**
-     * 根据用户名获取用户信息
+     * 根据账号获取用户信息
      *
-     * @param username
+     * @param account
      * @return
      */
-    UserDetails loadUserByUsername(String username);
+    UserDetails loadUserByAccount(String account);
 
     void importUsers(MultipartFile file) throws Exception;
 

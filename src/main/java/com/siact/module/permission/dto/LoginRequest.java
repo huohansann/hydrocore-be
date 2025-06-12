@@ -15,6 +15,6 @@ public class LoginRequest {
     @ApiModelProperty(value = "密码", required = true)
     private String password;
 
-    @ApiModelProperty(value = "用户名", required = true)
-    private String username;
+    @ApiModelProperty(value = "account账号", required = true)
+    private String account;
 }
