@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.constant.ConstantTime;
 import com.siact.common.exception.CustomException;
 import com.siact.common.utils.ConvertUtils;
+import com.siact.common.utils.LoginUntil;
+import com.siact.module.permission.dto.UserTokenDTO;
 import com.siact.module.permission.vo.PageVO;
 import com.siact.module.process.dto.ProcessLogDTO;
 import com.siact.module.process.dto.ProcessLogPageDTO;
@@ -56,6 +58,8 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
             wrapper.eq(ProcessLogEntity::getReplaceMachine, dto.getReplaceMachine());
         }
 
+        wrapper.orderByDesc(ProcessLogEntity::getStartTime);
+
         return wrapper;
     }
 
@@ -82,13 +86,24 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
 
     @Override
     public boolean add(ProcessLogDTO dto) {
-        ProcessLogEntity entity = new ProcessLogEntity();
         // 校验时间区间是否存在重复
         if (checkTimeExist(dto)) {
             throw new CustomException("时间区间已存在");
         }
 
+        ProcessLogEntity entity = new ProcessLogEntity();
         BeanUtils.copyProperties(dto, entity);
+
+        // 获取当前操作人员
+        UserTokenDTO currentUser = LoginUntil.getCurrentUser();
+        if (ObjectUtils.isNotEmpty(currentUser)) {
+            String username = currentUser.getUsername();
+            entity.setOperator(username);
+            entity.setOperator("Admin");// TODO : 这段代码后续需要删除,不能设置默认的操作人"Admin"
+        } else {
+             throw new CustomException("当前登录状态失效!,请重新登录");
+        }
+
 
         // 生成工况编码 逻辑:工况编码=产线数量+换火周期+消泡
         String operatingCode = getOperatingCode(dto);
@@ -182,7 +197,7 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         if (ObjectUtils.isEmpty(processLogVOList)) {
             return new HashMap<>();
         }
-        return processLogVOList.stream().collect(Collectors.groupingBy(o-> IntervalTimeUtil.dateFormat(o.getOperationDate(), ConstantTime.DATE_FORMAT)));
+        return processLogVOList.stream().collect(Collectors.groupingBy(o-> IntervalTimeUtil.dateFormat(o.getStartTime(), ConstantTime.DATE_FORMAT)));
     }
 
     private List<ProcessLogEntity> getByTimeRange(String startTime, String endTime) {

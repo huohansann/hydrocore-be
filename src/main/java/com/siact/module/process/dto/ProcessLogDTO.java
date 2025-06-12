@@ -37,8 +37,7 @@ public class ProcessLogDTO {
     @ApiModelProperty(value = "更换设备 1:正常 2:换机")
     private Integer replaceMachine;
 
-    @NotBlank(message = "操作人不能为空")
-    @ApiModelProperty(value = "操作人")
+    @ApiModelProperty(value = "操作人,为空则为当前登录用户名")
     private String operator;
 
     @ApiModelProperty(value = "操作时间")
