@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 /**
  * 控制区间实体
  *
@@ -66,14 +68,14 @@ public class ControlIntervalConfigEntity {
     private String temperatureSet;
 
     /**
-     * 创建时间
+     * 生效开始日期
      */
-    @TableField("create_time")
-    private String createTime;
+    @TableField("start_time")
+    private LocalDateTime startTime;
 
     /**
-     * 更新时间
+     * 生效结束时间
      */
-    @TableField("update_time")
-    private String updateTime;
+    @TableField("end_time")
+    private LocalDateTime endTime;
 }
