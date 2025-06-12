@@ -15,6 +15,7 @@ import com.siact.common.utils.ConvertUtils;
 import com.siact.module.permission.dto.AssignPermissionsDTO;
 import com.siact.module.permission.dto.PageDTO;
 import com.siact.module.permission.dto.UserDTO;
+import com.siact.module.permission.dto.UserUpdateDTO;
 import com.siact.module.permission.entity.*;
 import com.siact.module.permission.mapper.*;
 import com.siact.module.permission.service.UserService;
@@ -82,8 +83,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         }
 
         UserEntity user = ConvertUtils.sourceToTarget(request, UserEntity.class);
-        // account为根据用户名拼音字母
-        user.setAccount(PinyinUtil.getPinyin(user.getUsername(), ""));
+        if (ObjectUtils.isEmpty(user.getAccount())) {
+            // 如果用户已存在  则account为根据用户名拼音字母
+            user.setAccount(PinyinUtil.getPinyin(user.getUsername(), ""));
+        }
 
         // 密码加密
         String password = passwordEncoder.encode(request.getPassword());
@@ -110,7 +113,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean updateUser(UserDTO request) {
+    public boolean updateUser(UserUpdateDTO request) {
         if (request.getId() == null) {
             return false;
         }
@@ -304,28 +307,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
     }
 
     @Override
-    public UserEntity getUserByUsername(String username) {
-        UserEntity user = getOne(new LambdaQueryWrapper<UserEntity>()
-                .eq(UserEntity::getAccount, username)
-                .eq(UserEntity::getStatus, true), false);
-
-        if (user != null) {
-            // 查询用户关联的角色ID列表
-            List<Long> roleIds = userRoleMapper.selectRoleIdsByUserId(user.getId());
-            user.setRoleIds(roleIds);
-
-            // 查询用户关联的组织ID列表
-            List<Long> orgIds = userOrganizationMapper.selectOrgIdsByUserId(user.getId());
-            user.setOrgIds(orgIds);
-        }
-
-        return user;
-    }
-
-
     public UserEntity getUserByAccount(String account) {
         UserEntity user = getOne(new LambdaQueryWrapper<UserEntity>()
-                .eq(UserEntity::getUsername, account)
+                .eq(UserEntity::getAccount, account)
                 .eq(UserEntity::getStatus, true), false);
 
         if (user != null) {
@@ -391,8 +375,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
 
 
     @Override
-    public UserDetails loadUserByUsername(String username) {
-        UserEntity user = getUserByAccount(username);
+    public UserDetails loadUserByAccount(String account) {
+        UserEntity user = getUserByAccount(account);
         if (user != null) {
             return buildUserDetails(user, user.getRoleIds());
         }

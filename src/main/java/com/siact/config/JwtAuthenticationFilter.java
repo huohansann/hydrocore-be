@@ -1,7 +1,10 @@
 package com.siact.config;
 
 
+import com.alibaba.fastjson2.JSON;
 import com.siact.common.utils.JwtUtil;
+import com.siact.common.utils.LoginUntil;
+import com.siact.module.permission.dto.UserTokenDTO;
 import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,7 +23,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
-
 
     /**
      * 处理JWT认证过滤器逻辑
@@ -56,8 +58,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 //                return;
 //            }
 //            String token = resolveToken(request);
-//
-//            // 如果 Token 不存在或验证失败，返回 401 Unauthorized
+
+            // 如果 Token 不存在或验证失败，返回 401 Unauthorized
 //            if (token == null || !validateToken(token)) {
 //                response.setContentType("application/json;charset=UTF-8");
 //                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -65,8 +67,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 //                return;
 //            }
 //
-//            // Token 存在且有效，进行后续认证逻辑
-//            String username = jwtUtil.extractUsername(token);
+            // Token 存在且有效，进行后续认证逻辑
+//            UserTokenDTO curUser = jwtUtil.extractUsername(token);
+//            LoginUntil.setCurrentUser(JSON.toJSONString(curUser));
+            LoginUntil.setCurrentUser(JSON.toJSONString(new UserTokenDTO()));// TODO 这行代码需要删除!!!
+
+//            if (ObjectUtils.isEmpty(curUser)) {
+//                response.setContentType("application/json;charset=UTF-8");
+//                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//                response.getWriter().write("{\"code\":401,\"message\":\"未授权或 Token 失效\"}");
+//                return;
+//            }
+//            String username = curUser.getUsername();
 //            String redisToken = redisTemplate.opsForValue().get(username);
 //            if (redisToken != null && redisToken.equals(token)) {
 //                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username

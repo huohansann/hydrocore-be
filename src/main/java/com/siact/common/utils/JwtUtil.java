@@ -1,12 +1,17 @@
 package com.siact.common.utils;
 
-import io.jsonwebtoken.*;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
+import com.siact.module.permission.dto.UserTokenDTO;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -25,25 +30,25 @@ public class JwtUtil {
      * 生成JWT令牌
      * 使用JJWT库构建符合JWT标准的令牌，包含主题声明、过期时间声明，并通过指定算法进行签名
      *
-     * @param username 令牌主题标识，通常表示用户唯一标识
+     * @param account  令牌主题标识，通常表示用户唯一标识
      * @param userinfo
      * @return 经过Base64Url编码的完整JWT字符串，包含头部、载荷和签名三部分
      */
-    public String generateToken(String username, Object userinfo) {
+    public String generateToken(String account, Object userinfo) {
         String token = Jwts.builder()
                 /* 设置标准声明：主题(subject)和过期时间(expiration) */
-                .setSubject(username)
+                .setSubject(account)
                 /* 添加自定义声明：角色列表 */
-                .claim("roles", userinfo)
+                .claim("infos", userinfo)
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 /* 使用HMAC-SHA256算法和预设密钥进行签名 */
                 .signWith(SignatureAlgorithm.HS256, secretKey)
                 /* 最终序列化为紧凑的URL安全字符串 */
                 .compact();
 
-                // 存储到Redis（用户名为key，24小时有效期）
+        // 存储到Redis（用户名为key，24小时有效期）
         redisTemplate.opsForValue().set(
-                username,
+                account,
                 token,
                 expiration,
                 TimeUnit.MILLISECONDS
@@ -64,8 +69,8 @@ public class JwtUtil {
      * 3. 从JWT的claims体中提取subject字段
      * 注意：当令牌无效/过期/签名不匹配时会抛出异常
      */
-    public String extractUsername(String token) {
-        return Jwts.parser()
+    public UserTokenDTO extractUsername(String token) {
+        Map<String, Object> infos = (Map<String, Object>) Jwts.parser()
                 // 设置用于验证令牌签名的密钥
                 .setSigningKey(secretKey)
                 // 执行签名验证并解析令牌，返回完整的JWS对象
@@ -73,7 +78,8 @@ public class JwtUtil {
                 // 获取JWT的payload部分（claims集合）
                 .getBody()
                 // 提取标准subject声明字段（通常用于存放用户标识）
-                .getSubject();
+                .get("infos");
+        return JSONObject.parseObject(JSON.toJSONString(infos), UserTokenDTO.class);
     }
 
     /**
