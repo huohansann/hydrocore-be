@@ -1,5 +1,6 @@
 package com.siact.module.base.service;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.vo.ControlIntervalConfigVO;
 
@@ -16,4 +17,7 @@ public interface ControlIntervalConfigService {
 
     ControlIntervalConfigDTO get(ControlIntervalConfigVO configVO);
 
+    JSONObject selectListByConditionNew(ControlIntervalConfigVO configVO);
+
+    void updateAndSaveHis(ControlIntervalConfigDTO configDTO);
 }

@@ -24,4 +24,13 @@ public class ControlIntervalConfigVO {
     @ApiModelProperty(value = "测点类型：temperature、liquidLevel、pressure")
     private String pointType;
 
+    private String startTime;
+
+    private String endTime;
+
+    private Integer ts;
+
+    private String tsUnit;
+
+    private String formatVal;
 }

@@ -48,4 +48,6 @@ public class ControlIntervalConfigDTO {
      * 温度设定值
      */
     private String temperatureSet;
+
+    private String time;
 }
