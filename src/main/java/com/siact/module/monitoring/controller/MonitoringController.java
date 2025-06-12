@@ -1,6 +1,5 @@
 package com.siact.module.monitoring.controller;
 
-import com.alibaba.fastjson2.JSONObject;
 import com.siact.common.R;
 import com.siact.module.monitoring.dto.ModelConditionDto;
 import com.siact.module.monitoring.service.MonitoringService;
@@ -60,7 +59,6 @@ public class MonitoringController {
     @PostMapping("/getModelData")
     @ApiOperation("根据dataCode查询数据")
     public R getModelData(@RequestBody ModelConditionDto modelConditionDto) {
-        JSONObject result = monitoringService.getModelData(modelConditionDto);
-        return R.success(result);
+        return R.success(monitoringService.getModelData(modelConditionDto));
     }
 }

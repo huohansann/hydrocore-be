@@ -1,6 +1,7 @@
 package com.siact.module.monitoring.service.impl;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.siact.common.constant.ConstantSymbol;
 import com.siact.module.base.service.TplService;
 import com.siact.module.monitoring.dto.ModelConditionDto;
 import com.siact.module.monitoring.service.MonitoringService;
@@ -33,11 +34,8 @@ public class MonitoringServiceImpl implements MonitoringService {
     }
 
     @Override
-    public JSONObject getModelData(ModelConditionDto modelConditionDto) {
-        com.alibaba.fastjson.JSONObject jsonObject = dataService.queryRealValue(String.join(",", modelConditionDto.getDataCodes()));
-        if(jsonObject != null){
-            return JSONObject.parseObject(jsonObject.toJSONString());
-        }
-        return null;
+    public com.alibaba.fastjson.JSONObject getModelData(ModelConditionDto modelConditionDto) {
+        return dataService.queryRealValue(String.join(ConstantSymbol.COMMA, modelConditionDto.getDataCodes()));
     }
+
 }
