@@ -41,3 +41,5 @@ spring:
 jwt:
   secret: 5K8264ILTBkK1Rfwu1+7JIh8SLfHau5a5LzZqqkd7PpHdYc=
   expiration: 86400000  # 24小时
+  # 加密盐值
+  salt: siact

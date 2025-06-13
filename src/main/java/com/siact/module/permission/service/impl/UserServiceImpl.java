@@ -26,12 +26,14 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
@@ -49,6 +51,9 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> implements UserService {
+
+    @Value("${jwt.salt}")
+    private String salt;
 
     @Resource
     private UserRoleMapper userRoleMapper;
@@ -78,8 +83,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         }
 
         if (StrUtil.isBlank(request.getPassword())) {
-            // 默认密码,可以nacos配置
-            request.setPassword("123456");
+            // 默认密码
+            // ps:前端的加密逻辑,密码后面拼接siact,然后在进行MD5加密,这里默认密码123456
+            request.setPassword(DigestUtils.md5DigestAsHex(("123456" + "siact").getBytes()));
         }
 
         UserEntity user = ConvertUtils.sourceToTarget(request, UserEntity.class);
@@ -89,7 +95,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         }
 
         // 密码加密
-        String password = passwordEncoder.encode(request.getPassword());
+        String password = passwordEncoder.encode(request.getPassword() + salt);// 前端密文 + 盐值进行密码加密,并存储
         user.setPassword(password);
 
         // 默认值设置
