@@ -194,20 +194,11 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
             lineChartDataVO.setXData(timeList);
 
             SeriesDataVO seriesDataVO = new SeriesDataVO();
-            PredictionDataShowTplDTO dataShowDto = dataShowMap.get(dataCode);
-            seriesDataVO.setActual(parseAttributeInfo(dataShowDto.getShowActual() ? acturalDataMap.get(dataCode) : null, StringUtils.isNotBlank(dataName) ? "实际" + dataName : "实际"));
-            seriesDataVO.setSingleForecast(parseAttributeInfo(dataShowDto.getShowSingleForecast() ? singlePredictionDataMap.get(dataCode) : null, StringUtils.isNotBlank(dataName) ? "单步预测" + dataName : "单步预测"));
-            seriesDataVO.setMultiForecast(parseAttributeInfo(dataShowDto.getShowMultiForecast() ? multiPredictionDataMap.get(dataCode) : null, StringUtils.isNotBlank(dataName) ? "多步预测" + dataName : "多步预测"));
-            lineChartDataVO.setSeriesData(seriesDataVO);
+            List<Object[]> actualChartData = acturalDataMap.get(dataCode);
+            // 处理需要返回的数据
+            handleRtnData(dataShowMap, dataCode, seriesDataVO, actualChartData, dataName, singlePredictionDataMap, multiPredictionDataMap, dataCodeConfigMap, lineChartDataVO);
 
-            ControlIntervalConfigDTO configDTO = dataCodeConfigMap.get(dataCode);
-            if (ObjectUtils.isNotEmpty(configDTO)) {
-                lineChartDataVO.setUpControl(dataShowDto.getShowUpControl() ? configDTO.getUpControl() : null);
-                lineChartDataVO.setLowControl(dataShowDto.getShowLowControl() ? configDTO.getLowControl() : null);
-                lineChartDataVO.setUpAlarm(dataShowDto.getShowUpAlarm() ? configDTO.getUpAlarm() : null);
-                lineChartDataVO.setLowAlarm(dataShowDto.getShowLowAlarm() ? configDTO.getLowAlarm() : null);
-                lineChartDataVO.setTemperatureSet(dataShowDto.getShowTemperatureSet() ? configDTO.getTemperatureSet() : null);
-            }
+            lineChartDataVO.setSeriesData(seriesDataVO);
 
             lineChartVO.setData(lineChartDataVO);
             lineChartVOList.add(lineChartVO);
@@ -260,11 +251,35 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
             LineChartDataVO lineChartDataVO = new LineChartDataVO();
             lineChartDataVO.setXData(timeList);
             SeriesDataVO seriesDataVO = new SeriesDataVO();
-            PredictionDataShowTplDTO dataShowDto = dataShowMap.get(dataCode);
-            seriesDataVO.setSingleForecast(parseAttributeInfo(dataShowDto.getShowSingleForecast() ? singlePredictionDataMap.get(dataCode) : null, "单步"));
-            seriesDataVO.setMultiForecast(parseAttributeInfo(dataShowDto.getShowMultiForecast() ? multiPredictionDataMap.get(dataCode) : null, "多步"));
+            List<Object[]> actualChartData = new  ArrayList<>();
+            // 处理需要返回的数据
+            handleRtnData(dataShowMap, dataCode, seriesDataVO, actualChartData, dataName, singlePredictionDataMap, multiPredictionDataMap, dataCodeConfigMap, lineChartDataVO);
             lineChartDataVO.setSeriesData(seriesDataVO);
 
+            lineChartVO.setData(lineChartDataVO);
+            lineChartVOList.add(lineChartVO);
+        }
+        return lineChartVOList;
+    }
+
+    /**
+     * 根据配置,处理要返回的数据
+     * @param dataShowMap
+     * @param dataCode
+     * @param seriesDataVO
+     * @param actualChartData
+     * @param dataName
+     * @param singlePredictionDataMap
+     * @param multiPredictionDataMap
+     * @param dataCodeConfigMap
+     * @param lineChartDataVO
+     */
+    private void handleRtnData(Map<String, PredictionDataShowTplDTO> dataShowMap, String dataCode, SeriesDataVO seriesDataVO, List<Object[]> actualChartData, String dataName, Map<String, List<Object[]>> singlePredictionDataMap, Map<String, List<Object[]>> multiPredictionDataMap, Map<String, ControlIntervalConfigDTO> dataCodeConfigMap, LineChartDataVO lineChartDataVO) {
+        PredictionDataShowTplDTO dataShowDto = dataShowMap.get(dataCode);
+        if (ObjectUtils.isNotEmpty(dataShowDto)) {
+            seriesDataVO.setActual(parseAttributeInfo(dataShowDto.getShowActual() ? actualChartData : null, StringUtils.isNotBlank(dataName) ? "实际" + dataName : "实际"));
+            seriesDataVO.setSingleForecast(parseAttributeInfo(dataShowDto.getShowSingleForecast() ? singlePredictionDataMap.get(dataCode) : null, StringUtils.isNotBlank(dataName) ? "单步预测" + dataName : "单步预测"));
+            seriesDataVO.setMultiForecast(parseAttributeInfo(dataShowDto.getShowMultiForecast() ? multiPredictionDataMap.get(dataCode) : null, StringUtils.isNotBlank(dataName) ? "多步预测" + dataName : "多步预测"));
             ControlIntervalConfigDTO configDTO = dataCodeConfigMap.get(dataCode);
             if (ObjectUtils.isNotEmpty(configDTO)) {
                 lineChartDataVO.setUpControl(dataShowDto.getShowUpControl() ? configDTO.getUpControl() : null);
@@ -273,11 +288,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
                 lineChartDataVO.setLowAlarm(dataShowDto.getShowLowAlarm() ? configDTO.getLowAlarm() : null);
                 lineChartDataVO.setTemperatureSet(dataShowDto.getShowTemperatureSet() ? configDTO.getTemperatureSet() : null);
             }
-
-            lineChartVO.setData(lineChartDataVO);
-            lineChartVOList.add(lineChartVO);
         }
-        return lineChartVOList;
     }
 
 
