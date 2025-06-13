@@ -1,23 +1,16 @@
 package com.siact.module.base.controller;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.siact.common.R;
-import com.siact.module.base.dto.KilnInfoDTO;
-import com.siact.module.base.dto.KilnInfoDistributeDTO;
-import com.siact.module.base.dto.KilnInfoGasFlowDTO;
-import com.siact.module.base.dto.KilnInfoQuery;
-import com.siact.module.base.dto.KilnInfoWindDisDTO;
+import com.siact.module.base.dto.*;
 import com.siact.module.base.service.IKilnInfoService;
 import com.siact.module.base.vo.KilnInfoVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Api(tags = "炉子基本信息配置")
@@ -29,9 +22,28 @@ public class KilnInfoController {
 
     @ApiOperation("查询炉子信息列表")
     @PostMapping("/list")
-    public R<List<KilnInfoVO>> list(@RequestBody KilnInfoQuery query) {
+    public R<List<JSONObject>> list(@RequestBody KilnInfoQuery query) {
         List<KilnInfoVO> list = kilnInfoService.selectKilnInfoList(query);
-        return R.data(list);
+
+        List<JSONObject> rtnData = new ArrayList<>();
+        for (KilnInfoVO kilnInfoVO : list) {
+            JSONObject curObj = new JSONObject();
+            curObj.put("id", kilnInfoVO.getId());
+            curObj.put("number", kilnInfoVO.getNumber());
+            curObj.put("code", kilnInfoVO.getCode());
+            curObj.put("state", kilnInfoVO.getState());
+            curObj.put("gasCalc", kilnInfoVO.getGasCalc() == null ? null : kilnInfoVO.getGasCalc().doubleValue());
+            curObj.put("gasVal", kilnInfoVO.getGasVal() == null ? null : kilnInfoVO.getGasVal().doubleValue());
+            curObj.put("windVal", kilnInfoVO.getWindVal() == null ? null : kilnInfoVO.getWindVal().doubleValue());
+            curObj.put("windGasRate", kilnInfoVO.getWindGasRate() == null ? null : kilnInfoVO.getWindGasRate().doubleValue());
+            curObj.put("gasValUp", kilnInfoVO.getGasValUp() == null ? null : kilnInfoVO.getGasValUp().doubleValue());
+            curObj.put("gasValLow", kilnInfoVO.getGasValLow() == null ? null : kilnInfoVO.getGasValLow().doubleValue());
+            curObj.put("windDisUp", kilnInfoVO.getWindDisUp() == null ? null : kilnInfoVO.getWindDisUp().doubleValue());
+            curObj.put("windDisLow", kilnInfoVO.getWindDisLow() == null ? null : kilnInfoVO.getWindDisLow().doubleValue());
+            rtnData.add(curObj);
+        }
+
+        return R.data(rtnData);
     }
 
     @ApiOperation("获取炉子详细信息")
