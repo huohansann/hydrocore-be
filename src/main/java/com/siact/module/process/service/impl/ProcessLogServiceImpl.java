@@ -99,7 +99,6 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         if (ObjectUtils.isNotEmpty(currentUser)) {
             String username = currentUser.getUsername();
             entity.setOperator(username);
-            entity.setOperator("Admin");// TODO : 这段代码后续需要删除,不能设置默认的操作人"Admin"
         } else {
              throw new CustomException("当前登录状态失效!,请重新登录");
         }

@@ -85,9 +85,9 @@ public class JwtUtil {
     /**
      * 删除Redis中的JWT令牌
      *
-     * @param username 需要删除的令牌对应的用户标识
+     * @param account 需要删除的令牌对应的用户标识
      */
-    public void deleteToken(String username) {
-        redisTemplate.delete(username);
+    public void deleteToken(String account) {
+        redisTemplate.delete(account);
     }
 }

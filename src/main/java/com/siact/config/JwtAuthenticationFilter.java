@@ -6,8 +6,10 @@ import com.siact.common.utils.JwtUtil;
 import com.siact.common.utils.LoginUntil;
 import com.siact.module.permission.dto.UserTokenDTO;
 import io.jsonwebtoken.JwtException;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -16,6 +18,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
@@ -40,46 +44,54 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
-//            // 获取请求路径
-//            String requestUri = request.getRequestURI();
-//
-//            // 定义豁免路径列表
-//            List<String> excludedPaths = Arrays.asList(
-//                    "/auth/login",
-//                    "/doc.html"
-//            );
-//
-//            // 检查请求路径是否在豁免列表中
-//            boolean isExcludedPath = excludedPaths.stream().anyMatch(requestUri::startsWith);
-//
-//            if (isExcludedPath) {
-//                // 如果是豁免路径，直接放行
-//                filterChain.doFilter(request, response);
-//                return;
-//            }
-//            String token = resolveToken(request);
+            // 获取请求路径
+            String requestUri = request.getRequestURI();
+
+            // 定义豁免路径列表
+            List<String> excludedPaths = Arrays.asList(
+                    "/kiln-control/**/auth/login",
+                    "/kiln-control/**/doc.html"
+            );
+
+            // 检查请求路径是否在豁免列表中
+            AntPathMatcher pathMatcher = new AntPathMatcher();
+            boolean isExcludedPath = excludedPaths.stream()
+                    .anyMatch(pattern -> pathMatcher.match(pattern, requestUri));
+
+            if (isExcludedPath) {
+                // 如果是豁免路径，直接放行
+                filterChain.doFilter(request, response);
+                return;
+            }
+            String token = resolveToken(request);
 
             // 如果 Token 不存在或验证失败，返回 401 Unauthorized
-//            if (token == null || !validateToken(token)) {
-//                response.setContentType("application/json;charset=UTF-8");
-//                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-//                response.getWriter().write("{\"code\":401,\"message\":\"未授权或 Token 失效\"}");
-//                return;
-//            }
-//
-            // Token 存在且有效，进行后续认证逻辑
-//            UserTokenDTO curUser = jwtUtil.extractUsername(token);
-//            LoginUntil.setCurrentUser(JSON.toJSONString(curUser));
-            LoginUntil.setCurrentUser(JSON.toJSONString(new UserTokenDTO()));// TODO 这行代码需要删除!!!
+            if (token == null || !validateToken(token)) {
+                response.setContentType("application/json;charset=UTF-8");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("{\"code\":401,\"message\":\"未授权或 Token 失效\"}");
+                return;
+            }
 
-//            if (ObjectUtils.isEmpty(curUser)) {
-//                response.setContentType("application/json;charset=UTF-8");
-//                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-//                response.getWriter().write("{\"code\":401,\"message\":\"未授权或 Token 失效\"}");
-//                return;
-//            }
-//            String username = curUser.getUsername();
-//            String redisToken = redisTemplate.opsForValue().get(username);
+            // Token 存在且有效，进行后续认证逻辑
+            UserTokenDTO curUser = jwtUtil.extractUsername(token);
+            LoginUntil.setCurrentUser(JSON.toJSONString(curUser));
+
+            if (ObjectUtils.isEmpty(curUser)) {
+                response.setContentType("application/json;charset=UTF-8");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("{\"code\":401,\"message\":\"未授权或 Token 失效\"}");
+                return;
+            }
+            String account = curUser.getAccount();
+            String redisToken = redisTemplate.opsForValue().get(account);
+            if (ObjectUtils.isEmpty(redisToken) || (ObjectUtils.isNotEmpty(redisToken) && !redisToken.equals(token))) {
+                response.setContentType("application/json;charset=UTF-8");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("{\"code\":401,\"message\":\"未授权或 Token 失效\"}");
+                return;
+            }
+
 //            if (redisToken != null && redisToken.equals(token)) {
 //                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username
 //                        , null, new ArrayList<>());
