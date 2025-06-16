@@ -98,6 +98,9 @@ public class GeneralRuleValidator implements RuleValidator {
         List<ConfigFieldStoreVO> configFieldStoreVOList =
                 configFieldStoreService.selectConfigFieldStoreList(storeQuery);
 
+        configFieldStoreVOList = configFieldStoreVOList.stream().filter(vo -> vo.getFieldValue() != null && !vo.getFieldValue().trim().isEmpty())
+                .collect(Collectors.toList());
+
         if (CollectionUtils.isEmpty(configFieldStoreVOList)) {
             log.warn("总气量和未配置");
             return;
