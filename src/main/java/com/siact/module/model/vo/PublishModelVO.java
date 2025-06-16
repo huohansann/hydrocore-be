@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
+import javax.validation.constraints.NotEmpty;
 import java.util.List;
 
 @Data
@@ -13,6 +14,7 @@ public class PublishModelVO {
     private String dataCode;
 
     @ApiModelProperty(value = "勾选的模型ID列表")
+    @NotEmpty(message = "未选择下发模型")
     private List<Long> modelIdList;
 
     @ApiModelProperty(value = "多步预测开始时间")

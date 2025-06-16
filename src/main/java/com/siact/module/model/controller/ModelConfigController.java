@@ -73,7 +73,7 @@ public class ModelConfigController {
 
     @ApiOperation(value = "下发模型")
     @PostMapping("/publishModel")
-    public R sendModel(@RequestBody PublishModelVO publishModelVO) {
+    public R sendModel(@RequestBody @Validated PublishModelVO publishModelVO) {
         modelInfoService.publishModel(publishModelVO);
         return R.success();
     }

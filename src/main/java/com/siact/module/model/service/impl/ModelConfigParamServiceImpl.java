@@ -213,7 +213,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
         ModelConfigParamDetailDTO selectedAlgorithmConfig = algorithmParamDtoList.stream().filter(ModelConfigParamDetailDTO::getSelected).findFirst().orElse(null);
         if (ObjectUtils.isEmpty(selectedAlgorithmConfig)) {
-            throw new CustomException("未选择算法," + entity.getPredictedTypeCode());
+            throw new CustomException("未选中算法," + entity.getPredictedTypeCode());
         }
 
         sendParamMap.put("algorithmCode", selectedAlgorithmConfig.getParamCode());
