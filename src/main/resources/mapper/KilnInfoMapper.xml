@@ -26,6 +26,14 @@
             </trim>
 
 
+            <!-- 更新 wind_gas_rate -->
+            <trim prefix="wind_gas_rate = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.windGasRate}
+                </foreach>
+            </trim>
+
+
             <!-- 更新 wind_val -->
             <trim prefix="wind_val = CASE" suffix="END,">
                 <foreach collection="list" item="item">
