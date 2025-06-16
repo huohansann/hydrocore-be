@@ -251,6 +251,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
 
         // 组织查询下对应的人员信息
         queryWrapper.in(CollectionUtils.isNotEmpty(userIdList), UserEntity::getId, userIdList);
+        queryWrapper.eq(UserEntity::getDeleted, 0);
         IPage<UserEntity> result = page(page, queryWrapper);
         List<UserEntity> records = result.getRecords();
         // 类型转换
