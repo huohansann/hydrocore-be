@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
@@ -229,6 +230,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
             roleMapper.eq(StringUtils.isNotBlank(request.getRoleId()), UserRoleEntity::getRoleId, request.getRoleId());
             List<UserRoleEntity> userRoleEntities = userRoleMapper.selectList(roleMapper);
             userIdList = userRoleEntities.stream().map(UserRoleEntity::getUserId).distinct().collect(Collectors.toList());
+            if (userIdList.isEmpty()) {
+                return getresultPageVo(request);
+            }
         }
 
         // 组织部门对应的人员信息
@@ -239,7 +243,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
             orgMapper.eq(StringUtils.isNotBlank(request.getOrgId()), UserOrganizationEntity::getOrgId, request.getOrgId());
             List<UserOrganizationEntity> userOrganizationEntities = userOrganizationMapper.selectList(orgMapper);
             userIdList = userOrganizationEntities.stream().map(UserOrganizationEntity::getUserId).distinct().collect(Collectors.toList());
+            if (userIdList.isEmpty()) {
+                return getresultPageVo(request);
+            }
         }
+
 
         // 组织查询下对应的人员信息
         queryWrapper.in(CollectionUtils.isNotEmpty(userIdList), UserEntity::getId, userIdList);
@@ -291,6 +299,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         IPage<UserVO> vo = new Page<>();
         vo.setRecords(users);
         vo.setTotal(result.getTotal());
+        return PageVO.build(vo);
+    }
+
+    @NotNull
+    private static PageVO<UserVO> getresultPageVo(PageDTO request) {
+        IPage<UserVO> vo = new Page<>(request.getPageNum(), request.getPageSize());
+        vo.setRecords(Collections.emptyList());
+        vo.setTotal(0L);
         return PageVO.build(vo);
     }
 

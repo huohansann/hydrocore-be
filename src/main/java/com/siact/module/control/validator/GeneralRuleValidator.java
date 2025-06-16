@@ -60,6 +60,11 @@ public class GeneralRuleValidator implements RuleValidator {
             BigDecimal gasVal = distributeDTO.getGasVal();
             BigDecimal gasValLow = kilnInfoEntity.getGasValLow();
             BigDecimal gasValUp = kilnInfoEntity.getGasValUp();
+            if (kilnInfoEntity.getGasValLow() == null || kilnInfoEntity.getGasValUp() == null) {
+                log.warn("总规没有天然气设定值,number :{}", distributeDTO.getNumber());
+                continue;
+            }
+
             //  gasValLow  <= gasVal <= gasValUp
             if (gasVal.compareTo(gasValLow) < 0 || gasVal.compareTo(gasValUp) > 0) {
                 HashMap<String, Object> errorMap = new HashMap<>();
