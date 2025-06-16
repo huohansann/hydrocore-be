@@ -217,4 +217,15 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, MenuEntity> impleme
         // 将列表转为树形结构
         return buildTree(menus, null);
     }
+
+    @Override
+    public List<Long> getMenuIdsByRoleIds(List<Long> roleIds) {
+        if (CollUtil.isEmpty(roleIds)) {
+            return new ArrayList<>();
+        }
+
+        // 根据角色ID列表查询菜单列表
+        List<MenuEntity> menus = baseMapper.selectMenusByRoleIds(roleIds);
+        return menus.stream().map(MenuEntity::getId).distinct().collect(Collectors.toList());
+    }
 } 

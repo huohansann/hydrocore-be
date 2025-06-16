@@ -98,4 +98,12 @@ public class MenuController {
         List<MenuVO> tree = menuService.getMenusByRoleIds(roleIds);
         return R.data(tree);
     }
+
+    @ApiOperation("根据角色ID列表获取菜单id集合")
+    @ApiImplicitParam(name = "roleIds", value = "角色ID列表", required = true, dataType = "List", paramType = "body")
+    @PostMapping("/role/getMenuIdsByRoleIds")
+    public R<List<Long>> getMenuIdsByRoleIds(@RequestBody List<Long> roleIds) {
+        List<Long> menuIds = menuService.getMenuIdsByRoleIds(roleIds);
+        return R.data(menuIds);
+    }
 } 

@@ -70,4 +70,6 @@ public interface MenuService extends IService<MenuEntity> {
      * @return 菜单列表
      */
     List<MenuVO> getMenusByRoleIds(List<Long> roleIds);
+
+    List<Long> getMenuIdsByRoleIds(List<Long> roleIds);
 }
