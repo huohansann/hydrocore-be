@@ -134,7 +134,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
         
         // 排序
         queryWrapper.orderByAsc(RoleEntity::getSort);
-        
+
+        queryWrapper.eq(RoleEntity::getDeleted, 0);
         IPage<RoleEntity> result = page(page, queryWrapper);
 
         // 权限赋值

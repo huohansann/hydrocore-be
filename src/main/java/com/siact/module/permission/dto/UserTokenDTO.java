@@ -19,4 +19,6 @@ public class UserTokenDTO {
     private List<Long> roleIds;
     @ApiModelProperty(value = "组织ID列表")
     private List<Long> orgIds;
+    @ApiModelProperty(value = "菜单ID列表")
+    private List<Long> menuIds;
 }
