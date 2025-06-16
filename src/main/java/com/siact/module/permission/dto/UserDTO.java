@@ -33,13 +33,10 @@ public class UserDTO {
     @Size(min = 6, max = 20, message = "密码长度必须在6-20个字符之间")
     private String password;
 
-    @ApiModelProperty(value = "所属组织ID", example = "1")
-    private Long orgId;
-    
     @ApiModelProperty(value = "性别（0未知 1男 2女）", example = "1")
     private Integer gender;
 
-    @ApiModelProperty(value = "用户账号", example = "true")
+    @ApiModelProperty(value = "用户账号", example = "zhangsan")
     private String account;
 
     @ApiModelProperty(value = "角色ID列表", example = "[1, 2, 3]")

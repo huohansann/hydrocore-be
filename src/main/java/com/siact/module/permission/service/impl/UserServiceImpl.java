@@ -76,7 +76,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
     public boolean saveUser(UserDTO request) {
         // 检查用户名是否已存在
         LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(UserEntity::getUsername, request.getUsername());
+
+        queryWrapper.eq(UserEntity::getAccount, request.getAccount());
         long count = baseMapper.selectCount(queryWrapper);
         if (count > 0) {
             return false;
@@ -105,12 +106,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         boolean result = save(user);
 
         // 保存用户角色关联
-        if (result && CollUtil.isNotEmpty(request.getRoleIds())) {
+        if (result && CollectionUtils.isNotEmpty(request.getRoleIds())) {
             userRoleMapper.batchInsert(user.getId(), request.getRoleIds());
         }
 
         // 保存用户组织关联
-        if (result && CollUtil.isNotEmpty(request.getOrgIds())) {
+        if (result && CollectionUtils.isNotEmpty(request.getOrgIds())) {
             userOrganizationMapper.batchInsert(user.getId(), request.getOrgIds());
         }
 
