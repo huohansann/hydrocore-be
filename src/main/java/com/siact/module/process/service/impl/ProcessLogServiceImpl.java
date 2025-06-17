@@ -213,18 +213,20 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
     @Override
     public Map<String,List<ProcessLogVO>> queryByDateRange(String startTime, String endTime) {
         List<ProcessLogEntity> processLogEntity = getByTimeRange(startTime, endTime);
-        if (ObjectUtils.isEmpty(processLogEntity)) {
+
+        List<ProcessLogVO> processLogVOList = processLogEntity == null ? null : ConvertUtils.sourceToTarget(processLogEntity, ProcessLogVO.class);
+        if (ObjectUtils.isEmpty(processLogVOList)) {
             log.info("查询时间段内无数据");
             return new HashMap<>();
         }
-        for (ProcessLogEntity entity : processLogEntity) {
-            formatRtnTime(entity);
-        }
-        List<ProcessLogVO> processLogVOList = processLogEntity == null ? null : ConvertUtils.sourceToTarget(processLogEntity, ProcessLogVO.class);
-        if (ObjectUtils.isEmpty(processLogVOList)) {
-            return new HashMap<>();
-        }
-        return processLogVOList.stream().collect(Collectors.groupingBy(o-> IntervalTimeUtil.dateFormat(o.getStartTime(), ConstantTime.DATE_FORMAT)));
+        Map<String, List<ProcessLogVO>> rtnMap = processLogVOList.stream()
+                .collect(Collectors.groupingBy(o -> IntervalTimeUtil.dateFormat(o.getStartTime(), ConstantTime.DATE_FORMAT)));
+        rtnMap.values().stream().flatMap(List::stream).forEach(record->{
+            record.setStartTime(IntervalTimeUtil.dateFormat(record.getStartTime(),"yyyy-MM-dd HH点"));
+            record.setEndTime(IntervalTimeUtil.dateFormat(record.getEndTime(),"yyyy-MM-dd HH点"));
+            record.setOperationDate(IntervalTimeUtil.dateFormat(record.getOperationDate(), "yyyy-MM-dd"));
+        });
+        return rtnMap;
     }
 
     private List<ProcessLogEntity> getByTimeRange(String startTime, String endTime) {
