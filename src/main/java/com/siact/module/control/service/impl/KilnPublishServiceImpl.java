@@ -30,10 +30,7 @@ public class KilnPublishServiceImpl implements KilnPublishService {
 
     @Override
     public R publish(List<KilnInfoDistributeDTO> list) {
-        // 1. 更新下发参数
-        kilnInfoService.updateDistribute(list);
-
-        // 2. 责任链自动校验
+        // 1. 责任链自动校验参数
         AnnotationAwareOrderComparator.sort(validators);
         for (RuleValidator validator : validators) {
             RuleValidateResult result = validator.validate(list);
@@ -41,6 +38,9 @@ public class KilnPublishServiceImpl implements KilnPublishService {
                 return R.fail(result.getMessage(), result.getErrors());
             }
         }
+
+        // 2. 保存下发参数
+        kilnInfoService.updateDistribute(list);
 
         // 3. 下发 暂时不开发
         return R.success();
