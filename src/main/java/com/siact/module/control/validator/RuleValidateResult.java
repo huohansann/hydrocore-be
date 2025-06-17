@@ -28,7 +28,7 @@ public class RuleValidateResult {
     }
 
     public static RuleValidateResult fail(List<HashMap<String, Object>> errors) {
-        return new RuleValidateResult(false, "校验失败").addErrors(errors);
+        return new RuleValidateResult(false, "设定值不在范围内").addErrors(errors);
     }
 
     public RuleValidateResult addError(HashMap<String, Object> error) {
