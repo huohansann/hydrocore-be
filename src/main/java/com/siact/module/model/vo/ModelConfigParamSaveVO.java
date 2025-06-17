@@ -5,6 +5,7 @@ import com.siact.module.model.dto.ModelConfigParamDetailDTO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import org.hibernate.validator.constraints.Length;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -37,5 +38,6 @@ public class ModelConfigParamSaveVO {
 
     @ApiModelProperty(value = "自定义模型名称")
     @NotBlank(message = "自定义模型名称不能为空")
+    @Length(max = 20, message = "自定义模型名称长度不能超过20个字")
     private String customModelName;
 }
