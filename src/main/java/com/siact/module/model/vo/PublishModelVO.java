@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import java.util.List;
 
@@ -11,6 +12,7 @@ import java.util.List;
 @ApiModel("下发模型参数")
 public class PublishModelVO {
     @ApiModelProperty(value = "左侧模型的dataCode,如MC1的dataCode")
+    @NotBlank(message = "未选择左侧模型设置")
     private String dataCode;
 
     @ApiModelProperty(value = "勾选的模型ID列表")

@@ -175,6 +175,7 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
             JSONObject typeEnumObj = new JSONObject();
             typeEnumObj.put("type", typeEnum.getType());
             typeEnumObj.put("code", typeEnum.getCode());
+            typeEnumObj.put("name", typeEnum.getName());
             typeEnumObj.put("step", typeEnum.getStep());
             rtnList.add(typeEnumObj);
         }

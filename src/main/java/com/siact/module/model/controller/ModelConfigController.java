@@ -15,11 +15,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.Map;
 
 @Api(tags = "模型配置")
 @RestController
+@Validated
 @RequestMapping("/model")
 public class ModelConfigController {
 
@@ -38,7 +41,8 @@ public class ModelConfigController {
 
     @ApiOperation(value = "查询当前模型对应时间步长的参数配置")
     @GetMapping("/queryParam")
-    public R<ModelConfigParamRtnDTO> queryParamByDataCodeAndPredictedTypeCode(@RequestParam String dataCode, @RequestParam String predictedTypeCode) {
+    public R<ModelConfigParamRtnDTO> queryParamByDataCodeAndPredictedTypeCode(@RequestParam @NotBlank(message = "dataCode不能为空") String dataCode,
+                                                                              @RequestParam @NotBlank(message = "步长code不能为空") String predictedTypeCode) {
         // 获取参数模板
         return R.success(modelConfigParamService.queryParamByDataCodeAndPredictedTypeCode(dataCode, predictedTypeCode));
     }
@@ -52,21 +56,21 @@ public class ModelConfigController {
 
     @ApiOperation(value = "下发参数生成对应模型")
     @PostMapping("/sendParam")
-    public R sendParamById(@RequestBody Long id) {
+    public R sendParamById(@RequestBody @NotBlank(message = "id不能为空") Long id) {
         modelConfigParamService.sendParamById(id);
         return R.success();
     }
 
     @ApiOperation(value = "查询当前模型对应时间步长的所有模型(包含指标评价)")
     @PostMapping("/queryModel")
-    public R<ModelOutputSelectRtnDTO> queryModelByDataCodeGroupByPredictedTypeCodes(@RequestBody ModelQueryVO modelQueryVO) {
+    public R<ModelOutputSelectRtnDTO> queryModelByDataCodeGroupByPredictedTypeCodes(@RequestBody @Validated ModelQueryVO modelQueryVO) {
         ModelOutputSelectRtnDTO rtnDTOMap = modelInfoService.queryModelByDataCodeGroupByPredictedTypeCodes(modelQueryVO.getDataCode(), modelQueryVO.getPredictedTypeCodeList());
         return R.success(rtnDTOMap);
     }
 
     @ApiOperation(value = "根据模型id,获取指标评价的柱状图")
     @PostMapping("/queryModelAssessChart")
-    public R<ModelAssessChartDTO> queryModelAssessChart(@RequestBody List<Long> modelIdList) {
+    public R<ModelAssessChartDTO> queryModelAssessChart(@RequestBody @NotEmpty(message = "未选择下发模型") List<Long> modelIdList) {
         ModelAssessChartDTO rtnDTOMap = modelInfoService.queryModelAssessChart(modelIdList);
         return R.success(rtnDTOMap);
     }
