@@ -140,16 +140,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
             }
         }
 
+        String oldPassword = user.getPassword();
         BeanUtil.copyProperties(request, user);
+
 
         // 密码处理，仅在密码不为空时更新
         if (StrUtil.isNotBlank(request.getPassword())) {
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            if (!StringUtils.equals(request.getPassword(), oldPassword)) {
+                if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                    user.setPassword(passwordEncoder.encode(request.getPassword()));
+                }
+            }
         }
 
-        if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            log.info("密码未修改");
-        }
 
         boolean result = updateById(user);
 
