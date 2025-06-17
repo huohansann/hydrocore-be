@@ -23,6 +23,7 @@ public class UserDTO {
     
     @ApiModelProperty(value = "用户名", required = true, example = "admin")
     @NotBlank(message = "用户名不能为空")
+    @Pattern(regexp = "^[\\u4E00-\\u9FA5a-zA-Z0-9_]+$", message = "用户名称只能包含中文、字母、数字、下划线")
     private String username;
 
     @ApiModelProperty(value = "手机号码", example = "13800138000")
@@ -37,6 +38,7 @@ public class UserDTO {
     private Integer gender;
 
     @ApiModelProperty(value = "用户账号", example = "zhangsan")
+    @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "用户账号只能包含字母、数字、下划线")
     private String account;
 
     @ApiModelProperty(value = "角色ID列表", example = "[1, 2, 3]")
