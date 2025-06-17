@@ -196,6 +196,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
 
     @Override
     public boolean deleteUserByIdList(List<Long> idList) {
+        if (CollUtil.isEmpty(idList)) {
+            return false;
+        }
         // 删除用户角色关联
         userRoleMapper.delete(new LambdaQueryWrapper<UserRoleEntity>()
                 .in(UserRoleEntity::getUserId, idList));
