@@ -20,6 +20,7 @@ import com.siact.module.process.mapper.ProcessLogMapper;
 import com.siact.module.process.service.IProcessLogService;
 import com.siact.module.process.vo.ProcessLogVO;
 import com.siact.sec.utils.IntervalTimeUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 /**
  * 工艺日志Service实现
  */
+@Slf4j
 @Service
 public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, ProcessLogEntity> implements IProcessLogService {
 
@@ -63,11 +65,26 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         return wrapper;
     }
 
+    /**
+     * 转换返回的时间测试
+     * @param record
+     */
+    private static void formatRtnTime(ProcessLogEntity record) {
+        record.setStartTime(IntervalTimeUtil.dateFormat(record.getStartTime(),"yyyy-MM-dd HH点"));
+        record.setEndTime(IntervalTimeUtil.dateFormat(record.getEndTime(),"yyyy-MM-dd HH点"));
+        record.setOperationDate(IntervalTimeUtil.dateFormat(record.getOperationDate(), "yyyy-MM-dd"));
+    }
+
     @Override
     public PageVO<ProcessLogEntity> pageQuery(ProcessLogPageDTO queryDTO) {
         Page<ProcessLogEntity> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         LambdaQueryWrapper<ProcessLogEntity> wrapper = buildQueryWrapper(queryDTO);
         IPage<ProcessLogEntity> entityPage = page(page, wrapper);
+        for (ProcessLogEntity record : entityPage.getRecords()) {
+            formatRtnTime(record);
+        }
+
+
         return PageVO.build(entityPage);
     }
 
@@ -75,12 +92,16 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
     public List<ProcessLogVO> listAll(ProcessLogDTO queryDTO) {
         LambdaQueryWrapper<ProcessLogEntity> wrapper = buildQueryWrapper(queryDTO);
         List<ProcessLogEntity> list = this.list(wrapper);
+        for (ProcessLogEntity entity : list) {
+            formatRtnTime(entity);
+        }
         return list.stream().map(this::toVO).collect(Collectors.toList());
     }
 
     @Override
     public ProcessLogVO getById(Long id) {
         ProcessLogEntity entity = baseMapper.selectById(id);
+        formatRtnTime(entity);
         return entity == null ? null : toVO(entity);
     }
 
@@ -192,6 +213,13 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
     @Override
     public Map<String,List<ProcessLogVO>> queryByDateRange(String startTime, String endTime) {
         List<ProcessLogEntity> processLogEntity = getByTimeRange(startTime, endTime);
+        if (ObjectUtils.isEmpty(processLogEntity)) {
+            log.info("查询时间段内无数据");
+            return new HashMap<>();
+        }
+        for (ProcessLogEntity entity : processLogEntity) {
+            formatRtnTime(entity);
+        }
         List<ProcessLogVO> processLogVOList = processLogEntity == null ? null : ConvertUtils.sourceToTarget(processLogEntity, ProcessLogVO.class);
         if (ObjectUtils.isEmpty(processLogVOList)) {
             return new HashMap<>();
@@ -214,7 +242,12 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         wrapper.ge(ProcessLogEntity::getEndTime, queryDate);
 
         ProcessLogEntity processLogEntity = baseMapper.selectOne(wrapper);
-        return processLogEntity == null ? null : toVO(processLogEntity);
+        if (ObjectUtils.isEmpty(processLogEntity)) {
+            log.info("查询时间段内无数据");
+            return null;
+        }
+        formatRtnTime(processLogEntity);
+        return toVO(processLogEntity);
     }
 
     private ProcessLogVO toVO(ProcessLogEntity entity) {
