@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.enums.StatusEnum;
+import com.siact.common.exception.CustomException;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.module.enmus.PublishStatusEnum;
 import com.siact.module.model.dto.ModelAssessChartDTO;
@@ -48,7 +49,7 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
         ModelInfoEntity modelInfoEntity = ConvertUtils.sourceToTarget(modelInfoDTO, ModelInfoEntity.class);
 
         // 1:先失效之前的模型信息
-        invalidModelInfo(modelInfoEntity.getDataCode(),modelInfoEntity.getPredictedTypeCode(), modelInfoEntity.getAlgorithmCode());
+        invalidModelInfo(modelInfoEntity.getDataCode(), modelInfoEntity.getPredictedTypeCode(), modelInfoEntity.getAlgorithmCode());
 
         // 2:再新增最新的模型信息
         save(modelInfoEntity);
@@ -115,6 +116,9 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
 
     @Override
     public void publishModel(PublishModelVO publishModelVO) {
+        if (publishModelVO.getMultiStartTime().compareTo(publishModelVO.getMultiEndTime()) > 0) {
+            throw new CustomException("多步时间设置错误,开始时间不能大于结束时间");
+        }
 
         List<Long> modelIdList = publishModelVO.getModelIdList();
         List<ModelInfoEntity> selectedModelInfoList = baseMapper.selectBatchIds(modelIdList);
