@@ -1,6 +1,7 @@
 package com.siact.module.model.controller;
 
 import com.siact.common.R;
+import com.siact.common.exception.CustomException;
 import com.siact.module.model.dto.ModelAssessChartDTO;
 import com.siact.module.model.dto.ModelConfigParamRtnDTO;
 import com.siact.module.model.dto.ModelOutputSelectRtnDTO;
@@ -11,12 +12,12 @@ import com.siact.module.model.vo.PublishModelVO;
 import com.siact.module.permission.vo.ModelQueryVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.Map;
 
@@ -70,7 +71,10 @@ public class ModelConfigController {
 
     @ApiOperation(value = "根据模型id,获取指标评价的柱状图")
     @PostMapping("/queryModelAssessChart")
-    public R<ModelAssessChartDTO> queryModelAssessChart(@RequestBody @NotEmpty(message = "未选择下发模型") List<Long> modelIdList) {
+    public R<ModelAssessChartDTO> queryModelAssessChart(@RequestBody List<Long> modelIdList) {
+        if (ObjectUtils.isEmpty(modelIdList)) {
+            throw new CustomException("未选择下发模型");
+        }
         ModelAssessChartDTO rtnDTOMap = modelInfoService.queryModelAssessChart(modelIdList);
         return R.success(rtnDTOMap);
     }
