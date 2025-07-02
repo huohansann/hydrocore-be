@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 控制区间设置
@@ -158,16 +159,23 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
     @Override
     public ControlIntervalConfigChartDTO chart(ControlIntervalConfigVO configVO) {
         List<ControlIntervalConfigDTO> dataList = selectListByCondition(configVO);
-        Map<String, ControlIntervalConfigDTO> measureCodeDataMap = dataList.stream().collect(Collectors.toMap(ControlIntervalConfigDTO::getMeasurePoint, o -> o, (oldValue, newValue) -> oldValue));
+
+        dataList = dataList.stream().sorted(Comparator.comparingInt(o -> Integer.parseInt(o.getMeasurePoint().split("MC")[1]))).collect(Collectors.toList());
 
         ControlIntervalConfigChartDTO chartDTO = new ControlIntervalConfigChartDTO();
+
+        // 整理x轴排序(根据MC进行分隔排序)
+        List<String> xAxis = dataList.stream().map(ControlIntervalConfigDTO::getMeasurePoint).collect(Collectors.toList());
+        xAxis.sort(Comparator.comparingInt(o->Integer.parseInt(o.split("MC")[1])));
+        chartDTO.setXAxis(xAxis);
+
         // 整理数据
         List<Object[]> upControlData = new ArrayList<>();
         List<Object[]> lowControlData = new ArrayList<>();
         List<Object[]> upAlarmData = new ArrayList<>();
         List<Object[]> lowAlarmData = new ArrayList<>();
         List<Object[]> temperatureSetData = new ArrayList<>();
-        for (ControlIntervalConfigDTO value : measureCodeDataMap.values()) {
+        for (ControlIntervalConfigDTO value : dataList) {
 
             upControlData.add(new Object[]{value.getMeasurePoint(), value.getUpControl()});
             lowControlData.add(new Object[]{value.getMeasurePoint(), value.getLowControl()});
@@ -176,11 +184,7 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
             temperatureSetData.add(new Object[]{value.getMeasurePoint(), value.getTemperatureSet()});
         }
 
-        // 整理x轴排序(根据MC进行分隔排序)
-        ArrayList<String> xAxis = new ArrayList<>(measureCodeDataMap.keySet());
-        xAxis.sort(Comparator.comparingInt(o->Integer.parseInt(o.split("MC")[1])));
         // 设置图表数据
-        chartDTO.setXAxis(xAxis);
         chartDTO.setUpControlData(upControlData);
         chartDTO.setLowControlData(lowControlData);
         chartDTO.setUpAlarmData(upAlarmData);
