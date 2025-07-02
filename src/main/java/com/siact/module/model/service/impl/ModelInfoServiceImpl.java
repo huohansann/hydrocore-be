@@ -9,13 +9,11 @@ import com.siact.common.enums.StatusEnum;
 import com.siact.common.exception.CustomException;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.module.enmus.PublishStatusEnum;
-import com.siact.module.model.dto.ModelAssessChartDTO;
-import com.siact.module.model.dto.ModelAssessChartDetailDTO;
-import com.siact.module.model.dto.ModelInfoDTO;
-import com.siact.module.model.dto.ModelOutputSelectRtnDTO;
+import com.siact.module.model.dto.*;
 import com.siact.module.model.entity.ModelInfoEntity;
 import com.siact.module.model.entity.ModelPublishInfoEntity;
 import com.siact.module.model.entity.ModelPublishRecordEntity;
+import com.siact.module.model.feign.AlgorithmFeign;
 import com.siact.module.model.mapper.ModelInfoMapper;
 import com.siact.module.model.service.ModelInfoService;
 import com.siact.module.model.service.ModelPublishInfoService;
@@ -39,6 +37,9 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
 
     @Autowired
     private ModelPublishRecordService modelPublishRecordService;
+
+    @Autowired
+    private AlgorithmFeign algorithmFeign;
 
     @Override
     public void saveModelInfo(ModelInfoDTO modelInfoDTO) {
@@ -134,27 +135,6 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
         publishInfo.setMultiEndTime(publishModelVO.getMultiEndTime());
         publishInfo.setCreateTime(new Date());
         modelPublishInfoService.save(publishInfo);
-
-        // TODO 1:根据sendModelVo构建算法所需要的下发参数 (ps:是所有模型同一个接口一次下发  还是分开多次下发??)
-        Object publishParam = "{}";
-        // TODO 2:调用算法的接口
-        // 新增模型下发调用算法的记录
-        List<ModelPublishRecordEntity> publishRecordList = new ArrayList<>();
-        for (ModelInfoEntity modelEntity : selectedModelInfoList) {
-            ModelPublishRecordEntity publishRecord = new ModelPublishRecordEntity();
-            publishRecord.setModelInfoId(modelEntity.getId());
-            publishRecord.setDataCode(modelEntity.getDataCode());
-            publishRecord.setPredictedType(modelEntity.getPredictedType());
-            publishRecord.setPredictedTypeCode(modelEntity.getPredictedTypeCode());
-            publishRecord.setPublishParam(JSON.toJSONString(publishParam));
-            publishRecord.setModelCode(modelEntity.getModelCode());
-            publishRecord.setStatus(PublishStatusEnum.PUBLISHING.getCode());
-            publishRecord.setCreateTime(new Date());
-            publishRecord.setPublishInfoId(publishInfoId);
-            publishRecordList.add(publishRecord);
-        }
-        // 3: 保存发布记录 (ps:后续通过回调或者mqtt 更新发布记录状态)
-        modelPublishRecordService.saveModelPublishRecord(publishRecordList);
     }
 
     @Override

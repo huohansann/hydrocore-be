@@ -10,5 +10,5 @@ public interface MonitoringService {
 
     List<JSONObject> getEnvironmentInfo(String tplCode);
 
-    com.alibaba.fastjson.JSONObject getModelData(ModelConditionDto modelConditionDto);
+    JSONObject getModelData(ModelConditionDto modelConditionDto);
 }

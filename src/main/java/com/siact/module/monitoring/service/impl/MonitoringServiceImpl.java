@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -34,8 +35,19 @@ public class MonitoringServiceImpl implements MonitoringService {
     }
 
     @Override
-    public com.alibaba.fastjson.JSONObject getModelData(ModelConditionDto modelConditionDto) {
-        return dataService.queryRealValue(String.join(ConstantSymbol.COMMA, modelConditionDto.getDataCodes()));
+    public JSONObject getModelData(ModelConditionDto modelConditionDto) {
+        com.alibaba.fastjson.JSONObject jsonObject = dataService.queryRealValue(String.join(ConstantSymbol.COMMA, modelConditionDto.getDataCodes()));
+
+        JSONObject resultObj = new JSONObject();
+        for (String dataCode : modelConditionDto.getDataCodes()) {
+            BigDecimal dataVal = null;
+            if (jsonObject != null && jsonObject.containsKey(dataCode)) {
+                dataVal = jsonObject.getBigDecimal(dataCode);
+            }
+            resultObj.put(dataCode, dataVal);
+        }
+
+        return resultObj;
     }
 
 }

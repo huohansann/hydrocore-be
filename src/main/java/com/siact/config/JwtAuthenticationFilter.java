@@ -55,7 +55,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     "/kiln-control/**/webjars/**",
                     "/kiln-control/**/swagger-resources/**",
                     "/kiln-control/**/v2/api-docs",
-                    "/kiln-control/**/favicon.ico"
+                    "/kiln-control/**/favicon.ico",
+                    "/kiln-control/**/algorithm/*"
             );
 
             // 检查请求路径是否在豁免列表中

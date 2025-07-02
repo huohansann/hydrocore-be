@@ -18,6 +18,7 @@ import com.siact.module.base.service.TplService;
 import com.siact.module.enmus.ModelStatusEnum;
 import com.siact.module.model.dto.*;
 import com.siact.module.model.entity.ModelConfigParamEntity;
+import com.siact.module.model.feign.AlgorithmFeign;
 import com.siact.module.model.mapper.ModelConfigParamMapper;
 import com.siact.module.model.service.ModelConfigParamService;
 import com.siact.module.model.service.ModelInfoService;
@@ -60,6 +61,9 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
     @Autowired
     private IProcessLogService processLogService;
+
+    @Autowired
+    private AlgorithmFeign algorithmFeign;
 
     @Override
     public Map<String, String> getParamTemplate() {
@@ -186,6 +190,9 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
         log.info("sendParamMap:{}",JSON.toJSONString(sendParamMap));
         // TODO 调用算法接口 生成模型 (需要把id给算法  后续异步回调更新modelInfo的状态及其他数据信息)
+
+        LinkedHashMap<String,Object> projectListByDateRange = algorithmFeign.train(sendParamMap);
+        log.info("调用算法接口返回数据.projectListByDateRange:{}", JSON.toJSONString(projectListByDateRange));
 
         // 解析出算法code
         String algorithmCode = null;
@@ -333,13 +340,13 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         List<IntervalDataDto> secDataList = dataService.queryIntervalVal(queryParam);
 
         // 测试 TODO 测试行 要删除
-//        testDataList(secDataList);
+        testDataList(secDataList);
 
 
         // 查询起止时间段内的
         List<ProcessLogEntity> processLogList = processLogService.getByTimeRange(startTime.format(ConstantUtil.DATE_FORMATTER), endTime.format(ConstantUtil.DATE_FORMATTER));
         // 测试 TODO 测试行 要删除
-//        testDataList2(processLogList);
+        testDataList2(processLogList);
 
         // 不符合的数据改为null
         List<IntervalDataDto> filterSecDataList = secDataList.stream().map(data -> {
