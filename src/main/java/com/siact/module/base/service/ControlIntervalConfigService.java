@@ -1,6 +1,7 @@
 package com.siact.module.base.service;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.siact.module.base.dto.ControlIntervalConfigChartDTO;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.vo.ControlIntervalConfigVO;
 
@@ -20,4 +21,11 @@ public interface ControlIntervalConfigService {
     JSONObject selectListByConditionNew(ControlIntervalConfigVO configVO);
 
     void updateAndSaveHis(ControlIntervalConfigDTO configDTO);
+
+    /**
+     * 查询区间限值呈现图表
+     * @param configVO
+     * @return
+     */
+    ControlIntervalConfigChartDTO chart(ControlIntervalConfigVO configVO);
 }

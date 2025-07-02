@@ -1,6 +1,7 @@
 package com.siact.module.base.controller;
 
 import com.siact.common.R;
+import com.siact.module.base.dto.ControlIntervalConfigChartDTO;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.vo.ControlIntervalConfigVO;
@@ -27,6 +28,13 @@ public class ControlIntervalConfigController {
     public R list(@RequestBody ControlIntervalConfigVO configVO) {
         List<ControlIntervalConfigDTO> list = configService.selectListByCondition(configVO);
         return R.data(list);
+    }
+
+    @ApiOperation("查询控制区间配置图表")
+    @PostMapping("/chart")
+    public R<ControlIntervalConfigChartDTO> chart(@RequestBody ControlIntervalConfigVO configVO) {
+        ControlIntervalConfigChartDTO chartDTO = configService.chart(configVO);
+        return R.data(chartDTO);
     }
 
     @ApiOperation("新增")

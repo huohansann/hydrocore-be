@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.constant.ConstantTime;
 import com.siact.common.utils.ConvertUtils;
+import com.siact.module.base.dto.ControlIntervalConfigChartDTO;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.entity.ControlIntervalConfigEntity;
 import com.siact.module.base.mapper.ControlIntervalConfigMapper;
@@ -21,11 +22,7 @@ import org.springframework.util.ObjectUtils;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -156,6 +153,40 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         insertEntity.setEndTime(null);
         insertEntity.setStartTime(LocalDateTime.now());
         baseMapper.insert(insertEntity);
+    }
+
+    @Override
+    public ControlIntervalConfigChartDTO chart(ControlIntervalConfigVO configVO) {
+        List<ControlIntervalConfigDTO> dataList = selectListByCondition(configVO);
+        Map<String, ControlIntervalConfigDTO> measureCodeDataMap = dataList.stream().collect(Collectors.toMap(ControlIntervalConfigDTO::getMeasurePoint, o -> o, (oldValue, newValue) -> oldValue));
+
+        ControlIntervalConfigChartDTO chartDTO = new ControlIntervalConfigChartDTO();
+        // 整理数据
+        List<Object[]> upControlData = new ArrayList<>();
+        List<Object[]> lowControlData = new ArrayList<>();
+        List<Object[]> upAlarmData = new ArrayList<>();
+        List<Object[]> lowAlarmData = new ArrayList<>();
+        List<Object[]> temperatureSetData = new ArrayList<>();
+        for (ControlIntervalConfigDTO value : measureCodeDataMap.values()) {
+
+            upControlData.add(new Object[]{value.getMeasurePoint(), value.getUpControl()});
+            lowControlData.add(new Object[]{value.getMeasurePoint(), value.getLowControl()});
+            upAlarmData.add(new Object[]{value.getMeasurePoint(), value.getUpAlarm()});
+            lowAlarmData.add(new Object[]{value.getMeasurePoint(), value.getLowAlarm()});
+            temperatureSetData.add(new Object[]{value.getMeasurePoint(), value.getTemperatureSet()});
+        }
+
+        // 整理x轴排序(根据MC进行分隔排序)
+        ArrayList<String> xAxis = new ArrayList<>(measureCodeDataMap.keySet());
+        xAxis.sort(Comparator.comparingInt(o->Integer.parseInt(o.split("MC")[1])));
+        // 设置图表数据
+        chartDTO.setXAxis(xAxis);
+        chartDTO.setUpControlData(upControlData);
+        chartDTO.setLowControlData(lowControlData);
+        chartDTO.setUpAlarmData(upAlarmData);
+        chartDTO.setLowAlarmData(lowAlarmData);
+        chartDTO.setTemperatureSetData(temperatureSetData);
+        return chartDTO;
     }
 
     @NotNull
