@@ -11,8 +11,8 @@ public class AlgorithmPublishModelParamDetailDTO {
     private String model_id;
     private String model_name;
     private String method;
-    private String work_code_num;
-    private String work_code;
-    private List<Map<String, String>> data;
+    private Integer work_code_num;
+    private Integer work_code;
+    private Map<String, String> data;
     private Integer step;
 }

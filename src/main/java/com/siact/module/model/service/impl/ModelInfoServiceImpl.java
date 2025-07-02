@@ -78,7 +78,7 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
     @Override
     public ModelOutputSelectRtnDTO queryModelByDataCodeGroupByPredictedTypeCodes(String dataCode, List<String> predictedTypeCodeList) {
 
-        List<ModelInfoEntity> modelInfoEntityList = queryModelByDataCodeAndPredictedTypeCodes(dataCode, predictedTypeCodeList);
+        List<ModelInfoEntity> modelInfoEntityList = queryModelByDataCodeAndPredictedTypeCodes(Arrays.asList(dataCode), predictedTypeCodeList);
 
         List<ModelInfoDTO> rtnDTOList = ConvertUtils.sourceToTarget(modelInfoEntityList, ModelInfoDTO.class);
 
@@ -177,18 +177,18 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
     }
 
     /**
-     * 根据 dataCode 和 predictedTypeCodeList 查询模型信息
+     * 根据 dataCodeList 和 predictedTypeCodeList 查询模型信息
      *
-     * @param dataCode
+     * @param dataCodeList
      * @param predictedTypeCodeList
      * @return
      */
-    private List<ModelInfoEntity> queryModelByDataCodeAndPredictedTypeCodes(String dataCode, List<String> predictedTypeCodeList) {
-        if (ObjectUtils.isEmpty(dataCode)) {
+    public List<ModelInfoEntity> queryModelByDataCodeAndPredictedTypeCodes(List<String> dataCodeList, List<String> predictedTypeCodeList) {
+        if (ObjectUtils.isEmpty(dataCodeList)) {
             return Collections.emptyList();
         }
         LambdaQueryWrapper<ModelInfoEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ModelInfoEntity::getDataCode, dataCode);
+        queryWrapper.in(ModelInfoEntity::getDataCode, dataCodeList);
         queryWrapper.eq(ModelInfoEntity::getValid, StatusEnum.VALID.getCode());
         if (ObjectUtils.isNotEmpty(predictedTypeCodeList)) {
             queryWrapper.in(ModelInfoEntity::getPredictedTypeCode, predictedTypeCodeList);

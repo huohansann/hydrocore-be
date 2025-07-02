@@ -36,4 +36,12 @@ public interface ModelInfoService extends IService<ModelInfoEntity> {
      * @return
      */
     ModelAssessChartDTO queryModelAssessChart(List<Long> modelIdList);
+
+    /**
+     * 根据dataCodeList和 predictedTypeCodeList查询模型
+     * @param dataCodeList
+     * @param predictedTypeCodeList
+     * @return
+     */
+    List<ModelInfoEntity> queryModelByDataCodeAndPredictedTypeCodes(List<String> dataCodeList, List<String> predictedTypeCodeList);
 }

@@ -1,6 +1,7 @@
 package com.siact.module.model.feign;
 
 import com.siact.module.model.dto.AlgorithmGenerateModelParamDTO;
+import com.siact.module.model.dto.AlgorithmPublishModelParamDTO;
 import org.springframework.cloud.openfeign.FallbackFactory;
 
 import java.util.LinkedHashMap;
@@ -15,7 +16,7 @@ public class AlgorithmFeignFallBack  implements FallbackFactory<AlgorithmFeign> 
             }
 
             @Override
-            public LinkedHashMap<String, Object> inference(AlgorithmGenerateModelParamDTO paramDTO) {
+            public LinkedHashMap<String, Object> inference(AlgorithmPublishModelParamDTO paramDTO) {
                 return new LinkedHashMap<>();
             }
         };

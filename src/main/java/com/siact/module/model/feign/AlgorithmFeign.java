@@ -1,6 +1,7 @@
 package com.siact.module.model.feign;
 
 import com.siact.module.model.dto.AlgorithmGenerateModelParamDTO;
+import com.siact.module.model.dto.AlgorithmPublishModelParamDTO;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,5 +29,5 @@ public interface AlgorithmFeign {
      * @return
      */
     @PostMapping("/inference")
-    LinkedHashMap<String, Object> inference(@RequestBody AlgorithmGenerateModelParamDTO paramDTO);
+    LinkedHashMap<String, Object> inference(@RequestBody AlgorithmPublishModelParamDTO paramDTO);
 }

@@ -18,6 +18,7 @@ import com.siact.module.base.service.TplService;
 import com.siact.module.enmus.ModelStatusEnum;
 import com.siact.module.model.dto.*;
 import com.siact.module.model.entity.ModelConfigParamEntity;
+import com.siact.module.model.entity.ModelInfoEntity;
 import com.siact.module.model.feign.AlgorithmFeign;
 import com.siact.module.model.mapper.ModelConfigParamMapper;
 import com.siact.module.model.service.ModelConfigParamService;
@@ -114,8 +115,18 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         queryWrapper.eq(ModelConfigParamEntity::getPredictedTypeCode, predictedTypeCode);
         queryWrapper.eq(ModelConfigParamEntity::getValid, StatusEnum.VALID.getCode());
 
-        ModelConfigParamEntity configParamEntity = baseMapper.selectOne(queryWrapper);
-        return configParamEntity;
+        return baseMapper.selectOne(queryWrapper);
+    }
+
+    @Override
+    public List<ModelConfigParamEntity> queryValidParamEntityList(List<String> dataCodeList, String predictedTypeCode) {
+        // 查询有效的参数配置
+        LambdaQueryWrapper<ModelConfigParamEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(ModelConfigParamEntity::getDataCode, dataCodeList);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(predictedTypeCode), ModelConfigParamEntity::getPredictedTypeCode, predictedTypeCode);
+        queryWrapper.eq(ModelConfigParamEntity::getValid, StatusEnum.VALID.getCode());
+
+        return baseMapper.selectList(queryWrapper);
     }
 
     @Override
@@ -186,12 +197,15 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
      * @param entity
      */
     private void sendParamForModel(ModelConfigParamEntity entity) {
-        AlgorithmGenerateModelParamDTO sendParamMap = buildSendParamForModel(entity);
+        long modelInfoId = IdWorker.getId(new ModelInfoEntity());
+
+        AlgorithmGenerateModelParamDTO sendParamMap = buildSendParamForModel(entity, modelInfoId);
 
         log.info("sendParamMap:{}",JSON.toJSONString(sendParamMap));
         // TODO 调用算法接口 生成模型 (需要把id给算法  后续异步回调更新modelInfo的状态及其他数据信息)
 
-        LinkedHashMap<String,Object> projectListByDateRange = algorithmFeign.train(sendParamMap);
+
+        LinkedHashMap<String, Object> projectListByDateRange = algorithmFeign.train(sendParamMap);
         log.info("调用算法接口返回数据.projectListByDateRange:{}", JSON.toJSONString(projectListByDateRange));
 
         // 解析出算法code
@@ -201,8 +215,10 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         }
         // 初始化 创建模型任务id
         ModelInfoDTO modelInfoDTO = new ModelInfoDTO();
+        modelInfoDTO.setId(modelInfoId);
         modelInfoDTO.setDataCode(entity.getDataCode());
         modelInfoDTO.setAlgorithmCode(algorithmCode);
+        modelInfoDTO.setConfigParamId(entity.getId());
         modelInfoDTO.setPredictedType(entity.getPredictedType());
         modelInfoDTO.setPredictedTypeCode(entity.getPredictedTypeCode());
         modelInfoDTO.setCustomModelName(entity.getCustomModelName());
@@ -220,32 +236,23 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
      * @param entity
      * @return
      */
-    private AlgorithmGenerateModelParamDTO buildSendParamForModel(ModelConfigParamEntity entity) {
+    private AlgorithmGenerateModelParamDTO buildSendParamForModel(ModelConfigParamEntity entity, Long modelInfoId) {
         if (ObjectUtils.isEmpty(entity)) {
             return null;
         }
 
         AlgorithmGenerateModelParamDTO paramDTO = new AlgorithmGenerateModelParamDTO();
 
-        // 设置窑炉系统  唯一标识
-        paramDTO.setModel_id(entity.getId() + "");
+        // 设置生成新模型的id
+        paramDTO.setModel_id(modelInfoId + "");
 
         // 公共配置当中所选中的参数特征名称
         // 处理公共配置 (获取选中的配置)
         String publicSetting = entity.getPublicSetting();
         ModelConfigParamDTO publicParamDto = JSONObject.parseObject(publicSetting, ModelConfigParamDTO.class);
-        List<ModelConfigParamDetailDTO> allParamList = publicParamDto.getParam();
-        List<String> features = new ArrayList<>();
-        List<String> featuresDataCodeList = new ArrayList<>();
-        allParamList.stream().map(ModelConfigParamDetailDTO::getParamList).flatMap(List::stream).filter(ModelConfigParamDetailDTO::getSelected).forEach(param -> {
-            features.add(param.getParamCode());
-            AlgorithmDataCodeDTO algorithmCodeDto = algorithmDataCodeUtil.getByAlgorithmCode(param.getParamCode());
-            if (ObjectUtils.isNotEmpty(algorithmCodeDto)) {
-                String dataCode = algorithmCodeDto.getDataCode();
-                featuresDataCodeList.add(dataCode);
-            }
-        });
+        List<AlgorithmDataCodeDTO> featuresDataCodeDtoList = parsePublicParam(publicParamDto);
         // 设置训练参与的特征列
+        List<String> features = featuresDataCodeDtoList.stream().map(AlgorithmDataCodeDTO::getDataCode).collect(Collectors.toList());
         paramDTO.setFeatures(features);
 
         // 需要计算的目标列  MC1~MC10  对应的算法code
@@ -313,6 +320,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         LocalDateTime endTime = TimeUtil.offset(nowDateTIme, hisDataEndTime.intValue(), ChronoUnit.MINUTES);
 
         // 设置算法需要的数据
+        List<String> featuresDataCodeList = featuresDataCodeDtoList.stream().map(AlgorithmDataCodeDTO::getDataCode).collect(Collectors.toList());
         Map<String, Map<String, List<BigDecimal>>> dataMap = getAlgorithmDataParam(entity, featuresDataCodeList, startTime, endTime);
         paramDTO.setData(dataMap);
 
@@ -320,6 +328,20 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         paramDTO.setData_rate(new ArrayList<>(Arrays.asList(0.8, 0.1, 0.1)));
 
         return paramDTO;
+    }
+
+    @NotNull
+    public List<AlgorithmDataCodeDTO> parsePublicParam(ModelConfigParamDTO publicParamDto) {
+        List<ModelConfigParamDetailDTO> allParamList = publicParamDto.getParam();
+
+        List<AlgorithmDataCodeDTO> featuresDataCodeDtoList = new ArrayList<>();
+        allParamList.stream().map(ModelConfigParamDetailDTO::getParamList).flatMap(List::stream).filter(ModelConfigParamDetailDTO::getSelected).forEach(param -> {
+            AlgorithmDataCodeDTO algorithmCodeDto = algorithmDataCodeUtil.getByAlgorithmCode(param.getParamCode());
+            if (ObjectUtils.isNotEmpty(algorithmCodeDto)) {
+                featuresDataCodeDtoList.add(algorithmCodeDto);
+            }
+        });
+        return featuresDataCodeDtoList;
     }
 
     @NotNull

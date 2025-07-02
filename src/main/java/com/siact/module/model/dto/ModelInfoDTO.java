@@ -25,6 +25,9 @@ public class ModelInfoDTO {
     @ApiModelProperty("预测类型Code,单步如:T20,T40,多步:MULTI")
     private String predictedTypeCode;
 
+    @ApiModelProperty("模型设置的id")
+    private Long configParamId;
+
     @ApiModelProperty("模型生成状态  1:生成中 2:生成成功 3:生成失败")
     private Integer status;
 
