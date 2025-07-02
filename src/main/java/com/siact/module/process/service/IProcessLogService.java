@@ -76,4 +76,12 @@ public interface IProcessLogService extends IService<ProcessLogEntity> {
      * @return
      */
     Map<String,List<ProcessLogVO>> queryByDateRange(String startTime, String endTime);
+
+    /**
+     * 查询时间段内的数据
+     * @param startTime
+     * @param endTime
+     * @return
+     */
+    List<ProcessLogEntity> getByTimeRange(String startTime, String endTime);
 }

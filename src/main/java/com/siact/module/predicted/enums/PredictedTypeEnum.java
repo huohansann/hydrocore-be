@@ -10,16 +10,17 @@ import java.util.stream.Collectors;
 @Getter
 public enum PredictedTypeEnum {
 
-    SINGLE_T20(1, "T20","T20", 20),
-    SINGLE_T40(1, "T40","T40", 40),
-    SINGLE_T60(1, "T60","T60", 60),
-    SINGLE_T80(1, "T80","T80", 80),
-    SINGLE_T27(1, "T27","T27", 27),
-    SINGLE_T54(1, "T54","T54", 54),
-    MULTI(2, "MULTI", "多步预测", 80),
+    SINGLE_T20(1, "single_step", "T20", "T20", 20),
+    SINGLE_T40(1, "single_step", "T40", "T40", 40),
+    SINGLE_T60(1, "single_step", "T60", "T60", 60),
+    SINGLE_T80(1, "single_step", "T80", "T80", 80),
+    SINGLE_T27(1, "single_step", "T27", "T27", 27),
+    SINGLE_T54(1, "single_step", "T54", "T54", 54),
+    MULTI(2, "multiple_step", "MULTI", "多步预测", 80),
     ;
 
     private final Integer type;
+    private final String algorithmCode;
     private final String code;
     private final String name;
     private final Integer step;
@@ -28,8 +29,9 @@ public enum PredictedTypeEnum {
             Arrays.stream(PredictedTypeEnum.values()).collect(Collectors.toMap(PredictedTypeEnum::getCode, o -> o));
 
 
-    PredictedTypeEnum(Integer type, String code,String name, Integer step) {
+    PredictedTypeEnum(Integer type,String algorithmCode, String code,String name, Integer step) {
         this.type = type;
+        this.algorithmCode = algorithmCode;
         this.code = code;
         this.name = name;
         this.step = step;

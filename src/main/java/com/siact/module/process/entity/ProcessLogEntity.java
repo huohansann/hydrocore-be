@@ -2,16 +2,17 @@ package com.siact.module.process.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import java.util.Date;
-import com.siact.module.process.enums.DefoamSystemEnum;
-import com.siact.module.process.enums.ReplaceMachineEnum;
+import lombok.NoArgsConstructor;
 
 /**
  * 工艺日志实体类
  */
 @Data
 @TableName("process_log")
+@AllArgsConstructor
+@NoArgsConstructor
 public class ProcessLogEntity {
     @TableId
     private Long id;

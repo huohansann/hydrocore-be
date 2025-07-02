@@ -19,6 +19,9 @@ public class KilnInfoDistributeDTO extends KilnInfoBase {
     /** 天然气设定值 */
     @ApiModelProperty("天然气设定值")
     private BigDecimal gasVal;
+    /** 天然气设定值 */
+    @ApiModelProperty("天然气变动值 = 当前的设定值 - 上一个的设定值")
+    private BigDecimal gasValueChange;
     /** 助燃风设定值 */
     @ApiModelProperty("助燃风设定值")
     private BigDecimal windVal;

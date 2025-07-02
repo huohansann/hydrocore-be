@@ -25,6 +25,13 @@
                 </foreach>
             </trim>
 
+            <!-- 更新 gas_value_change -->
+            <trim prefix="gas_value_change = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.gasValueChange}
+                </foreach>
+            </trim>
+
 
             <!-- 更新 wind_gas_rate -->
             <trim prefix="wind_gas_rate = CASE" suffix="END,">

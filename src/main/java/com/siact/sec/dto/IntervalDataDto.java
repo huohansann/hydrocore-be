@@ -1,7 +1,9 @@
 package com.siact.sec.dto;
 
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
@@ -10,6 +12,8 @@ import java.math.BigDecimal;
  * 等时间间隔数据返回格式
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class IntervalDataDto {
     // 数据编码
     private String insDataCode;

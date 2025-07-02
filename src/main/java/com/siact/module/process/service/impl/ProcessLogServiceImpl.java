@@ -229,11 +229,11 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         return rtnMap;
     }
 
-    private List<ProcessLogEntity> getByTimeRange(String startTime, String endTime) {
+    public List<ProcessLogEntity> getByTimeRange(String startTime, String endTime) {
         LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(ProcessLogEntity::getStartTime, startTime);
         wrapper.le(ProcessLogEntity::getEndTime, endTime);
-
+        // TODO 这里没有考虑跨查询区间的问题
         return baseMapper.selectList(wrapper);
     }
 

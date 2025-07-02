@@ -51,6 +51,12 @@ public class KilnInfoEntity {
     private BigDecimal gasVal;
 
     /**
+     * 天然气变动值 = 当前的设定值 - 上一个的设定值
+     */
+    @TableField("gas_value_change")
+    private BigDecimal gasValueChange;
+
+    /**
      * 助燃风设定值
      */
     @TableField("wind_val")
