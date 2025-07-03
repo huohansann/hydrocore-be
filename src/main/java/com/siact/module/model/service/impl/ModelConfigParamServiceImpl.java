@@ -17,6 +17,7 @@ import com.siact.common.utils.TimeUtil;
 import com.siact.module.base.service.TplService;
 import com.siact.module.enmus.ModelStatusEnum;
 import com.siact.module.model.dto.*;
+import com.siact.module.model.entity.AlgorithmCallInfoEntity;
 import com.siact.module.model.entity.ModelConfigParamEntity;
 import com.siact.module.model.entity.ModelInfoEntity;
 import com.siact.module.model.feign.AlgorithmFeign;
@@ -36,6 +37,7 @@ import com.siact.sec.sevice.DataService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -203,26 +205,20 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
      */
     private void sendParamForModel(ModelConfigParamEntity entity) {
         long modelInfoId = IdWorker.getId(new ModelInfoEntity());
+        // 构建算法生成模型需要的参数
+        AlgorithmGenerateModelParamDTO generateModelParamDto = buildGenerateModelParam(entity, modelInfoId);
 
-        AlgorithmGenerateModelParamDTO sendParamMap = buildSendParamForModel(entity, modelInfoId);
+        log.info("sendParamMap:{}",JSON.toJSONString(generateModelParamDto));
 
-        log.info("sendParamMap:{}",JSON.toJSONString(sendParamMap));
-        // TODO 调用算法接口 生成模型 (需要把id给算法  后续异步回调更新modelInfo的状态及其他数据信息)
-
-        // 保存算法调用记录
-        Long algorithmCallId =
-                algorithmCallInfoService.addAlgorithmCallInfo("modelInfo", modelInfoId, TimeUtil.getNow(), JSON.toJSONString(sendParamMap), null, null);
-
-        LinkedHashMap<String, Object> projectListByDateRange = algorithmFeign.train(sendParamMap);
-        log.info("调用算法接口返回数据.projectListByDateRange:{}", JSON.toJSONString(projectListByDateRange));
-
+        // 调用算法生成模型
+        Long algorithmCallId = callAlgorithmTrainModel(modelInfoId, generateModelParamDto);
 
         // 解析出算法code
         String algorithmCode = null;
-        if (sendParamMap != null) {
-            algorithmCode = sendParamMap.getMethod();
+        if (generateModelParamDto != null) {
+            algorithmCode = generateModelParamDto.getMethod();
         }
-        // 初始化 创建模型任务id
+        // 初始化 创建模型信息(ps:其他字段由算法回调后补全)
         ModelInfoDTO modelInfoDTO = new ModelInfoDTO();
         modelInfoDTO.setId(modelInfoId);
         modelInfoDTO.setDataCode(entity.getDataCode());
@@ -240,6 +236,35 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         modelInfoService.saveModelInfo(modelInfoDTO);
     }
 
+    @Nullable
+    private Long callAlgorithmTrainModel(long modelInfoId, AlgorithmGenerateModelParamDTO generateModelParamDto) {
+        // 保存算法调用记录
+        AlgorithmCallInfoEntity algorithmCallInfo = new AlgorithmCallInfoEntity();
+        long algorithmCallId = IdWorker.getId(algorithmCallInfo);
+        algorithmCallInfo.setId(algorithmCallId);
+        algorithmCallInfo.setType("train");
+        algorithmCallInfo.setModelId(modelInfoId);
+        algorithmCallInfo.setReqTime(TimeUtil.getNow());
+        algorithmCallInfo.setReqJson(JSON.toJSONString(generateModelParamDto));
+        algorithmCallInfo.setCreateTime(new Date());
+
+        LinkedHashMap<String, Object> projectListByDateRange = null;
+        try {
+            projectListByDateRange = algorithmFeign.train(generateModelParamDto);
+            log.info("调用算法接口返回数据.projectListByDateRange:{}", JSON.toJSONString(projectListByDateRange));
+            algorithmCallInfo.setRespTime(TimeUtil.getNow());
+            algorithmCallInfo.setRespJson(JSON.toJSONString(projectListByDateRange));
+        } catch (Exception e) {
+            log.error("调用算法接口异常,入参:{},响应:{}", generateModelParamDto, projectListByDateRange, e);
+            algorithmCallInfo.setRespTime(TimeUtil.getNow());
+            algorithmCallInfo.setRespJson("出现异常:请求返回" + JSON.toJSONString(projectListByDateRange) + ",异常信息:" + e.getMessage());
+            return null;
+        } finally {
+            algorithmCallInfoService.save(algorithmCallInfo);
+        }
+        return algorithmCallId;
+    }
+
     /**
      * 构建下发生成模型的参数
      * 逻辑: 将公共配置  和 算法配置  的paramCode和value做对应
@@ -248,7 +273,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
      * @param entity
      * @return
      */
-    private AlgorithmGenerateModelParamDTO buildSendParamForModel(ModelConfigParamEntity entity, Long modelInfoId) {
+    private AlgorithmGenerateModelParamDTO buildGenerateModelParam(ModelConfigParamEntity entity, Long modelInfoId) {
         if (ObjectUtils.isEmpty(entity)) {
             return null;
         }
@@ -297,7 +322,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         // 设置算法参数
         paramDTO.setMethod_par(methodPar);
 
-        // 设置工况总数,目前固定为9
+        // 设置工况总数,目前固定为9 TODO 后期需要进一步确认传值
         paramDTO.setWork_code_num(9);
 
         // 预测类型 单步('single_step')或多步('multiple_step')
@@ -322,9 +347,9 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         }
         BigDecimal hisDataStartTime = new BigDecimal(hisDataEndTimeStr);
         BigDecimal hisDataEndTime = new BigDecimal(hisDataStartTimeStr);
-        BigDecimal past_number = hisDataStartTime.subtract(hisDataEndTime);
 
-        // 设置时间范围
+        // 设置时间范围(页面设置的时间,末-头)
+        BigDecimal past_number = hisDataStartTime.subtract(hisDataEndTime);
         paramDTO.setPast_number(past_number.stripTrailingZeros().toPlainString());
 
         LocalDateTime nowDateTIme = LocalDateTime.now();
@@ -373,14 +398,8 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
         List<IntervalDataDto> secDataList = dataService.queryIntervalVal(queryParam);
 
-        // 测试 TODO 测试行 要删除
-//        testDataList(secDataList);
-
-
         // 查询起止时间段内的
         List<ProcessLogEntity> processLogList = processLogService.getByTimeRange(startTime.format(ConstantUtil.DATE_FORMATTER), endTime.format(ConstantUtil.DATE_FORMATTER));
-        // 测试 TODO 测试行 要删除
-//        testDataList2(processLogList);
 
         // 不符合的数据改为null
         List<IntervalDataDto> filterSecDataList = secDataList.stream().map(data -> {
@@ -431,100 +450,4 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         return dataMap;
     }
 
-    private void testDataList2(List<ProcessLogEntity> processLogList) {
-        processLogList.add(new ProcessLogEntity(null, "2025-07-01 00:00:00", "2025-07-03 23:59:59", null, null, null, null, null, null, null, null));
-        processLogList.add(new ProcessLogEntity(null, "2025-07-05 00:00:00", "2025-07-06 23:59:59", null, null, null, null, null, null, null, null));
-        processLogList.add(new ProcessLogEntity(null, "2025-07-09 00:00:00", "2025-07-09 23:59:59", null, null, null, null, null, null, null, null));
-    }
-
-    private static void testDataList(List<IntervalDataDto> secDataList) {
-        // 7月1号
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UTLGDY001_EQYLXTTLG01001_MPPLK2001", "aaa", "kva", "2025-07-01 00:12:00", new BigDecimal(1111)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPWD12001", "aaa", "kva", "2025-07-01 00:12:00", new BigDecimal(1222)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPXWH2001", "aaa", "kva", "2025-07-01 00:12:00", new BigDecimal(1333)));
-        secDataList.add(new IntervalDataDto("", "PGY02014_SPD01001_STPDS01001_U00000000_EQPD01DB001045_MPEPR2001", "aaa", "kva", "2025-07-01 00:12:00", new BigDecimal(1444)));
-
-        // 7月2号
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UTLGDY001_EQYLXTTLG01001_MPPLK2001", "aaa", "kva", "2025-07-02 00:12:00", new BigDecimal(2111)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPWD12001", "aaa", "kva", "2025-07-02 00:12:00", new BigDecimal(2222)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPXWH2001", "aaa", "kva", "2025-07-02 00:12:00", new BigDecimal(2333)));
-        secDataList.add(new IntervalDataDto("", "PGY02014_SPD01001_STPDS01001_U00000000_EQPD01DB001045_MPEPR2001", "aaa", "kva", "2025-07-02 00:12:00", new BigDecimal(2444)));
-        // 7月3号
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UTLGDY001_EQYLXTTLG01001_MPPLK2001", "aaa", "kva", "2025-07-03 00:12:00", new BigDecimal(3111)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPWD12001", "aaa", "kva", "2025-07-03 00:12:00", new BigDecimal(3222)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPXWH2001", "aaa", "kva", "2025-07-03 00:12:00", new BigDecimal(3333)));
-        secDataList.add(new IntervalDataDto("", "PGY02014_SPD01001_STPDS01001_U00000000_EQPD01DB001045_MPEPR2001", "aaa", "kva", "2025-07-03 00:12:00", new BigDecimal(3444)));
-
-        // 7月4号
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UTLGDY001_EQYLXTTLG01001_MPPLK2001", "aaa", "kva", "2025-07-04 00:12:00", new BigDecimal(4111)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPWD12001", "aaa", "kva", "2025-07-04 00:12:00", new BigDecimal(4222)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPXWH2001", "aaa", "kva", "2025-07-04 00:12:00", new BigDecimal(4333)));
-        secDataList.add(new IntervalDataDto("", "PGY02014_SPD01001_STPDS01001_U00000000_EQPD01DB001045_MPEPR2001", "aaa", "kva", "2025-07-04 00:12:00", new BigDecimal(4444)));
-
-        // 7月5号
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UTLGDY001_EQYLXTTLG01001_MPPLK2001", "aaa", "kva", "2025-07-05 00:12:00", new BigDecimal(5111)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPWD12001", "aaa", "kva", "2025-07-05 00:12:00", new BigDecimal(5222)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPXWH2001", "aaa", "kva", "2025-07-05 00:12:00", new BigDecimal(5333)));
-        secDataList.add(new IntervalDataDto("", "PGY02014_SPD01001_STPDS01001_U00000000_EQPD01DB001045_MPEPR2001", "aaa", "kva", "2025-07-05 00:12:00", new BigDecimal(5444)));
-
-        // 7月6号
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UTLGDY001_EQYLXTTLG01001_MPPLK2001", "aaa", "kva", "2025-07-06 00:12:00", new BigDecimal(6111)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPWD12001", "aaa", "kva", "2025-07-06 00:12:00", new BigDecimal(6222)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPXWH2001", "aaa", "kva", "2025-07-06 00:12:00", new BigDecimal(6333)));
-        secDataList.add(new IntervalDataDto("", "PGY02014_SPD01001_STPDS01001_U00000000_EQPD01DB001045_MPEPR2001", "aaa", "kva", "2025-07-06 00:12:00", new BigDecimal(6444)));
-
-        // 7月7号
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UTLGDY001_EQYLXTTLG01001_MPPLK2001", "aaa", "kva", "2025-07-07 00:12:00", new BigDecimal(7111)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPWD12001", "aaa", "kva", "2025-07-07 00:12:00", new BigDecimal(7222)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPXWH2001", "aaa", "kva", "2025-07-07 00:12:00", new BigDecimal(7333)));
-        secDataList.add(new IntervalDataDto("", "PGY02014_SPD01001_STPDS01001_U00000000_EQPD01DB001045_MPEPR2001", "aaa", "kva", "2025-07-07 00:12:00", new BigDecimal(7444)));
-
-        // 7月8号
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UTLGDY001_EQYLXTTLG01001_MPPLK2001", "aaa", "kva", "2025-07-08 00:12:00", new BigDecimal(8111)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPWD12001", "aaa", "kva", "2025-07-08 00:12:00", new BigDecimal(8222)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPXWH2001", "aaa", "kva", "2025-07-08 00:12:00", new BigDecimal(8333)));
-        secDataList.add(new IntervalDataDto("", "PGY02014_SPD01001_STPDS01001_U00000000_EQPD01DB001045_MPEPR2001", "aaa", "kva", "2025-07-08 00:12:00", new BigDecimal(8444)));
-
-        // 7月9号
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UTLGDY001_EQYLXTTLG01001_MPPLK2001", "aaa", "kva", "2025-07-09 00:12:00", new BigDecimal(9111)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPWD12001", "aaa", "kva", "2025-07-09 00:12:00", new BigDecimal(9222)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPXWH2001", "aaa", "kva", "2025-07-09 00:12:00", new BigDecimal(9333)));
-        secDataList.add(new IntervalDataDto("", "PGY02014_SPD01001_STPDS01001_U00000000_EQPD01DB001045_MPEPR2001", "aaa", "kva", "2025-07-09 00:12:00", new BigDecimal(9444)));
-
-        // 7月10号
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UTLGDY001_EQYLXTTLG01001_MPPLK2001", "aaa", "kva", "2025-07-10 00:12:00", new BigDecimal(10111)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPWD12001", "aaa", "kva", "2025-07-10 00:12:00", new BigDecimal(10222)));
-        secDataList.add(new IntervalDataDto("", "PGY02003_SYLXT001_STYLZ01001_UWCGDY001_EQYLXTWDCGQ001_MPXWH2001", "aaa", "kva", "2025-07-10 00:12:00", new BigDecimal(10333)));
-        secDataList.add(new IntervalDataDto("", "PGY02014_SPD01001_STPDS01001_U00000000_EQPD01DB001045_MPEPR2001", "aaa", "kva", "2025-07-10 00:12:00", new BigDecimal(10444)));
-
-    }
-
-    /**
-     * 将参数Dto转化为Map结构   TODO 对接算法时,可能会调整
-     *
-     * @param publicParamDtoList
-     * @param index
-     * @param sendParamMap
-     */
-    private static void getParamMapByDto(List<ModelConfigParamDetailDTO> publicParamDtoList, int index, HashMap<String, String> sendParamMap) {
-        // curDto为空  跳出递归
-        if (index >= publicParamDtoList.size()) {
-            return;
-        }
-
-        ModelConfigParamDetailDTO curDto = publicParamDtoList.get(index);
-
-        String paramCode = curDto.getParamCode();
-        String value = curDto.getValue();
-        // 设置值
-        sendParamMap.put(paramCode, value);
-
-        List<ModelConfigParamDetailDTO> childrenList = curDto.getParamList();
-        if (ObjectUtils.isNotEmpty(childrenList)) {
-            // 递归子集
-            getParamMapByDto(childrenList, index, sendParamMap);
-        }
-        // 递归下一级
-        getParamMapByDto(publicParamDtoList, index++, sendParamMap);
-    }
 }

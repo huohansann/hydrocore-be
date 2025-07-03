@@ -39,13 +39,14 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
     public void handleCallBackModelInfo(LinkedHashMap<String, Object> params) {
         // 获取参数模板
         log.info("获取模型信息：{}", JSON.toJSONString(params));
-
+        // 解析回调当中的数据
         AlgorithmCallBackModelInfoDTO backModelInfoDTO = JSONObject.parseObject(JSON.toJSONString(params), AlgorithmCallBackModelInfoDTO.class);
 
+        // 获取或掉的modelId,需要根据该id,修改模型的信息
         String modelId = backModelInfoDTO.getModel_id();
 
         ModelInfoEntity modelInfo = modelInfoService.getById(modelId);
-
+        // 设置算法模型名称
         modelInfo.setModelName(backModelInfoDTO.getModel_name());
 
         // 模型存放路径 /modelBasePath/年/月/日/模型名称
@@ -56,7 +57,7 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
         String minioPath = uploadMinio(modelPath);
         modelInfo.setModelMinioPath(minioPath);
 
-        // 解析评价数据 // TODO 后期确认,目前评价数据 用的是测试集数据
+        // 设置评价数据 // TODO 后期确认,目前评价数据 用的是测试集数据
         AlgorithmCallBackModelEvaluationInfoDetailDTO evaluationInfo = backModelInfoDTO.getEvaluation().getTest();
         modelInfo.setDetermination(evaluationInfo.getR2());
         modelInfo.setMse(evaluationInfo.getMse());
@@ -66,7 +67,7 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
 
         modelInfoService.updateById(modelInfo);
 
-        // 更新请求数据
+        // 更新请求记录数据
         Long algorithmCallId = modelInfo.getAlgorithmCallId();
         AlgorithmCallInfoEntity callInfo = getById(algorithmCallId);
         callInfo.setRespTime(TimeUtil.getNow());
