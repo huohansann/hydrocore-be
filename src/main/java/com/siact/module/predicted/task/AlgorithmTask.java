@@ -247,6 +247,7 @@ public class AlgorithmTask {
                 // 当前模型是单步预测 则取第一个预测结果 数据时间为下一个时间点
                 String dataTime = TimeUtil.getCalcTime(predictionTime, predictedTypeEnum.getStep(), ConstantBase.MIN);
                 BigDecimal curDataVal = dataValList.get(0);
+                curDataVal = dataValList.get(new Random().nextInt(dataValList.size()));// TODO 需要删除 目前算法没有逻辑  因此单步预测先随机获取一个数据
 
                 predictedDataList.add(new PredictedDataEntity(null, modelInfoEntity.getDataCode(), predictedTypeEnum.getType(), predictedTypeEnum.getCode(), dataTime, curDataVal, "℃", new Date()));
             } else {
