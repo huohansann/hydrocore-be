@@ -27,8 +27,6 @@ public class ModelPublishRecordEntity {
     private Long modelInfoId;
     // 模型下发状态(0:未下发 1:下发中 2:下发完成)
     private Integer status;
-    // 算法响应的参数(择到另一张表,可能是mqtt或者是回调接口,主要是记录)
-    private String algorithmResp;
     //  创建时间
     private Date createTime;
     // 更新时间

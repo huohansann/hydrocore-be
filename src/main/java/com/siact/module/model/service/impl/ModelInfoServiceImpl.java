@@ -17,7 +17,6 @@ import com.siact.module.model.feign.AlgorithmFeign;
 import com.siact.module.model.mapper.ModelInfoMapper;
 import com.siact.module.model.service.ModelInfoService;
 import com.siact.module.model.service.ModelPublishInfoService;
-import com.siact.module.model.service.ModelPublishRecordService;
 import com.siact.module.model.vo.PublishModelVO;
 import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
@@ -35,9 +34,6 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
 
     @Autowired
     private ModelPublishInfoService modelPublishInfoService;
-
-    @Autowired
-    private ModelPublishRecordService modelPublishRecordService;
 
     @Autowired
     private AlgorithmFeign algorithmFeign;
