@@ -19,4 +19,6 @@ public class ModelPublishInfoEntity {
     private String multiEndTime;
     // 创建时间
     private Date createTime;
+    // 是否删除 0:未删除 1:已删除
+    private Integer deleted;
 }

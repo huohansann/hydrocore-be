@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.siact.common.constant.ConstantBase;
+import com.siact.common.constant.ConstantSymbol;
 import com.siact.common.constant.ConstantTime;
 import com.siact.common.utils.TimeUtil;
 import com.siact.module.base.service.TplService;
@@ -14,10 +15,12 @@ import com.siact.module.model.dto.ModelConfigParamDTO;
 import com.siact.module.model.entity.AlgorithmCallInfoEntity;
 import com.siact.module.model.entity.ModelConfigParamEntity;
 import com.siact.module.model.entity.ModelInfoEntity;
+import com.siact.module.model.entity.ModelPublishInfoEntity;
 import com.siact.module.model.feign.AlgorithmFeign;
 import com.siact.module.model.service.AlgorithmCallInfoService;
 import com.siact.module.model.service.ModelConfigParamService;
 import com.siact.module.model.service.ModelInfoService;
+import com.siact.module.model.service.ModelPublishInfoService;
 import com.siact.module.predicted.dto.AlgorithmPredictionCallDataDTO;
 import com.siact.module.predicted.dto.AlgorithmPredictionDataCodeTplDTO;
 import com.siact.module.predicted.entity.PredictedDataEntity;
@@ -63,6 +66,9 @@ public class AlgorithmTask {
     @Autowired
     private PredictedDataService predictedDataService;
 
+    @Autowired
+    private ModelPublishInfoService modelPublishInfoService;
+
 
     /**
      * 每分钟调用一次算法  获取预测数据
@@ -84,6 +90,18 @@ public class AlgorithmTask {
         List<ModelInfoEntity> modelInfoEntityList = modelInfoService.queryModelByDataCodeAndPredictedTypeCodes(dataCodeList, null, AlgorithmCallStatusEnum.SUCCESS.getStatus());
         if (modelInfoEntityList.isEmpty()) {
             log.info("没有已完成回调的模型数据,nowTimeStr:{}", nowTimeStr);
+            return;
+        }
+
+        // 1.2:过滤出已选择的模型数据
+        List<ModelPublishInfoEntity> lastPublishInfoList = modelPublishInfoService.queryLastPublishInfoByDataCodeList(dataCodeList);
+        String allSelectedModelIdList = lastPublishInfoList.stream().map(ModelPublishInfoEntity::getPublishModelInfoIds).collect(Collectors.joining(ConstantSymbol.COMMA));
+
+        modelInfoEntityList = modelInfoEntityList.stream()
+                .filter(modelInfoEntity -> allSelectedModelIdList.contains( modelInfoEntity.getId() + ""))
+                .collect(Collectors.toList());
+        if (modelInfoEntityList.isEmpty()) {
+            log.info("没有已选择的模型数据,nowTimeStr:{}", nowTimeStr);
             return;
         }
 

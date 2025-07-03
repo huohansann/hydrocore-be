@@ -114,12 +114,15 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
 
     @Override
     public void publishModel(PublishModelVO publishModelVO) {
-        if (publishModelVO.getMultiStartTime().compareTo(publishModelVO.getMultiEndTime()) > 0) {
+        if (publishModelVO.getMultiStartTime() != null && publishModelVO.getMultiEndTime() != null
+                && publishModelVO.getMultiStartTime().compareTo(publishModelVO.getMultiEndTime()) > 0) {
             throw new CustomException("多步时间设置错误,开始时间不能大于结束时间");
         }
 
         List<Long> modelIdList = publishModelVO.getModelIdList();
-        List<ModelInfoEntity> selectedModelInfoList = baseMapper.selectBatchIds(modelIdList);
+
+        // 先删除
+        modelPublishInfoService.removeByDataCode(publishModelVO.getDataCode());
 
         // 新增当前批次的下发记录
         ModelPublishInfoEntity publishInfo = new ModelPublishInfoEntity();
