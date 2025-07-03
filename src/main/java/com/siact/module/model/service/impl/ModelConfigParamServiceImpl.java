@@ -389,8 +389,8 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         allQueryDataCodeList.add(entity.getDataCode());
         allQueryDataCodeList.addAll(featuresDataCodeList);
         queryParam.setDataCodes(allQueryDataCodeList);
-        queryParam.setStartTime(startTime.format(ConstantUtil.DATE_FORMATTER));
-        queryParam.setEndTime(endTime.format(ConstantUtil.DATE_FORMATTER));
+        queryParam.setStartTime(startTime.format(ConstantUtil.DATE_TIME_FORMATTER));
+        queryParam.setEndTime(endTime.format(ConstantUtil.DATE_TIME_FORMATTER));
         queryParam.setTs(1);
         queryParam.setTsUnit(ConstantBase.MIN);// 查询每分钟数据
         queryParam.setCalcType(ConstantBase.LAST);// 查询温度,为瞬时值
