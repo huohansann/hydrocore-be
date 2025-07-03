@@ -2,6 +2,7 @@ package com.siact.module.predicted.task;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.siact.common.constant.ConstantBase;
 import com.siact.common.constant.ConstantSymbol;
@@ -248,14 +249,21 @@ public class AlgorithmTask {
                 predictedDataList.add(new PredictedDataEntity(null, modelInfoEntity.getDataCode(), predictedTypeEnum.getType(), predictedTypeEnum.getCode(), dataTime, curDataVal, "℃", new Date()));
             } else {
                 // 当前模型是多步预测  则取多步预测的步长的预测结果
-                for (int i = 0; i < predictedTypeEnum.getStep(); i++) {
+                for (int i = 1; i <= predictedTypeEnum.getStep(); i++) {
                     String dataTime = TimeUtil.getCalcTime(predictionTime, i, ConstantBase.MIN);
                     BigDecimal curDataVal = dataValList.get(i);
                     predictedDataList.add(new PredictedDataEntity(null, modelInfoEntity.getDataCode(), predictedTypeEnum.getType(), predictedTypeEnum.getCode(), dataTime, curDataVal, "℃", new Date()));
                 }
             }
         }
-        // 保存预测数据
-        predictedDataService.saveOrUpdateBatch(predictedDataList);
+
+        // 3:保存/更新数据表(同时间点进行覆盖  单步覆盖单步  多步覆盖多步  即 根据typeCode进行 和 time进行覆盖)
+        for (PredictedDataEntity entity : predictedDataList) {
+            LambdaQueryWrapper<PredictedDataEntity> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(PredictedDataEntity::getDataCode, entity.getDataCode());
+            queryWrapper.eq(PredictedDataEntity::getPredictedTypeCode, entity.getPredictedTypeCode());
+            queryWrapper.eq(PredictedDataEntity::getTime, entity.getTime());
+            predictedDataService.saveOrUpdate(entity, queryWrapper);
+        }
     }
 }
