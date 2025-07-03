@@ -6,7 +6,9 @@ import com.siact.common.constant.ConstantNum;
 import com.siact.common.constant.ConstantTime;
 import com.siact.common.constant.ConstantUtil;
 import com.siact.common.exception.ActiveException;
+import com.siact.common.exception.CustomException;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
@@ -2517,6 +2519,66 @@ public class TimeUtil {
             return null;
         }
         return (T) time.plus(number, field);
+    }
+
+    /**
+     * 时间计算
+     * @param time
+     * @param ts
+     * @param tsUnit
+     * @return
+     */
+    public static String getCalcTime(String time, Integer ts, String tsUnit) {
+        if (!StringUtils.isBlank(time) && !ObjectUtils.isEmpty(ts) && !StringUtils.isBlank(tsUnit)) {
+            if (time.length() == 10) {
+                LocalDate date = LocalDate.parse(time);
+                switch (tsUnit) {
+                    case "Y":
+                        date = date.plusYears((long)ts);
+                        break;
+                    case "M":
+                        date = date.plusMonths((long)ts);
+                        break;
+                    case "D":
+                        date = date.plusDays((long)ts);
+                        break;
+                    default:
+                        throw new CustomException("传入时间格式不正确!");
+                }
+
+                return date.toString();
+            } else if (time.length() >= 19) {
+                LocalDateTime date = LocalDateTime.parse(time.substring(0, 19), ConstantUtil.DATE_TIME_FORMATTER);
+                switch (tsUnit) {
+                    case "Y":
+                        date = date.plusYears((long)ts);
+                        break;
+                    case "M":
+                        date = date.plusMonths((long)ts);
+                        break;
+                    case "D":
+                        date = date.plusDays((long)ts);
+                        break;
+                    case "H":
+                        date = date.plusHours((long)ts);
+                        break;
+                    case "MIN":
+                        date = date.plusMinutes((long)ts);
+                        break;
+                    case "S":
+                        date = date.plusSeconds((long)ts);
+                        break;
+                    default:
+                        throw new CustomException("传入时间格式不正确!");
+                }
+
+                return date.format(ConstantUtil.DATE_TIME_FORMATTER);
+            } else {
+                throw new CustomException("时间格式不正确！！");
+            }
+        } else {
+            throw new CustomException("参数校验不通过");
+        }
     }
 
     /**

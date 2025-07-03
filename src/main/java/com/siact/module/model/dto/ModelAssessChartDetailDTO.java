@@ -14,9 +14,6 @@ import java.util.List;
 @ApiModel("模型指标评价图表")
 public class ModelAssessChartDetailDTO {
 
-    @ApiModelProperty("模型Code(算法)")
-    private String modelCode;
-
     @ApiModelProperty("模型名称(算法)")
     private String modelName;
 

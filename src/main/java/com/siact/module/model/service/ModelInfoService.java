@@ -43,5 +43,5 @@ public interface ModelInfoService extends IService<ModelInfoEntity> {
      * @param predictedTypeCodeList
      * @return
      */
-    List<ModelInfoEntity> queryModelByDataCodeAndPredictedTypeCodes(List<String> dataCodeList, List<String> predictedTypeCodeList);
+    List<ModelInfoEntity> queryModelByDataCodeAndPredictedTypeCodes(List<String> dataCodeList, List<String> predictedTypeCodeList, Integer algorithmCallStatus);
 }

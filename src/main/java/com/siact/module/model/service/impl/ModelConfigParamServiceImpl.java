@@ -21,10 +21,12 @@ import com.siact.module.model.entity.ModelConfigParamEntity;
 import com.siact.module.model.entity.ModelInfoEntity;
 import com.siact.module.model.feign.AlgorithmFeign;
 import com.siact.module.model.mapper.ModelConfigParamMapper;
+import com.siact.module.model.service.AlgorithmCallInfoService;
 import com.siact.module.model.service.ModelConfigParamService;
 import com.siact.module.model.service.ModelInfoService;
 import com.siact.module.model.utils.AlgorithmDataCodeUtil;
 import com.siact.module.model.vo.ModelConfigParamSaveVO;
+import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.process.entity.ProcessLogEntity;
 import com.siact.module.process.service.IProcessLogService;
@@ -65,6 +67,9 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
     @Autowired
     private AlgorithmFeign algorithmFeign;
+
+    @Autowired
+    private AlgorithmCallInfoService algorithmCallInfoService;
 
     @Override
     public Map<String, String> getParamTemplate() {
@@ -204,9 +209,13 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         log.info("sendParamMap:{}",JSON.toJSONString(sendParamMap));
         // TODO 调用算法接口 生成模型 (需要把id给算法  后续异步回调更新modelInfo的状态及其他数据信息)
 
+        // 保存算法调用记录
+        Long algorithmCallId =
+                algorithmCallInfoService.addAlgorithmCallInfo("modelInfo", modelInfoId, TimeUtil.getNow(), JSON.toJSONString(sendParamMap), null, null);
 
         LinkedHashMap<String, Object> projectListByDateRange = algorithmFeign.train(sendParamMap);
         log.info("调用算法接口返回数据.projectListByDateRange:{}", JSON.toJSONString(projectListByDateRange));
+
 
         // 解析出算法code
         String algorithmCode = null;
@@ -224,6 +233,9 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         modelInfoDTO.setCustomModelName(entity.getCustomModelName());
         modelInfoDTO.setStatus(ModelStatusEnum.RUNNING.getValue());
         modelInfoDTO.setValid(StatusEnum.VALID.getCode());
+        // 设置算法相关字段
+        modelInfoDTO.setAlgorithmCallId(algorithmCallId);
+        modelInfoDTO.setAlgorithmCallStatus(AlgorithmCallStatusEnum.RUNNING.getStatus());
 
         modelInfoService.saveModelInfo(modelInfoDTO);
     }
@@ -362,13 +374,13 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         List<IntervalDataDto> secDataList = dataService.queryIntervalVal(queryParam);
 
         // 测试 TODO 测试行 要删除
-        testDataList(secDataList);
+//        testDataList(secDataList);
 
 
         // 查询起止时间段内的
         List<ProcessLogEntity> processLogList = processLogService.getByTimeRange(startTime.format(ConstantUtil.DATE_FORMATTER), endTime.format(ConstantUtil.DATE_FORMATTER));
         // 测试 TODO 测试行 要删除
-        testDataList2(processLogList);
+//        testDataList2(processLogList);
 
         // 不符合的数据改为null
         List<IntervalDataDto> filterSecDataList = secDataList.stream().map(data -> {

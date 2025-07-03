@@ -25,15 +25,19 @@ public class ModelInfoEntity {
     private Long configParamId;
     // 模型生成状态  1:生成中 2:生成成功 3:生成失败
     private Integer status;
-    // 算法响应的参数(择到另一张表,可能是mqtt或者是回调接口,主要是记录)
-    private String algorithmResp;
+    // 算法响应的id
+    private Long algorithmCallId;
+    // 算法调用状态 0:待回调 1:已回调
+    private Integer algorithmCallStatus;
     // 自定义模型名称
     private String customModelName;
     // 模型名称
     private String modelName;
-    // 模型Code
-    private String modelCode;
-    // 决定系数
+    // 模型Path
+    private String modelPath;
+    // 模型minio路径
+    private String modelMinioPath;
+    // 决定系数(r2)
     private String determination;
     // MSE均方误差
     private String mse;

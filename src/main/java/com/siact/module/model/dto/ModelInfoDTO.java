@@ -31,14 +31,23 @@ public class ModelInfoDTO {
     @ApiModelProperty("模型生成状态  1:生成中 2:生成成功 3:生成失败")
     private Integer status;
 
+    @ApiModelProperty("算法调用id")
+    private Long algorithmCallId;
+
+    @ApiModelProperty("算法调用请求状态")
+    private Integer algorithmCallStatus;
+
     @ApiModelProperty("自定义模型名称")
     private String customModelName;
 
     @ApiModelProperty("模型名称(算法)")
     private String modelName;
 
-    @ApiModelProperty("模型Code(算法)")
-    private String modelCode;
+    @ApiModelProperty("模型Path(算法)")
+    private String modelPath;
+
+    @ApiModelProperty("模型minio Path(算法)")
+    private String modelMinioPath;
 
     @ApiModelProperty("决定系数")
     private String determination;

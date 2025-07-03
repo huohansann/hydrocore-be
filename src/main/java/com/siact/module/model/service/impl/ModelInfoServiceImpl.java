@@ -1,6 +1,5 @@
 package com.siact.module.model.service.impl;
 
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
@@ -8,17 +7,19 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.enums.StatusEnum;
 import com.siact.common.exception.CustomException;
 import com.siact.common.utils.ConvertUtils;
-import com.siact.module.enmus.PublishStatusEnum;
-import com.siact.module.model.dto.*;
+import com.siact.module.model.dto.ModelAssessChartDTO;
+import com.siact.module.model.dto.ModelAssessChartDetailDTO;
+import com.siact.module.model.dto.ModelInfoDTO;
+import com.siact.module.model.dto.ModelOutputSelectRtnDTO;
 import com.siact.module.model.entity.ModelInfoEntity;
 import com.siact.module.model.entity.ModelPublishInfoEntity;
-import com.siact.module.model.entity.ModelPublishRecordEntity;
 import com.siact.module.model.feign.AlgorithmFeign;
 import com.siact.module.model.mapper.ModelInfoMapper;
 import com.siact.module.model.service.ModelInfoService;
 import com.siact.module.model.service.ModelPublishInfoService;
 import com.siact.module.model.service.ModelPublishRecordService;
 import com.siact.module.model.vo.PublishModelVO;
+import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -78,7 +79,7 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
     @Override
     public ModelOutputSelectRtnDTO queryModelByDataCodeGroupByPredictedTypeCodes(String dataCode, List<String> predictedTypeCodeList) {
 
-        List<ModelInfoEntity> modelInfoEntityList = queryModelByDataCodeAndPredictedTypeCodes(Arrays.asList(dataCode), predictedTypeCodeList);
+        List<ModelInfoEntity> modelInfoEntityList = queryModelByDataCodeAndPredictedTypeCodes(Arrays.asList(dataCode), predictedTypeCodeList, AlgorithmCallStatusEnum.SUCCESS.getStatus());
 
         List<ModelInfoDTO> rtnDTOList = ConvertUtils.sourceToTarget(modelInfoEntityList, ModelInfoDTO.class);
 
@@ -155,7 +156,6 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
         for (ModelInfoEntity info : modelEntityList) {
             String modelName = info.getModelName();
             String customModelName = info.getCustomModelName();
-            String modelCode = info.getModelCode();
             Integer predictedType = info.getPredictedType();
             String predictedTypeCode = info.getPredictedTypeCode();
 
@@ -169,7 +169,7 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
             // Accuracy精度
             values.add(new Object[]{"Accuracy精度", info.getAccuracy()});
 
-            ModelAssessChartDetailDTO curChartDetail = new ModelAssessChartDetailDTO(modelCode, modelName, customModelName, predictedType, predictedTypeCode, values);
+            ModelAssessChartDetailDTO curChartDetail = new ModelAssessChartDetailDTO(modelName, customModelName, predictedType, predictedTypeCode, values);
             dataList.add(curChartDetail);
         }
 
@@ -181,15 +181,18 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
      *
      * @param dataCodeList
      * @param predictedTypeCodeList
+     * @param algorithmCallStatus 是否已完成算法回调
      * @return
      */
-    public List<ModelInfoEntity> queryModelByDataCodeAndPredictedTypeCodes(List<String> dataCodeList, List<String> predictedTypeCodeList) {
+    public List<ModelInfoEntity> queryModelByDataCodeAndPredictedTypeCodes(List<String> dataCodeList, List<String> predictedTypeCodeList, Integer algorithmCallStatus) {
         if (ObjectUtils.isEmpty(dataCodeList)) {
             return Collections.emptyList();
         }
         LambdaQueryWrapper<ModelInfoEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.in(ModelInfoEntity::getDataCode, dataCodeList);
         queryWrapper.eq(ModelInfoEntity::getValid, StatusEnum.VALID.getCode());
+        // 是否已完成算法回调
+        queryWrapper.eq(ObjectUtils.isNotEmpty(algorithmCallStatus), ModelInfoEntity::getAlgorithmCallStatus, algorithmCallStatus);
         if (ObjectUtils.isNotEmpty(predictedTypeCodeList)) {
             queryWrapper.in(ModelInfoEntity::getPredictedTypeCode, predictedTypeCodeList);
         }
