@@ -46,20 +46,20 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
 
         ModelInfoEntity modelInfoEntity = ConvertUtils.sourceToTarget(modelInfoDTO, ModelInfoEntity.class);
 
-        // 1:先失效之前的模型信息
-        invalidModelInfo(modelInfoEntity.getDataCode(), modelInfoEntity.getPredictedTypeCode(), modelInfoEntity.getAlgorithmCode());
+        // ps:需要等算法回调以后,再失效原先的模型
 
         // 2:再新增最新的模型信息
         save(modelInfoEntity);
     }
 
     /**
-     * 失效模型信息
+     * 根据dataCode,预测步长,和算法 失效模型信息
      * 逻辑: 同一个dataCode + predictedTypeCode 只能生效一种算法模型的信息
      * @param dataCode
      * @param predictedTypeCode
+     * @param algorithmCode
      */
-    private void invalidModelInfo(String dataCode, String predictedTypeCode, String algorithmCode) {
+    public void invalidModelInfo(String dataCode, String predictedTypeCode, String algorithmCode) {
 
         LambdaUpdateWrapper<ModelInfoEntity> queryWrapper = new LambdaUpdateWrapper<>();
         queryWrapper.eq(ModelInfoEntity::getDataCode, dataCode);
@@ -69,7 +69,7 @@ public class ModelInfoServiceImpl extends ServiceImpl<ModelInfoMapper, ModelInfo
 
         queryWrapper.set(ModelInfoEntity::getValid, StatusEnum.INVALID.getCode());
 
-        update(null, queryWrapper);
+        update(queryWrapper);
     }
 
     @Override

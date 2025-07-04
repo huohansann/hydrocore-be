@@ -44,4 +44,13 @@ public interface ModelInfoService extends IService<ModelInfoEntity> {
      * @return
      */
     List<ModelInfoEntity> queryModelByDataCodeAndPredictedTypeCodes(List<String> dataCodeList, List<String> predictedTypeCodeList, Integer algorithmCallStatus);
+
+    /**
+     * 根据dataCode,预测步长,和算法 失效模型信息
+     * 逻辑: 同一个dataCode + predictedTypeCode 只能生效一种算法模型的信息
+     * @param dataCode
+     * @param predictedTypeCode
+     * @param algorithmCode
+     */
+    void invalidModelInfo(String dataCode, String predictedTypeCode, String algorithmCode);
 }

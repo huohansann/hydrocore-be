@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -36,6 +37,7 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
     private ModelInfoService modelInfoService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void handleCallBackModelInfo(LinkedHashMap<String, Object> params) {
         // 获取参数模板
         log.info("获取模型信息：{}", JSON.toJSONString(params));
@@ -46,6 +48,22 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
         String modelId = backModelInfoDTO.getModel_id();
 
         ModelInfoEntity modelInfo = modelInfoService.getById(modelId);
+
+        // 1:先失效同算法的其他模型
+        modelInfoService.invalidModelInfo(modelInfo.getDataCode(),modelInfo.getPredictedTypeCode(),modelInfo.getAlgorithmCode());
+
+        // 2:再更新 回调模型信息
+        updateCallBackModelInfo(modelInfo, backModelInfoDTO);
+
+        // 3:更新请求记录数据
+        Long algorithmCallId = modelInfo.getAlgorithmCallId();
+        AlgorithmCallInfoEntity callInfo = getById(algorithmCallId);
+        callInfo.setRespTime(TimeUtil.getNow());
+        callInfo.setRespJson(JSON.toJSONString(params));
+        updateById(callInfo);
+    }
+
+    private void updateCallBackModelInfo(ModelInfoEntity modelInfo, AlgorithmCallBackModelInfoDTO backModelInfoDTO) {
         // 设置算法模型名称
         modelInfo.setModelName(backModelInfoDTO.getModel_name());
 
@@ -66,13 +84,6 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
         modelInfo.setAlgorithmCallStatus(AlgorithmCallStatusEnum.SUCCESS.getStatus());
 
         modelInfoService.updateById(modelInfo);
-
-        // 更新请求记录数据
-        Long algorithmCallId = modelInfo.getAlgorithmCallId();
-        AlgorithmCallInfoEntity callInfo = getById(algorithmCallId);
-        callInfo.setRespTime(TimeUtil.getNow());
-        callInfo.setRespJson(JSON.toJSONString(params));
-        updateById(callInfo);
     }
 
     @Override
