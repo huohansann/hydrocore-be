@@ -73,21 +73,18 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         List<String> dataCodeList = predictionDataList.stream().map(AlgorithmPredictionDataCodeTplDTO::getDataCode).distinct().collect(Collectors.toList());
 
-        List<ModelInfoEntity> modelInfoEntityList = modelInfoService.queryModelByDataCodeAndPredictedTypeCodes(dataCodeList, null, AlgorithmCallStatusEnum.SUCCESS.getStatus());
-        if (modelInfoEntityList.isEmpty()) {
-            log.info("没有已完成回调的模型数据,nowTimeStr:{}", nowTimeStr);
-            return;
-        }
-
         // 1.2:过滤出已选择的模型数据
         List<ModelPublishInfoEntity> lastPublishInfoList = modelPublishInfoService.queryLastPublishInfoByDataCodeList(dataCodeList);
         String allSelectedModelIdList = lastPublishInfoList.stream().map(ModelPublishInfoEntity::getPublishModelInfoIds).collect(Collectors.joining(ConstantSymbol.COMMA));
-
+        // 1.3: 根据配置的模型id查找模型信息
+        List<ModelInfoEntity> modelInfoEntityList = modelInfoService.listByIds(Arrays.asList(allSelectedModelIdList.split(ConstantSymbol.COMMA)));
+        // 1.4: 为防止调用算法失败,额外过滤出已完成回调的模型信息
         modelInfoEntityList = modelInfoEntityList.stream()
-                .filter(modelInfoEntity -> allSelectedModelIdList.contains(modelInfoEntity.getId() + ""))
+                .filter(o -> o.getAlgorithmCallStatus().equals(AlgorithmCallStatusEnum.SUCCESS.getStatus()))
                 .collect(Collectors.toList());
+
         if (modelInfoEntityList.isEmpty()) {
-            log.info("没有已选择的模型数据,nowTimeStr:{}", nowTimeStr);
+            log.info("没有已完成回调的模型数据,nowTimeStr:{}", nowTimeStr);
             return;
         }
 
