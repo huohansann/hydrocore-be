@@ -27,12 +27,11 @@ public class JepUtils {
      *
      * @param formula    公式
      * @param param2Vals 变量-》值
-     * @param scale      精度
      * @param nullCalc   空值是否计算 如果计算 则将空值当0参与运算 如果不计算则当前计算结果为null
      * @param nullVal   如果所有数据都为null，则返回nullVal
      * @return
      */
-    private static Object calc(String formula, Map<String, BigDecimal> param2Vals, int scale, boolean nullCalc,
+    private static Object calc(String formula, Map<String, BigDecimal> param2Vals, boolean nullCalc,
                          BigDecimal nullVal) throws ParseException, EvaluationException {
 
         //如果数据全为null则返回null
@@ -84,18 +83,18 @@ public class JepUtils {
                                BigDecimal nullVal)  {
         Object result = null;
         try {
-            result = calc(formula, param2Vals, scale, nullCalc, nullVal);
+            result = calc(formula, param2Vals, nullCalc, nullVal);
         } catch (ParseException | EvaluationException e) {
             throw new CustomException("当前计算公式" + formula + ",计算时出现异常,参数:" + JSON.toJSONString(param2Vals), e.getMessage(), e);
         }
         return result == null ? null : new BigDecimal(result.toString()).setScale(scale, BigDecimal.ROUND_HALF_UP);
     }
 
-    public static Boolean calcBoolean(String formula, Map<String, BigDecimal> param2Vals, int scale, boolean nullCalc,
+    public static Boolean calcBoolean(String formula, Map<String, BigDecimal> param2Vals, boolean nullCalc,
                                        BigDecimal nullVal) {
         Object result = null;
         try {
-            result = calc(formula, param2Vals, scale, nullCalc, nullVal);
+            result = calc(formula, param2Vals, nullCalc, nullVal);
         } catch (ParseException | EvaluationException e) {
             throw new CustomException("当前计算公式" + formula + ",计算时出现异常,参数:" + JSON.toJSONString(param2Vals), e.getMessage(), e);
         }
@@ -106,10 +105,10 @@ public class JepUtils {
     public static void main(String[] args) throws ParseException, EvaluationException {
         Map<String, BigDecimal> param2Vals = new HashMap<>();
         param2Vals.put("curVal", new BigDecimal(4));   // 现查
-        param2Vals.put("val", new BigDecimal(795)); // 入参
+        param2Vals.put("val", new BigDecimal(14)); // 入参
         // 增加 8-15  炉子比较
-        String formula = "(curVal + 8 <= val) && (val <= curVal + 15)";
-        boolean calc = (Boolean)calc(formula, param2Vals, 2, true, null);
+        String formula = "@[curVal]==@[val]";
+        boolean calc = (Boolean) calcBoolean(formula, param2Vals, true, null);
 
         // 区间比较
         String formula1 = "(lowVal <= val) && (val <= upLow)";
