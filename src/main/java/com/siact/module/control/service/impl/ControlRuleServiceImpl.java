@@ -7,9 +7,9 @@ import com.siact.common.utils.ConvertUtils;
 import com.siact.module.control.dto.ControlRuleDTO;
 import com.siact.module.control.dto.ControlRuleQuery;
 import com.siact.module.control.entity.ControlRuleEntity;
-import com.siact.module.control.enums.ControlRuleTypeEnum;
 import com.siact.module.control.mapper.ControlRuleMapper;
 import com.siact.module.control.service.ControlRuleService;
+import com.siact.module.control.validator.ControlRuleValidator;
 import com.siact.module.control.vo.ControlRuleVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -40,15 +40,8 @@ public class ControlRuleServiceImpl extends ServiceImpl<ControlRuleMapper, Contr
         List<ControlRuleVO> rtnDto = list.stream().map(e -> ConvertUtils.sourceToTarget(e, ControlRuleVO.class)).collect(Collectors.toList());
         // 校验每一条约束规则  是否合法
         for (ControlRuleVO rule : rtnDto) {
-            // 查询 换火 液位 炉压是否异常的状态 TODO 目前点位还没有对接 对接后需要完善逻辑
-            Integer type = rule.getType();
-            if (ControlRuleTypeEnum.FIRE.getCode().equals(type)) {
-                rule.setLegal(true);
-            }else if (ControlRuleTypeEnum.LIQUID.getCode().equals(type)) {
-                rule.setLegal(true);
-            }else if (ControlRuleTypeEnum.PRESSURE.getCode().equals(type)) {
-                rule.setLegal(true);
-            }
+            // 设置 液位 炉压 的合法状态
+            ControlRuleValidator.validateFireAndLiquidAndPressure(rule);
         }
 
         return rtnDto;
