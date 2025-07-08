@@ -79,14 +79,14 @@ public class RuleMetaValidator implements RuleValidator {
         for (RuleFormulaDetailDTO ruleFormulaDetailDTO : ruleFormulaDetailList) {
             // 先校验温度限制
             String tempConditionFormula = ruleFormulaDetailDTO.getTempConditionFormula();
-            Boolean tempCalcResult = JepUtils.calcBoolean(tempConditionFormula, allCalcValMap, 6, false, null);
+            Boolean tempCalcResult = JepUtils.calcBoolean(tempConditionFormula, allCalcValMap, false, null);
             if (Boolean.FALSE.equals(tempCalcResult)) {
                 log.error("条规温度校验失败:{}", ruleFormulaDetailDTO.getRuleCode());
                 continue;
             }
             // 再校验天然气控制限制
             String gasOperationFormula = ruleFormulaDetailDTO.getGasOperationFormula();
-            Boolean gasCalcResult = JepUtils.calcBoolean(gasOperationFormula, allCalcValMap, 6, false, null);
+            Boolean gasCalcResult = JepUtils.calcBoolean(gasOperationFormula, allCalcValMap, false, null);
             if (Boolean.FALSE.equals(gasCalcResult)) {
                 log.error("条规天然气控制校验失败:{}", ruleFormulaDetailDTO.getRuleCode());
                 continue;
@@ -302,4 +302,4 @@ public class RuleMetaValidator implements RuleValidator {
         // 多个天然气设定条件 需要同时满足才算通过 用&&拼接
         return String.join(" && ", formulaList);
     }
-} 
+}

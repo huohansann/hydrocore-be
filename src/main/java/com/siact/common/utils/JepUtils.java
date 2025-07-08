@@ -101,18 +101,6 @@ public class JepUtils {
         return result == null ? null : Boolean.valueOf(result.toString());
     }
 
-    public static Boolean calcBoolean(String formula, Map<String, BigDecimal> param2Vals, int scale, boolean nullCalc,
-                                      BigDecimal nullVal) {
-        Object result = null;
-        try {
-            result = calc(formula, param2Vals, nullCalc, nullVal);
-        } catch (ParseException | EvaluationException e) {
-            throw new CustomException("当前计算公式" + formula + ",计算时出现异常,参数:" + JSON.toJSONString(param2Vals), e.getMessage(), e);
-        }
-        return result == null ? null : Boolean.valueOf(result.toString());
-    }
-
-
     public static void main(String[] args) throws ParseException, EvaluationException {
         Map<String, BigDecimal> param2Vals = new HashMap<>();
         param2Vals.put("curVal", new BigDecimal(4));   // 现查
