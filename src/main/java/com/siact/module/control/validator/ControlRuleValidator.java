@@ -44,7 +44,7 @@ public class ControlRuleValidator implements RuleValidator {
     @Override
     public RuleValidateResult validate(List<KilnInfoDistributeDTO> list) {
 
-        List<HashMap<String, Object>> errors = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
         // 1: 获取所有的约束规则 (查询所有类型) ps: 已经设置过了换火  液压  炉压 的合法状态
         List<ControlRuleVO> ruleVOList = controlRuleService.selectControlRuleList(new ControlRuleQuery());
 
@@ -106,29 +106,32 @@ public class ControlRuleValidator implements RuleValidator {
      * @param ruleVO
      * @param errors
      */
-    private static void validateStep(List<KilnInfoDistributeDTO> list, ControlRuleVO ruleVO, List<HashMap<String, Object>> errors) {
+    private static void validateStep(List<KilnInfoDistributeDTO> list, ControlRuleVO ruleVO, List<String> errors) {
         for (KilnInfoDistributeDTO kilnInfoDistributeDTO : list) {
+            BigDecimal gasValueChange = kilnInfoDistributeDTO.getGasValueChange();
+
+            if (ObjectUtils.isEmpty(gasValueChange)) {
+                log.info("{},气量调节无变动,可以直接下发", kilnInfoDistributeDTO.getNumber());
+                continue;
+            }
+
             // 调节变动值
             HashMap<String, BigDecimal> paramValMap = new HashMap<>();
-            paramValMap.put("step", kilnInfoDistributeDTO.getGasValueChange());
+            paramValMap.put("step", gasValueChange);
             String validFormula = getCalcFormula(ruleVO, errors);
             Boolean result = JepUtils.calcBoolean(validFormula, paramValMap, false, null);
             // 当前结果 与上次结果 相与
             if (result != null) {
                 if (!result) {
-                    errors.add(new HashMap<String, Object>() {{
-                        log.error("{},未通过校验!规则:{}", kilnInfoDistributeDTO.getNumber(), JSON.toJSONString(ruleVO));
-                        String errorMsg = buildErrorMsg(ruleVO);
-                        put(kilnInfoDistributeDTO.getNumber() + "未通过校验!规则:", errorMsg);
-                    }});
+                    log.error("{},未通过校验!规则:{}", kilnInfoDistributeDTO.getNumber(), JSON.toJSONString(ruleVO));
+                    String errorMsg = buildErrorMsg(ruleVO);
+                    errors.add(kilnInfoDistributeDTO.getNumber() + "未通过校验!规则:" + errorMsg);
                 }
                 ruleVO.setLegal(ruleVO.getLegal() == null ? result : result && ruleVO.getLegal());
             } else {
-                errors.add(new HashMap<String, Object>() {{
-                    log.error("{},result结果计算失败!规则:{},公式:{},参数:{}", kilnInfoDistributeDTO.getNumber(), JSON.toJSONString(ruleVO), validFormula, paramValMap);
-                    String errorMsg = buildErrorMsg(ruleVO);
-                    put(kilnInfoDistributeDTO.getNumber() + "result结果计算失败!规则:", errorMsg);
-                }});
+                log.error("{},result结果计算失败!规则:{},公式:{},参数:{}", kilnInfoDistributeDTO.getNumber(), JSON.toJSONString(ruleVO), validFormula, paramValMap);
+                String errorMsg = buildErrorMsg(ruleVO);
+                errors.add(kilnInfoDistributeDTO.getNumber() + "result结果计算失败!规则:" + errorMsg);
             }
         }
     }
@@ -140,7 +143,7 @@ public class ControlRuleValidator implements RuleValidator {
      * @param errors
      * @param gasSettingDataValMap
      */
-    private static void validateTotalGasAndDiffGas(ControlRuleVO ruleVO, List<HashMap<String, Object>> errors, Map<String, BigDecimal> gasSettingDataValMap) {
+    private static void validateTotalGasAndDiffGas(ControlRuleVO ruleVO, List<String> errors, Map<String, BigDecimal> gasSettingDataValMap) {
         // 校验气量总和 或者 校验气量差 根据公式进行计算
         // 组装校验公式
         String validFormula = getCalcFormula(ruleVO, errors);
@@ -148,18 +151,14 @@ public class ControlRuleValidator implements RuleValidator {
         if (result != null) {
             ruleVO.setLegal(ruleVO.getLegal() == null ? result : result && ruleVO.getLegal());
         } else {
-            errors.add(new HashMap<String, Object>() {{
-                log.error("result结果计算失败!规则:{},公式:{},参数:{}", JSON.toJSONString(ruleVO), validFormula, gasSettingDataValMap);
-                String errorMsg = buildErrorMsg(ruleVO);
-                put("result结果计算失败!规则:", errorMsg);
-            }});
+            log.error("result结果计算失败!规则:{},公式:{},参数:{}", JSON.toJSONString(ruleVO), validFormula, gasSettingDataValMap);
+            String errorMsg = buildErrorMsg(ruleVO);
+            errors.add("result结果计算失败!规则:" + errorMsg);
         }
         if (!ruleVO.getLegal()) {
-            errors.add(new HashMap<String, Object>() {{
-                log.error("未通过校验!规则:{}", JSON.toJSONString(ruleVO));
-                String errorMsg = buildErrorMsg(ruleVO);
-                put("未通过校验!规则:", errorMsg);
-            }});
+            log.error("未通过校验!规则:{}", JSON.toJSONString(ruleVO));
+            String errorMsg = buildErrorMsg(ruleVO);
+            errors.add("未通过校验!规则:" + errorMsg);
         }
     }
 
@@ -184,6 +183,7 @@ public class ControlRuleValidator implements RuleValidator {
 
     /**
      * 解析公式当中涉及的dataCode
+     *
      * @param formula
      * @return
      */
@@ -194,6 +194,7 @@ public class ControlRuleValidator implements RuleValidator {
 
     /**
      * 构建错误信息
+     *
      * @param ruleVO
      * @return
      */
@@ -205,32 +206,27 @@ public class ControlRuleValidator implements RuleValidator {
 
     /**
      * 根据ruleVo,构建计算公式
+     *
      * @param ruleVO
      * @param errors
      * @return
      */
     @NotNull
-    private static String getCalcFormula(ControlRuleVO ruleVO, List<HashMap<String, Object>> errors) {
+    private static String getCalcFormula(ControlRuleVO ruleVO, List<String> errors) {
         StringBuilder validFormula = new StringBuilder();
         if (ruleVO.getSymbol() == null) {
-            errors.add(new HashMap<String, Object>() {{
-                log.error("公式配置错误!未配置运算符号,ruleId:{}", ruleVO.getId());
-                put("公式配置错误!未配置运算符号", ruleVO.getId());
-            }});
+            log.error("公式配置错误!未配置运算符号,ruleId:{}", ruleVO.getId());
+            errors.add("公式配置错误!未配置运算符号" + ruleVO.getId());
             return "";
         }
         if (ruleVO.getFormula() == null) {
-            errors.add(new HashMap<String, Object>() {{
-                log.error("公式配置错误!未配置formula,ruleId:{}", ruleVO.getId());
-                put("公式配置错误!未配置formula", ruleVO.getId());
-            }});
+            log.error("公式配置错误!未配置formula,ruleId:{}", ruleVO.getId());
+            errors.add("公式配置错误!未配置formula" + ruleVO.getId());
             return "";
         }
         if (ruleVO.getCompareValue() == null) {
-            errors.add(new HashMap<String, Object>() {{
-                log.error("公式配置错误!未配置compareValue,ruleId:{}", ruleVO.getId());
-                put("公式配置错误!未配置compareValue", ruleVO.getId());
-            }});
+            log.error("公式配置错误!未配置compareValue,ruleId:{}", ruleVO.getId());
+            errors.add("公式配置错误!未配置compareValue" + ruleVO.getId());
             return "";
         }
         // 1:拼接运算左侧

@@ -35,7 +35,7 @@ public class KilnPublishServiceImpl implements KilnPublishService {
         for (RuleValidator validator : validators) {
             RuleValidateResult result = validator.validate(list);
             if (!result.isPass()) {
-                return R.fail(result.getMessage(), result.getErrors());
+                return R.success(result.getMessage(), result.getErrors());
             }
         }
 

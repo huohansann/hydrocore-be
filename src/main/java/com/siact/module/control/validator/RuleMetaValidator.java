@@ -54,7 +54,7 @@ public class RuleMetaValidator implements RuleValidator {
      */
     @Override
     public RuleValidateResult validate(List<KilnInfoDistributeDTO> gasWindSetList) {
-
+        List<String> errors = new ArrayList<>();
         // 1:查询所有有效的条规配置
         List<RuleDetailVO> ruleDetailVOs = ruleService.listRules();
 
@@ -82,6 +82,7 @@ public class RuleMetaValidator implements RuleValidator {
             Boolean tempCalcResult = JepUtils.calcBoolean(tempConditionFormula, allCalcValMap, false, null);
             if (Boolean.FALSE.equals(tempCalcResult)) {
                 log.error("条规温度校验失败:{}", ruleFormulaDetailDTO.getRuleCode());
+                errors.add("条规温度校验失败:" + ruleFormulaDetailDTO.getRuleCode());
                 continue;
             }
             // 再校验天然气控制限制
@@ -89,6 +90,7 @@ public class RuleMetaValidator implements RuleValidator {
             Boolean gasCalcResult = JepUtils.calcBoolean(gasOperationFormula, allCalcValMap, false, null);
             if (Boolean.FALSE.equals(gasCalcResult)) {
                 log.error("条规天然气控制校验失败:{}", ruleFormulaDetailDTO.getRuleCode());
+                errors.add("条规天然气控制校验失败:" + ruleFormulaDetailDTO.getRuleCode());
                 continue;
             }
             log.info("条规校验通过:{}", ruleFormulaDetailDTO.getRuleCode());
@@ -102,7 +104,7 @@ public class RuleMetaValidator implements RuleValidator {
             return RuleValidateResult.pass();
         }
 
-        return RuleValidateResult.fail("校验失败!");
+        return RuleValidateResult.fail(errors);
     }
 
     /**

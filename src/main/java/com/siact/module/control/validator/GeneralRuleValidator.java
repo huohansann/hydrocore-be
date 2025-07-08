@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -37,7 +36,7 @@ public class GeneralRuleValidator implements RuleValidator {
         Map<Long, KilnInfoEntity> kilnInfoEntityMap = kilnInfoEntities.stream().collect(Collectors.toMap(KilnInfoEntity::getId,
                 vo -> vo, (v1, v2) -> v1));
 
-        List<HashMap<String, Object>> errors = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
         for (KilnInfoDistributeDTO distributeDTO : list) {
             KilnInfoEntity kilnInfoEntity = kilnInfoEntityMap.get(distributeDTO.getId());
             if (kilnInfoEntity == null) {
@@ -56,9 +55,7 @@ public class GeneralRuleValidator implements RuleValidator {
 
             //  gasValLow  <= gasVal <= gasValUp
             if (gasVal.compareTo(gasValLow) < 0 || gasVal.compareTo(gasValUp) > 0) {
-                HashMap<String, Object> errorMap = new HashMap<>();
-                errorMap.put(distributeDTO.getNumber(), "天然气设定值不在总规范围");
-                errors.add(errorMap);
+                errors.add(distributeDTO.getNumber() + "天然气设定值不在总规范围");
                 continue;
             }
         }

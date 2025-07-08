@@ -20,23 +20,23 @@ public class RuleValidateResult {
     private boolean pass;
     private String message;
 
-    private List<HashMap<String, Object>> errors = new ArrayList<>();
+    private List<String> errors = new ArrayList<>();
 
     public RuleValidateResult(boolean pass, String message) {
         this.pass = pass;
         this.message = message;
     }
 
-    public static RuleValidateResult fail(List<HashMap<String, Object>> errors) {
+    public static RuleValidateResult fail(List<String> errors) {
         return new RuleValidateResult(false, "设定值不在范围内").addErrors(errors);
     }
 
-    public RuleValidateResult addError(HashMap<String, Object> error) {
+    public RuleValidateResult addError(String error) {
         this.errors.add(error);
         return this;
     }
 
-    public RuleValidateResult addErrors(List<HashMap<String, Object>> errors) {
+    public RuleValidateResult addErrors(List<String> errors) {
         this.errors.addAll(errors);
         return this;
     }
