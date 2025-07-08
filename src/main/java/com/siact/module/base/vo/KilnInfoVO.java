@@ -20,7 +20,7 @@ public class KilnInfoVO implements Serializable {
     private String number;
     /** 炉子编码，数字孪生编码 */
     @ApiModelProperty(value = "炉子编码，数字孪生编码")
-    private String code;
+    private String dataCode;
     /** 状态：是否自动状态（1是 0否） */
     @ApiModelProperty(value = "状态：是否自动状态（1是 0否）")
     private Boolean state;

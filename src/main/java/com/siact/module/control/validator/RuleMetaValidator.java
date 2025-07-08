@@ -165,7 +165,7 @@ public class RuleMetaValidator implements RuleValidator {
         Map<String, BigDecimal> temperatureSetMap = temperatureSetList.stream().collect(Collectors.toMap(ControlIntervalConfigDTO::getDataCode, o -> new BigDecimal(o.getTemperatureSet()), (oldValue, newValue) -> newValue));
         setValMap.putAll(temperatureSetMap);
         // 2:查询天然气设定值
-        Map<String, BigDecimal> gasSetValMap = gasWindSetList.stream().collect(Collectors.toMap(KilnInfoDistributeDTO::getCode, KilnInfoDistributeDTO::getGasVal, (oldValue, newValue) -> newValue));
+        Map<String, BigDecimal> gasSetValMap = gasWindSetList.stream().collect(Collectors.toMap(KilnInfoDistributeDTO::getDataCode, KilnInfoDistributeDTO::getGasVal, (oldValue, newValue) -> newValue));
         setValMap.putAll(gasSetValMap);
         return setValMap;
     }

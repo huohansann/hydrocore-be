@@ -43,7 +43,7 @@ public class KilnInfoServiceImpl extends ServiceImpl<KilnInfoMapper, KilnInfoEnt
         LambdaQueryWrapper<KilnInfoEntity> wrapper = new LambdaQueryWrapper<>();
 
         wrapper.eq(StringUtils.isNoneBlank(query.getNumber()), KilnInfoEntity::getNumber, query.getNumber());
-        wrapper.eq(StringUtils.isNoneBlank(query.getCode()), KilnInfoEntity::getCode, query.getCode());
+        wrapper.eq(StringUtils.isNoneBlank(query.getDataCode()), KilnInfoEntity::getDataCode, query.getDataCode());
 
         if (query.getState() != null) {
             wrapper.eq(KilnInfoEntity::getState, query.getState());

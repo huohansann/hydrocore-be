@@ -14,7 +14,7 @@ public class KilnInfoDTO implements Serializable {
     /** 炉子编号 */
     private String number;
     /** 炉子编码，数字孪生编码 */
-    private String code;
+    private String dataCode;
     /** 状态：是否自动状态（1是 0否） */
     private Boolean state;
     /** 天然气计算值 */

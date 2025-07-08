@@ -29,8 +29,8 @@ public class KilnInfoEntity {
     /**
      * 炉子编码，数字孪生编码
      */
-    @TableField("code")
-    private String code;
+    @TableField("data_code")
+    private String dataCode;
 
     /**
      * 状态： 是否自动状态（1是 0否）

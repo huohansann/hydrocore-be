@@ -30,7 +30,7 @@ public class KilnInfoController {
             JSONObject curObj = new JSONObject();
             curObj.put("id", kilnInfoVO.getId());
             curObj.put("number", kilnInfoVO.getNumber());
-            curObj.put("code", kilnInfoVO.getCode());
+            curObj.put("dataCode", kilnInfoVO.getDataCode());
             curObj.put("state", kilnInfoVO.getState());
             curObj.put("gasCalc", kilnInfoVO.getGasCalc() == null ? null : kilnInfoVO.getGasCalc().doubleValue());
             curObj.put("gasVal", kilnInfoVO.getGasVal() == null ? null : kilnInfoVO.getGasVal().doubleValue());

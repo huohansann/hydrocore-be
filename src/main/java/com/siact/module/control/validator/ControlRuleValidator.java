@@ -1,18 +1,12 @@
 package com.siact.module.control.validator;
 
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.TypeReference;
-import com.siact.common.constant.ConstantBase;
 import com.siact.common.utils.JepUtils;
-import com.siact.common.utils.TimeUtil;
 import com.siact.module.base.dto.KilnInfoDistributeDTO;
 import com.siact.module.control.dto.ControlRuleQuery;
 import com.siact.module.control.enums.ControlRuleTypeEnum;
 import com.siact.module.control.service.ControlRuleService;
 import com.siact.module.control.vo.ControlRuleVO;
-import com.siact.sec.dto.IntervalValParamsDto;
-import com.siact.sec.sevice.DataService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -38,60 +32,35 @@ public class ControlRuleValidator implements RuleValidator {
     @Autowired
     private ControlRuleService controlRuleService;
 
-    @Autowired
-    private DataService dataService;
-
     @Override
-    public RuleValidateResult validate(List<KilnInfoDistributeDTO> list) {
+    public RuleValidateResult validate(List<KilnInfoDistributeDTO> kilnInfoList) {
 
         List<String> errors = new ArrayList<>();
         // 1: 获取所有的约束规则 (查询所有类型) ps: 已经设置过了换火  液压  炉压 的合法状态
         List<ControlRuleVO> ruleVOList = controlRuleService.selectControlRuleList(new ControlRuleQuery());
 
-        Set<String> allGasSettingCodeList = new HashSet<>();
-        for (ControlRuleVO ruleVO : ruleVOList) {
-            if (ObjectUtils.isNotEmpty(ruleVO.getFormula())) {
-                allGasSettingCodeList.addAll(getFormulaDataCode(ruleVO.getFormula()));
-            }
-            if (ObjectUtils.isNotEmpty(ruleVO.getCompareFormula())) {
-                allGasSettingCodeList.addAll(getFormulaDataCode(ruleVO.getCompareFormula()));
-            }
+        Map<String, BigDecimal> gasSettingDataValMap = new HashMap<>();
+
+        for (KilnInfoDistributeDTO kilnInfo : kilnInfoList) {
+            gasSettingDataValMap.put(kilnInfo.getDataCode(), kilnInfo.getGasVal());
         }
 
-        // 查询1# ~ 8# 的所有气量设定值
-        IntervalValParamsDto querySecDataParam = new IntervalValParamsDto();
-        querySecDataParam.setDataCodes(new ArrayList<>(allGasSettingCodeList));
-        // 结束时间为当前时间
-        String endTime = TimeUtil.getNow();
-        // 开始时间为当前结束时间减1分钟
-        String startTime = TimeUtil.getCalcTime(endTime, 1, ConstantBase.MIN);
-        querySecDataParam.setStartTime(startTime);
-        querySecDataParam.setEndTime(endTime);
-        querySecDataParam.setCalcType(ConstantBase.LAST);
-
-        JSONObject gasSettingDataValJsonObj = dataService.queryBetweenVal(querySecDataParam);
-
-        Map<String, BigDecimal> gasSettingDataValMap =
-                ObjectUtils.isEmpty(gasSettingDataValJsonObj) ? new HashMap<>() : com.alibaba.fastjson2.JSONObject.parseObject(gasSettingDataValJsonObj.toJSONString(), new TypeReference<Map<String, BigDecimal>>() {
-                });
-
         if (ObjectUtils.isEmpty(gasSettingDataValMap)) {
-            log.error("查询孪生数据查询失败!,未返回点位数据");
-            return RuleValidateResult.fail("查询孪生数据失败");
+            log.error("气量设定值为空!");
+            return RuleValidateResult.fail("气量设定值为空!");
         }
 
         for (ControlRuleVO ruleVO : ruleVOList) {
             Integer type = ruleVO.getType();
             if (ControlRuleTypeEnum.STEP.getCode().equals(type)) {
                 // 校验调节步长
-                validateStep(list, ruleVO, errors);
+                validateStep(kilnInfoList, ruleVO, errors);
             } else if (ControlRuleTypeEnum.TOTAL_GAS.getCode().equals(type) || ControlRuleTypeEnum.DIFF_GAS.getCode().equals(type)) {
                 // 校验总气量 和 气量差值
                 validateTotalGasAndDiffGas(ruleVO, errors, gasSettingDataValMap);
             }
 
         }
-
 
         if (CollectionUtils.isNotEmpty(errors)) {
             return RuleValidateResult.fail(errors);

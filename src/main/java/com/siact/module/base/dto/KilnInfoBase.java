@@ -13,5 +13,5 @@ public class KilnInfoBase {
     private String number;
     /** 炉子编码，数字孪生编码 */
     @ApiModelProperty("炉子编码，数字孪生编码")
-    private String code;
+    private String dataCode;
 }
