@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 @Component
 public class RedisUserCache implements UserCache {
 
-    private static final String CACHE_KEY_PREFIX = "user_cache:";
+    private static final String CACHE_KEY_PREFIX = "siact_kiln_user_cache:";
     private final RedisTemplate<String, UserLoginInfoDTO> redisTemplate;
 
     public RedisUserCache(RedisTemplate<String, UserLoginInfoDTO> redisTemplate) {

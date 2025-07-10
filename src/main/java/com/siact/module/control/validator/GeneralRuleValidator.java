@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  *
  * @author admin
  */
-@Order(1)
+@Order(5)
 @Component
 @Slf4j
 public class GeneralRuleValidator implements RuleValidator {

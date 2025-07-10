@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  * @author admin
  */
 @Slf4j
-@Order(2)
+@Order(10)
 @Component
 @ConditionalOnProperty(name = "rule.validator.meta.enable", havingValue = "true", matchIfMissing = true)
 public class RuleMetaValidator implements RuleValidator {

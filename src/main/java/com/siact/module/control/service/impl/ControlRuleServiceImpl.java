@@ -9,10 +9,11 @@ import com.siact.module.control.dto.ControlRuleQuery;
 import com.siact.module.control.entity.ControlRuleEntity;
 import com.siact.module.control.mapper.ControlRuleMapper;
 import com.siact.module.control.service.ControlRuleService;
-import com.siact.module.control.validator.ControlRuleValidator;
+import com.siact.module.control.validator.ControlRuleValidatorTypeUtil;
 import com.siact.module.control.vo.ControlRuleVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -22,6 +23,10 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ControlRuleServiceImpl extends ServiceImpl<ControlRuleMapper, ControlRuleEntity> implements ControlRuleService {
+
+    @Autowired
+    private ControlRuleValidatorTypeUtil controlRuleValidatorTypeUtil;
+
     @Override
     public ControlRuleVO selectControlRuleById(Long id) {
         ControlRuleEntity entity = this.getById(id);
@@ -30,21 +35,31 @@ public class ControlRuleServiceImpl extends ServiceImpl<ControlRuleMapper, Contr
 
     @Override
     public List<ControlRuleVO> selectControlRuleList(ControlRuleQuery query) {
-        LambdaQueryWrapper<ControlRuleEntity> wrapper = new LambdaQueryWrapper<>();
-
-        wrapper.in(ObjectUtils.isNotEmpty(query.getTypes()), ControlRuleEntity::getType, query.getTypes());
-        wrapper.eq(ControlRuleEntity::getStatus, ConstantNum.NUMBER_ONE);
-
-        List<ControlRuleEntity> list = this.list(wrapper);
+        List<ControlRuleEntity> list = queryRuleByTypes(query.getTypes());
 
         List<ControlRuleVO> rtnDto = list.stream().map(e -> ConvertUtils.sourceToTarget(e, ControlRuleVO.class)).collect(Collectors.toList());
         // 校验每一条约束规则  是否合法
         for (ControlRuleVO rule : rtnDto) {
             // 设置 液位 炉压 的合法状态
-            ControlRuleValidator.validateFireAndLiquidAndPressure(rule);
+            controlRuleValidatorTypeUtil.validateFireAndLiquidAndPressure(rule, null);
         }
 
         return rtnDto;
+    }
+
+    /**
+     * 根据类型查找规则(types为空查找全部)
+     * @param types
+     * @return
+     */
+    @Override
+    public List<ControlRuleEntity> queryRuleByTypes(List<Integer> types) {
+        LambdaQueryWrapper<ControlRuleEntity> wrapper = new LambdaQueryWrapper<>();
+
+        wrapper.in(ObjectUtils.isNotEmpty(types), ControlRuleEntity::getType, types);
+        wrapper.eq(ControlRuleEntity::getStatus, ConstantNum.NUMBER_ONE);
+
+        return this.list(wrapper);
     }
 
     @Override

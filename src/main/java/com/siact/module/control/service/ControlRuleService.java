@@ -14,6 +14,8 @@ public interface ControlRuleService extends IService<ControlRuleEntity> {
 
     List<ControlRuleVO> selectControlRuleList(ControlRuleQuery query);
 
+    List<ControlRuleEntity> queryRuleByTypes(List<Integer> types);
+
     int insertControlRule(ControlRuleDTO dto);
 
     int updateControlRule(List<ControlRuleDTO> dtoList);
