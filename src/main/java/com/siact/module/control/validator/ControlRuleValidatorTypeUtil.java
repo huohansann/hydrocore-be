@@ -70,6 +70,13 @@ public class ControlRuleValidatorTypeUtil {
      */
     public void validateTotalGasAndDiffGas(ControlRuleVO ruleVO, List<String> errors, Map<String, BigDecimal> gasSettingDataValMap) {
         // 校验气量总和 或者 校验气量差 根据公式进行计算
+
+        if (ObjectUtils.isEmpty(ruleVO.getCompareValue())) {
+            // 当前规则的设定值为 null 跳过约束校验
+            log.info("当前规则的设定值为 null 跳过约束校验,rule:{}", JSON.toJSONString(ruleVO));
+            return;
+        }
+
         // 组装校验公式
         String validFormula = getCalcFormula(ruleVO, errors);
         Boolean result = JepUtils.calcBoolean(validFormula, gasSettingDataValMap, false, null);
