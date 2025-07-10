@@ -35,7 +35,8 @@ public class ControlRuleValidatorTypeUtil {
         for (KilnInfoDistributeDTO kilnInfoDistributeDTO : list) {
             BigDecimal gasValueChange = kilnInfoDistributeDTO.getGasValueChange();
 
-            if (ObjectUtils.isEmpty(gasValueChange)) {
+            if (ObjectUtils.isEmpty(gasValueChange) || gasValueChange.compareTo(BigDecimal.ZERO) == 0) {
+                // 变动值为 null 或者 0 视为无变动 可以下发
                 log.info("{},气量调节无变动,可以直接下发", kilnInfoDistributeDTO.getNumber());
                 continue;
             }
