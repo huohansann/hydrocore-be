@@ -1,8 +1,6 @@
 package com.siact.module.control.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -28,6 +26,7 @@ public class ControlRuleEntity {
     private String symbol;
 
     // 比较值
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private BigDecimal compareValue;
     // 1:普通数值 2:绝对值 3:百分比
     private Integer compareType;

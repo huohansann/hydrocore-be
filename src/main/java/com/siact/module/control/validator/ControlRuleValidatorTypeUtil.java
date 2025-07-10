@@ -109,7 +109,7 @@ public class ControlRuleValidatorTypeUtil {
                 flag = true;
             }
             ruleVO.setLegal(flag);
-            if (!flag && ObjectUtils.isNotEmpty(errors)) {
+            if (!flag && errors != null) {
                 errors.add("当前处于换火期间!无法进行下发");
             }
         } else if (ControlRuleTypeEnum.LIQUID.getCode().equals(type)) {
@@ -121,7 +121,7 @@ public class ControlRuleValidatorTypeUtil {
                 flag = true;
             }
             ruleVO.setLegal(flag);
-            if (!flag && ObjectUtils.isNotEmpty(errors)) {
+            if (!flag && errors != null) {
                 errors.add("当前液位波动异常,波动为:" + ruleVO.getCompareValue().stripTrailingZeros().toPlainString() + "!无法进行下发");
             }
         } else if (ControlRuleTypeEnum.PRESSURE.getCode().equals(type)) {
@@ -133,7 +133,7 @@ public class ControlRuleValidatorTypeUtil {
                 flag = true;
             }
             ruleVO.setLegal(flag);
-            if (!flag && ObjectUtils.isNotEmpty(errors)) {
+            if (!flag && errors != null) {
                 errors.add("当前炉压波动异常,波动为:" + ruleVO.getCompareValue().stripTrailingZeros().toPlainString() + "!无法进行下发");
             }
         }
