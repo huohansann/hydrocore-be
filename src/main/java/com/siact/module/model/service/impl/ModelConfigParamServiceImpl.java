@@ -347,8 +347,8 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         // 设置算法参数
         paramDTO.setMethod_par(methodPar);
 
-        // 设置工况总数,目前固定为9 TODO 后期需要进一步确认传值
-        paramDTO.setWork_code_num(9);
+        // 设置工况总数,目前固定为12 12种工况
+        paramDTO.setWork_code_num(12);
 
         // 预测类型 单步('single_step')或多步('multiple_step')
         PredictedTypeEnum predictedTypeEnum = PredictedTypeEnum.getEnumByCode(entity.getPredictedTypeCode());
