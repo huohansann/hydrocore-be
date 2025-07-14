@@ -18,9 +18,9 @@ public class UserDetailsService {
     @Setter // 使用 Lombok 自动生成 setter 方法
     private RedisUserCache userCache;
 
-    public UserDetailsService( RedisUserCache userCache,UserService userServic) {
+    public UserDetailsService( RedisUserCache userCache,UserService userService) {
         this.userCache = userCache;
-        this.userService = userServic;
+        this.userService = userService;
     }
 
 
@@ -44,7 +44,7 @@ public class UserDetailsService {
         if (user==null) {
             throw new UsernameNotFoundException("用户名或密码错误!");
         }
-        this.userCache.putUserInCache(user);
+        // this.userCache.putUserInCache(user);
         return user;
     }
 }

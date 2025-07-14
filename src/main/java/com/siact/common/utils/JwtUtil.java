@@ -46,9 +46,17 @@ public class JwtUtil {
                 /* 最终序列化为紧凑的URL安全字符串 */
                 .compact();
 
-        // 存储到Redis（用户名为key，24小时有效期）
+        // 存储到Redis（用户名为key，24小时有效期,一个用户account只能有一个token登录,单点登录）
+//        redisTemplate.opsForValue().set(
+//                account,
+//                token,
+//                expiration,
+//                TimeUnit.MILLISECONDS
+//        );
+
+        // 存储到Redis（token为key，24小时有效期,一个用户名可以同时有多个token登录,多点登录）
         redisTemplate.opsForValue().set(
-                account,
+                token,
                 token,
                 expiration,
                 TimeUnit.MILLISECONDS

@@ -89,8 +89,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 response.getWriter().write("{\"code\":401,\"message\":\"未授权或 Token 失效\"}");
                 return;
             }
-            String account = curUser.getAccount();
-            String redisToken = redisTemplate.opsForValue().get(account);
+            // ---------- 单点登录  根据用户账号查询
+            // String account = curUser.getAccount();
+            // String redisToken = redisTemplate.opsForValue().get(account);
+
+            // ---------- 多点登录 根据token查询
+            String redisToken = redisTemplate.opsForValue().get(token);
+
             if (ObjectUtils.isEmpty(redisToken) || (ObjectUtils.isNotEmpty(redisToken) && !redisToken.equals(token))) {
                 response.setContentType("application/json;charset=UTF-8");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
