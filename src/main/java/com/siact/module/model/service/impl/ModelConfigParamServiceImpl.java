@@ -31,6 +31,7 @@ import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.process.entity.ProcessLogEntity;
 import com.siact.module.process.service.IProcessLogService;
+import com.siact.module.process.utils.ProcessOneHotEncoderEnum;
 import com.siact.sec.dto.IntervalDataDto;
 import com.siact.sec.dto.IntervalValParamsDto;
 import com.siact.sec.sevice.DataService;
@@ -39,9 +40,11 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -72,6 +75,10 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
     @Autowired
     private AlgorithmCallInfoService algorithmCallInfoService;
+
+    // 异步线程池
+    @Resource(name = "threadIoPoolTaskExecutor")
+    private ThreadPoolTaskExecutor threadIoPoolTaskExecutor;
 
     @Override
     public Map<String, String> getParamTemplate() {
@@ -111,6 +118,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
     /**
      * 查询有效的参数配置
+     *
      * @param dataCode
      * @param predictedTypeCode
      * @return
@@ -161,12 +169,19 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
         saveOrUpdate(entity);
 
-        // 调用算法  生成model
-        sendParamForModel(entity);
+        // 异步调用算法  生成model
+        threadIoPoolTaskExecutor.execute(() -> {
+            try {
+                sendParamForModel(entity);
+            } catch (Exception e) {
+                log.error("调用算法生成训练模型,线程池任务执行异常，参数: {}", entity, e);
+            }
+        });
     }
 
     /**
      * 失效之前的数据(软删除)
+     *
      * @param dataCode
      * @param predictedTypeCode
      */
@@ -195,7 +210,14 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
             return;
         }
 
-        sendParamForModel(entity);
+        // 异步调用算法  生成model
+        threadIoPoolTaskExecutor.execute(() -> {
+            try {
+                sendParamForModel(entity);
+            } catch (Exception e) {
+                log.error("调用算法生成训练模型,线程池任务执行异常，参数: {}", entity, e);
+            }
+        });
     }
 
     /**
@@ -208,7 +230,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         // 构建算法生成模型需要的参数
         AlgorithmGenerateModelParamDTO generateModelParamDto = buildGenerateModelParam(entity, modelInfoId);
 
-        log.info("sendParamMap:{}",JSON.toJSONString(generateModelParamDto));
+        log.info("sendParamMap:{}", JSON.toJSONString(generateModelParamDto));
 
         // 调用算法生成模型
         Long algorithmCallId = callAlgorithmTrainModel(modelInfoId, generateModelParamDto);
@@ -247,21 +269,24 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         algorithmCallInfo.setReqTime(TimeUtil.getNow());
         algorithmCallInfo.setReqJson(JSON.toJSONString(generateModelParamDto));
         algorithmCallInfo.setCreateTime(new Date());
+        algorithmCallInfoService.save(algorithmCallInfo);
 
-        LinkedHashMap<String, Object> projectListByDateRange = null;
-        try {
-            projectListByDateRange = algorithmFeign.train(generateModelParamDto);
-            log.info("调用算法接口返回数据.projectListByDateRange:{}", JSON.toJSONString(projectListByDateRange));
-            algorithmCallInfo.setRespTime(TimeUtil.getNow());
-            algorithmCallInfo.setRespJson(JSON.toJSONString(projectListByDateRange));
-        } catch (Exception e) {
-            log.error("调用算法接口异常,入参:{},响应:{}", generateModelParamDto, projectListByDateRange, e);
-            algorithmCallInfo.setRespTime(TimeUtil.getNow());
-            algorithmCallInfo.setRespJson("出现异常:请求返回" + JSON.toJSONString(projectListByDateRange) + ",异常信息:" + e.getMessage());
-            return null;
-        } finally {
-            algorithmCallInfoService.save(algorithmCallInfo);
-        }
+        // 异步调用算法feign接口,并更新回调数据
+        threadIoPoolTaskExecutor.execute(() -> {
+            LinkedHashMap<String, Object> projectListByDateRange = null;
+            try {
+                projectListByDateRange = algorithmFeign.train(generateModelParamDto);
+                log.info("调用算法接口返回数据.projectListByDateRange:{}", JSON.toJSONString(projectListByDateRange));
+                algorithmCallInfo.setRespTime(TimeUtil.getNow());
+                algorithmCallInfo.setRespJson(JSON.toJSONString(projectListByDateRange));
+            } catch (Exception e) {
+                log.error("调用算法接口异常,入参:{},响应:{}", generateModelParamDto, projectListByDateRange, e);
+                algorithmCallInfo.setRespTime(TimeUtil.getNow());
+                algorithmCallInfo.setRespJson("出现异常:请求返回" + JSON.toJSONString(projectListByDateRange) + ",异常信息:" + e.getMessage());
+            } finally {
+                algorithmCallInfoService.updateById(algorithmCallInfo);
+            }
+        });
         return algorithmCallId;
     }
 
@@ -289,12 +314,12 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         ModelConfigParamDTO publicParamDto = JSONObject.parseObject(publicSetting, ModelConfigParamDTO.class);
         List<AlgorithmDataCodeDTO> featuresDataCodeDtoList = parsePublicParam(publicParamDto);
         // 设置训练参与的特征列
-        List<String> features = featuresDataCodeDtoList.stream().map(AlgorithmDataCodeDTO::getDataCode).collect(Collectors.toList());
+        List<String> features = featuresDataCodeDtoList.stream().map(AlgorithmDataCodeDTO::getAlgorithmCode).collect(Collectors.toList());
         paramDTO.setFeatures(features);
 
         // 需要计算的目标列  MC1~MC10  对应的算法code
         AlgorithmDataCodeDTO algorithmDataCodeDTO = algorithmDataCodeUtil.getByDataCode(entity.getDataCode());
-        if (ObjectUtils.isEmpty(algorithmDataCodeDTO)){
+        if (ObjectUtils.isEmpty(algorithmDataCodeDTO)) {
             throw new CustomException("未找到对应的算法数据code:" + entity.getDataCode());
         }
         // 设置需要计算的目标列
@@ -353,12 +378,14 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         paramDTO.setPast_number(past_number.stripTrailingZeros().toPlainString());
 
         LocalDateTime nowDateTIme = LocalDateTime.now();
+        // TODO 这里的时间可能要改成区间 hisDataStartTime.intValue()  hisDataEndTime.intValue()
         LocalDateTime startTime = TimeUtil.offset(nowDateTIme, hisDataStartTime.intValue(), ChronoUnit.MINUTES);
         LocalDateTime endTime = TimeUtil.offset(nowDateTIme, hisDataEndTime.intValue(), ChronoUnit.MINUTES);
 
         // 设置算法需要的数据
         List<String> featuresDataCodeList = featuresDataCodeDtoList.stream().map(AlgorithmDataCodeDTO::getDataCode).collect(Collectors.toList());
-        Map<String, Map<String, List<BigDecimal>>> dataMap = getAlgorithmDataParam(entity, featuresDataCodeList, startTime, endTime);
+        Map<String, List<Map<String, List<BigDecimal>>>> dataMap = getAlgorithmDataParam(entity, featuresDataCodeList, startTime, endTime);
+        log.info("组装的算法数据:{}", dataMap);
         paramDTO.setData(dataMap);
 
         // 拆分 训练集  测试集  验证集 的数据占比 (目前固定为  0.8  0.1  0.1)
@@ -381,73 +408,86 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         return featuresDataCodeDtoList;
     }
 
-    @NotNull
-    private Map<String, Map<String, List<BigDecimal>>> getAlgorithmDataParam(ModelConfigParamEntity entity, List<String> featuresDataCodeList, LocalDateTime startTime, LocalDateTime endTime) {
+    private Map<String, List<Map<String, List<BigDecimal>>>> getAlgorithmDataParam(ModelConfigParamEntity entity, List<String> featuresDataCodeList, LocalDateTime startTime, LocalDateTime endTime) {
+        // 1:查询范围内的工况信息(考虑查询时间在工况中间的场景)
+        List<ProcessLogEntity> processLogList = processLogService.getByTimeRange(startTime.format(ConstantUtil.DATE_FORMATTER), endTime.format(ConstantUtil.DATE_FORMATTER));
+        if (ObjectUtils.isEmpty(processLogList)) {
+            log.error("工况信息未初始化为空,不进行处理");
+            return null;
+        }
+
+        // 2:整理数据 Map<String, Map<String, List<BigDecimal>>> <工况code , <数据code, 数据值List>>
+        Map<String, List<Map<String, List<BigDecimal>>>> algorithmDataValMap = new HashMap<>();
+        for (int i = 0; i < processLogList.size(); i++) {
+            ProcessLogEntity curProcess = processLogList.get(i);
+            if (i + 1 < processLogList.size()) {
+                ProcessLogEntity nextProcess = processLogList.get(i + 1);
+                // 当前工况之后 下一个工况结束之前 为当前工况的运行时间范围
+                String secStartTime = curProcess.getEndTime();
+                String secEndTime = nextProcess.getStartTime();
+
+                buildAlgorithmDataValMap(entity, featuresDataCodeList, secStartTime, secEndTime, curProcess, algorithmDataValMap);
+            } else {
+                // 最后一个工况
+                // 当前工况之后 一直到当前的结束时间 为当前工况的运行时间范围
+                String secStartTime = curProcess.getEndTime();
+                String secEndTime = endTime.format(ConstantUtil.DATE_TIME_FORMATTER);
+
+                buildAlgorithmDataValMap(entity, featuresDataCodeList, secStartTime, secEndTime, curProcess, algorithmDataValMap);
+            }
+        }
+
+        return algorithmDataValMap;
+    }
+
+    private void buildAlgorithmDataValMap(ModelConfigParamEntity entity, List<String> featuresDataCodeList, String secStartTime, String secEndTime, ProcessLogEntity curProcess, Map<String, List<Map<String, List<BigDecimal>>>> algorithmDataValMap) {
+        // 2:查询孪生时间范围内的数据
         // 查询时间范围内的孪生数据
         IntervalValParamsDto queryParam = new IntervalValParamsDto();
         ArrayList<String> allQueryDataCodeList = new ArrayList<>();
         allQueryDataCodeList.add(entity.getDataCode());
         allQueryDataCodeList.addAll(featuresDataCodeList);
         queryParam.setDataCodes(allQueryDataCodeList);
-        queryParam.setStartTime(startTime.format(ConstantUtil.DATE_TIME_FORMATTER));
-        queryParam.setEndTime(endTime.format(ConstantUtil.DATE_TIME_FORMATTER));
+        queryParam.setStartTime(secStartTime);
+        queryParam.setEndTime(secEndTime);
         queryParam.setTs(1);
         queryParam.setTsUnit(ConstantBase.MIN);// 查询每分钟数据
         queryParam.setCalcType(ConstantBase.LAST);// 查询温度,为瞬时值
         queryParam.setFormatVal(ConstantTime.DATE_TIME);
 
-        List<IntervalDataDto> secDataList = dataService.queryIntervalVal(queryParam);
+         List<IntervalDataDto> secDataList = dataService.queryIntervalVal(queryParam);
 
-        // 查询起止时间段内的
-        List<ProcessLogEntity> processLogList = processLogService.getByTimeRange(startTime.format(ConstantUtil.DATE_FORMATTER), endTime.format(ConstantUtil.DATE_FORMATTER));
-
-        // 不符合的数据改为null
-        List<IntervalDataDto> filterSecDataList = secDataList.stream().map(data -> {
-            boolean flag = true;
-            for (ProcessLogEntity processLog : processLogList) {
-                String dataTime = data.getTime();
-                if (dataTime.compareTo(processLog.getStartTime()) >= 0 && dataTime.compareTo(processLog.getEndTime()) <= 0) {
-                    // 只要有一个time在换机区间范围内 则不加入
-                    flag = false;
-                    break;
-                }
-            }
-            return flag ? data : null;
-        }).collect(Collectors.toList());
-
-        int index = -1;
-        Map<String, Map<String, List<BigDecimal>>> dataMap = new LinkedHashMap<>();
-        for (int i = 0; i < filterSecDataList.size(); i++) {
-            IntervalDataDto dataDto = filterSecDataList.get(i);
-            if (dataDto == null) {
-                while (i < filterSecDataList.size()) {
-                    if (filterSecDataList.get(i) == null) {
-                        i++;
-                    }else {
-                        i--;// 退回多加的 1
-                        break;
-                    }
-                }
-                index++;
-            } else {
-                if (index == -1){
-                    index = 0;
-                }
-                Map<String, List<BigDecimal>> codeValMap = dataMap.getOrDefault(index+"", new HashMap<>());
-                String dataCode = dataDto.getDataCode();
-                AlgorithmDataCodeDTO dataCodeDTO = algorithmDataCodeUtil.getByDataCode(dataCode);
-                if (dataCodeDTO == null) {
-                    continue;
-                }
-                String algorithmCode = dataCodeDTO.getAlgorithmCode();
-
-                List<BigDecimal> valList = codeValMap.getOrDefault(algorithmCode, new ArrayList<>());
-                valList.add(dataDto.getItemVal());
-                codeValMap.put(algorithmCode, valList);
-                dataMap.put(index+"", codeValMap);
-            }
+        // 获取当前工况type的one-hot对应的code
+        ProcessOneHotEncoderEnum hotEncoderEnum = ProcessOneHotEncoderEnum.getEnumByType(curProcess.getOperatingCode());
+        if (hotEncoderEnum == null) {
+            log.error("工况类型未定义,不进行处理,operatingCode:{}", curProcess.getOperatingCode());
+            return;
         }
-        return dataMap;
-    }
+        // 算法对应的工艺code
+        String algorithmProcessCode = hotEncoderEnum.getAlgorithmProcessCode();
 
+        List<Map<String, List<BigDecimal>>> curAlgorithmDataMapList = algorithmDataValMap.getOrDefault(algorithmProcessCode, new ArrayList<>());
+
+        Map<String, List<BigDecimal>> curProcessAlgorithmDataValMap = new HashMap<>();
+        for (IntervalDataDto dataDto : secDataList) {
+            AlgorithmDataCodeDTO algorithmDataCodeDTO = algorithmDataCodeUtil.getByDataCode(dataDto.getDataCode());
+            if (algorithmDataCodeDTO == null) {
+                log.error("算法数据code未定义,不进行处理,dataCode:{}",dataDto.getDataCode());
+                continue;
+            }
+            if (ObjectUtils.isEmpty(dataDto.getItemVal())) {
+                log.error("数据值为空,不进行处理,dataCode:{}",dataDto.getDataCode());
+                continue;
+            }
+            // 算法对应的参数code
+            String algorithmParamCode = algorithmDataCodeDTO.getAlgorithmCode();
+            List<BigDecimal> valList = curProcessAlgorithmDataValMap.getOrDefault(algorithmParamCode, new ArrayList<>());
+            valList.add(dataDto.getItemVal());
+            curProcessAlgorithmDataValMap.put(algorithmParamCode, valList);
+        }
+
+        curAlgorithmDataMapList.add(curProcessAlgorithmDataValMap);
+
+        algorithmDataValMap.put(algorithmProcessCode, curAlgorithmDataMapList);
+    }
 }

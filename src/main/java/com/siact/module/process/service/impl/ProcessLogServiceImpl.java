@@ -18,6 +18,7 @@ import com.siact.module.process.enums.FireCycleEnum;
 import com.siact.module.process.enums.ProductLineEnum;
 import com.siact.module.process.mapper.ProcessLogMapper;
 import com.siact.module.process.service.IProcessLogService;
+import com.siact.module.process.utils.ProcessOneHotEncoderEnum;
 import com.siact.module.process.vo.ProcessLogVO;
 import com.siact.sec.utils.IntervalTimeUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -130,7 +132,7 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         entity.setOperatingCode(operatingCode);
 
         // 生成二进制编码
-        String binaryCode = getBinaryCode(dto);
+        String binaryCode = getOneHotEncoding(dto);
         entity.setBinaryCode(binaryCode);
 
         return this.save(entity);
@@ -151,15 +153,13 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         entity.setOperatingCode(operatingCode);
 
         // 生成二进制编码
-        String binaryCode = getBinaryCode(dto);
+        String binaryCode = getOneHotEncoding(dto);
         entity.setBinaryCode(binaryCode);
 
         return this.updateById(entity);
     }
 
-
-    @NotNull
-    private static String getBinaryCode(ProcessLogDTO dto) {
+    private static String getOneHotEncoding(ProcessLogDTO dto) {
         ProductLineEnum productLineEnum = ProductLineEnum.getByCode(dto.getProductLineNum());
         FireCycleEnum fireCycleEnum = FireCycleEnum.getByCode(dto.getFireCycle());
         DefoamSystemEnum defoamSystemEnum = DefoamSystemEnum.getByCode(dto.getDefoamSystem());
@@ -168,11 +168,12 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         }
 
         // 生成二进制编码
-        String binaryCode =
-                productLineEnum.getBinaryCode()
-                        + fireCycleEnum.getBinaryCode()
-                        + defoamSystemEnum.getBinaryCode();
-        return binaryCode;
+        String type =
+                productLineEnum.getCode()
+                        + fireCycleEnum.getCode()
+                        + defoamSystemEnum.getCode();
+        int[] oneHotByType = ProcessOneHotEncoderEnum.getOneHotByType(type);
+        return oneHotByType == null ? null : Arrays.stream(oneHotByType).mapToObj(o -> o + "").collect(Collectors.joining());
     }
 
     @NotNull
