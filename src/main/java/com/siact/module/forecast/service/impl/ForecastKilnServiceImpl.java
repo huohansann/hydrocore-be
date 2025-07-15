@@ -284,14 +284,19 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
                                LineChartDataVO lineChartDataVO) {
         PredictionDataShowTplDTO dataShowDto = dataShowMap.get(dataCode);
         if (ObjectUtils.isNotEmpty(dataShowDto)) {
-            seriesDataVO.setActual(parseAttributeInfo(dataShowDto.getShowActual() ? actualChartData : null,
-                    StringUtils.isNotBlank(dataName) ? "实际" + dataName : "实际"));
+//            seriesDataVO.setActual(parseAttributeInfo(dataShowDto.getShowActual() ? actualChartData : null,
+//                    StringUtils.isNotBlank(dataName) ? "实际" + dataName : "实际"));
+//            seriesDataVO.setSingleForecast(parseAttributeInfo(dataShowDto.getShowSingleForecast() ?
+//                    singlePredictionDataMap.get(dataCode) : null, StringUtils.isNotBlank(dataName) ?
+//                    "单步预测" + dataName : "单步预测"));
+//            seriesDataVO.setMultiForecast(parseAttributeInfo(dataShowDto.getShowMultiForecast() ?
+//                    multiPredictionDataMap.get(dataCode) : null, StringUtils.isNotBlank(dataName) ?
+//                    "多步预测" + dataName : "多步预测"));
+            seriesDataVO.setActual(parseAttributeInfo(dataShowDto.getShowActual() ? actualChartData : null, "运行值"));
             seriesDataVO.setSingleForecast(parseAttributeInfo(dataShowDto.getShowSingleForecast() ?
-                    singlePredictionDataMap.get(dataCode) : null, StringUtils.isNotBlank(dataName) ?
-                    "单步预测" + dataName : "单步预测"));
+                    singlePredictionDataMap.get(dataCode) : null, "单步预测值"));
             seriesDataVO.setMultiForecast(parseAttributeInfo(dataShowDto.getShowMultiForecast() ?
-                    multiPredictionDataMap.get(dataCode) : null, StringUtils.isNotBlank(dataName) ?
-                    "多步预测" + dataName : "多步预测"));
+                    multiPredictionDataMap.get(dataCode) : null, "多步预测值"));
             ControlIntervalConfigDTO configDTO = dataCodeConfigMap.get(dataCode);
             if (ObjectUtils.isNotEmpty(configDTO)) {
                 lineChartDataVO.setUpControl(dataShowDto.getShowUpControl() ? configDTO.getUpControl() : null);
