@@ -22,9 +22,15 @@ public class KilnPublishController {
     private KilnPublishService kilnPublishService;
 
 
-    @ApiOperation("天然气与风气值下发")
+    @ApiOperation("天然气与风气值下发(手动)")
     @PostMapping("/publish")
     public R publish(@RequestBody List<KilnInfoDistributeDTO> list) {
         return kilnPublishService.publish(list);
+    }
+
+    @ApiOperation("天然气与风气值下发(自动)")
+    @PostMapping("/autoPublish")
+    public R autoPublish() {
+        return kilnPublishService.autoPublish();
     }
 }

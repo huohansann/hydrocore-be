@@ -3,6 +3,7 @@ package com.siact.module.permission.controller;
 
 import com.siact.common.result.R;
 import com.siact.module.permission.dto.LoginRequest;
+import com.siact.module.permission.dto.UserModifyPwdDTO;
 import com.siact.module.permission.service.AuthService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -49,6 +50,20 @@ public class AuthController {
         try {
             r = R.data(authService.logout(request));
         }catch (Exception e){
+            log.error(e.getMessage(), e);
+            r = R.fail(e.getMessage());
+        }
+        return r;
+    }
+
+    @ApiOperation("修改密码")
+    @PostMapping("/modifyPwd")
+    public R modifyPwd(@RequestBody UserModifyPwdDTO modifyPwdDTO) {
+        R r;
+        try {
+            authService.modifyPwd(modifyPwdDTO);
+            return R.success("success");
+        } catch (Exception e) {
             log.error(e.getMessage(), e);
             r = R.fail(e.getMessage());
         }

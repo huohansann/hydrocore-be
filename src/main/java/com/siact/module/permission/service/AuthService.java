@@ -2,6 +2,7 @@ package com.siact.module.permission.service;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.siact.module.permission.dto.LoginRequest;
+import com.siact.module.permission.dto.UserModifyPwdDTO;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -20,4 +21,10 @@ public interface AuthService {
      * @return
      */
     boolean logout(HttpServletRequest request);
+
+    /**
+     * 修改密码
+     * @param modifyPwdDTO
+     */
+    void modifyPwd(UserModifyPwdDTO modifyPwdDTO);
 }

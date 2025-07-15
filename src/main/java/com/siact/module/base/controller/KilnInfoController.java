@@ -35,7 +35,7 @@ public class KilnInfoController {
             curObj.put("gasCalc", kilnInfoVO.getGasCalc() == null ? null : kilnInfoVO.getGasCalc().doubleValue());
             curObj.put("gasVal", kilnInfoVO.getGasVal() == null ? null : kilnInfoVO.getGasVal().doubleValue());
             // 天然气变动值 = 当前的设定值 - 上一个的设定值
-            curObj.put("gasValueChange", kilnInfoVO.getGasValueChange() == null ? null : kilnInfoVO.getGasValueChange().doubleValue());
+//            curObj.put("gasValueChange", kilnInfoVO.getGasValueChange() == null ? null : kilnInfoVO.getGasValueChange().doubleValue());
             curObj.put("windVal", kilnInfoVO.getWindVal() == null ? null : kilnInfoVO.getWindVal().doubleValue());
             curObj.put("windGasRate", kilnInfoVO.getWindGasRate() == null ? null : kilnInfoVO.getWindGasRate().doubleValue());
             curObj.put("gasValUp", kilnInfoVO.getGasValUp() == null ? null : kilnInfoVO.getGasValUp().doubleValue());

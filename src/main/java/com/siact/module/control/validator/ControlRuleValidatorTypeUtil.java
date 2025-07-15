@@ -33,7 +33,9 @@ public class ControlRuleValidatorTypeUtil {
      */
     public void validateStep(List<KilnInfoDistributeDTO> list, ControlRuleVO ruleVO, List<String> errors) {
         for (KilnInfoDistributeDTO kilnInfoDistributeDTO : list) {
-            BigDecimal gasValueChange = kilnInfoDistributeDTO.getGasValueChange();
+//            BigDecimal gasValueChange = kilnInfoDistributeDTO.getGasValueChange();
+            // 天然气变动值  自动 = 算法计算值 - DCS运行值  人工 = 人工调整值 - DCS运行值
+            BigDecimal gasValueChange = kilnInfoDistributeDTO.getGasVal().subtract(kilnInfoDistributeDTO.getGasVal()).abs();// TODO 这段逻辑暂未完善
 
             if (ObjectUtils.isEmpty(gasValueChange) || gasValueChange.compareTo(BigDecimal.ZERO) == 0) {
                 // 变动值为 null 或者 0 视为无变动 可以下发

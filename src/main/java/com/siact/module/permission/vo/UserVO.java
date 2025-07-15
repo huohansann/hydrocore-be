@@ -26,9 +26,6 @@ public class UserVO  {
     @ApiModelProperty(value = "手机号码")
     private String mobile;
 
-    @ApiModelProperty(value = "密码")
-    private String password;
-
     @ApiModelProperty(value = "所属组织ID")
     private Long orgId;
 

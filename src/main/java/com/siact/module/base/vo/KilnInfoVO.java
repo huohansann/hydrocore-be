@@ -32,9 +32,9 @@ public class KilnInfoVO implements Serializable {
     @ApiModelProperty(value = "天然气设定值")
     @JsonSerialize(using = BigDecimalTrimmingConverter.class)
     private BigDecimal gasVal;
-    @ApiModelProperty(value = "天然气变动值")
-    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
-    private BigDecimal gasValueChange;
+//    @ApiModelProperty(value = "天然气变动值")
+//    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
+//    private BigDecimal gasValueChange;
     /** 助燃风设定值 */
     @ApiModelProperty(value = "助燃风设定值")
     @JsonSerialize(using = BigDecimalTrimmingConverter.class)
