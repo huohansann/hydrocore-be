@@ -4,12 +4,12 @@
     <update id="updateDistributeBatch" parameterType="list">
         UPDATE kiln_info
         <trim prefix="SET" suffixOverrides=",">
-            <!-- 更新 state
+            <!-- 更新 state  -->
             <trim prefix="state = CASE" suffix="END,">
                 <foreach collection="list" item="item">
                     WHEN id = #{item.id} THEN #{item.state}
                 </foreach>
-            </trim> -->
+            </trim>
 
             <!-- 更新 gas_calc -->
             <trim prefix="gas_calc = CASE" suffix="END,">
