@@ -52,7 +52,7 @@ public class ProcessLogController {
     @PostMapping("/add")
     public R add(@RequestBody @Validated ProcessLogDTO dto) {
         processLogService.add(dto);
-        return R.success("success");
+        return R.data(true);
     }
 
     @ApiOperation("修改工艺日志")
