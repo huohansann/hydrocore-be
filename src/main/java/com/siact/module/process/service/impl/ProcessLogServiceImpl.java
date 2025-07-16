@@ -197,7 +197,7 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
                     // 找到之前的数据当中  第一个正常的工况
                     // 换机还要在新增默认正常的一个工况
                     normalAddEntity = ConvertUtils.sourceToTarget(processLogEntity, ProcessLogEntity.class);
-
+                    normalAddEntity.setId(null);// 新增数据 id为null
                     // 开始时间为entity的结束时间 + 1分钟
                     normalAddEntity.setStartTime(TimeUtil.getCalcTime(endTime, 1, ConstantBase.MIN));
                     normalAddEntity.setEndTime(null);
