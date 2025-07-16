@@ -158,7 +158,7 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
             ProcessLogEntity beforeEntity = beforeList.get(0);
             // 补充上一个时段的endTime
             if (beforeEntity.getReplaceMachine().equals(ReplaceMachineEnum.NORMAL.getValue())) {
-                beforeEntity.setEndTime(entity.getStartTime());
+                beforeEntity.setEndTime(TimeUtil.getCalcTime(entity.getStartTime(), -1, ConstantBase.MIN));
             }
             this.updateById(beforeEntity);
         }
@@ -211,7 +211,7 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
             // 2.1 如果上一个时段是正常的,更新上一个正常时段的endTime  如果上个时段是换机,则不处理(因为换机有默认结束时间)
             ProcessLogEntity beforeUpdateEntity = beforeList.get(0);
             if (beforeUpdateEntity.getReplaceMachine().equals(ReplaceMachineEnum.NORMAL.getValue())) {
-                beforeUpdateEntity.setEndTime(replaceMachineAddEntity.getStartTime());
+                beforeUpdateEntity.setEndTime(TimeUtil.getCalcTime(replaceMachineAddEntity.getStartTime(), -1, ConstantBase.MIN));
                 addOrUpdateList.add(beforeUpdateEntity);
             }
         }
