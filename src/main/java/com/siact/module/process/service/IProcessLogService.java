@@ -40,7 +40,7 @@ public interface IProcessLogService extends IService<ProcessLogEntity> {
      * @param dto
      * @return
      */
-    boolean add(ProcessLogDTO dto);
+    void add(ProcessLogDTO dto);
 
     /**
      * 修改

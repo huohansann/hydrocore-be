@@ -50,8 +50,9 @@ public class ProcessLogController {
 
     @ApiOperation("新增工艺日志")
     @PostMapping("/add")
-    public R<Boolean> add(@RequestBody @Validated ProcessLogDTO dto) {
-        return R.data(processLogService.add(dto));
+    public R add(@RequestBody @Validated ProcessLogDTO dto) {
+        processLogService.add(dto);
+        return R.success("success");
     }
 
     @ApiOperation("修改工艺日志")

@@ -30,11 +30,9 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -112,7 +110,8 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
     }
 
     @Override
-    public boolean add(ProcessLogDTO dto) {
+    @Transactional(rollbackFor = Exception.class)
+    public void add(ProcessLogDTO dto) {
         // 校验时间区间是否存在重复
         if (checkTimeExist(dto)) {
             throw new CustomException("时间区间已存在");
@@ -121,37 +120,14 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         ProcessLogEntity entity = new ProcessLogEntity();
         BeanUtils.copyProperties(dto, entity);
 
-        // 换机状态 换机的结束时间为开始时间  次日的8:30  (ps:正常的工况不设置endTime)
-        if (entity.getReplaceMachine().equals(ReplaceMachineEnum.REPLACED.getValue())) {
-            String startTime = IntervalTimeUtil.dateFormat(dto.getStartTime(), ConstantTime.DATE_TIME);
-            String endTime = TimeUtil.getCalcTime(startTime, 1, ConstantBase.D);
-            entity.setStartTime(startTime);
-            entity.setEndTime(endTime);
-        }
-
-        // 获取当前startTime的上一个时段
-        ProcessLogEntity beforeEntity = getBeforeEntityByTime(entity.getStartTime());
-        // 如果上一个时段是正常的,补充上一个正常时段的endTime  如果上个时段是换机,则不处理(因为换机有默认结束时间)
-        if (beforeEntity.getReplaceMachine().equals(ReplaceMachineEnum.NORMAL.getValue())) {
-            beforeEntity.setEndTime(entity.getStartTime());
-        }
-
-        ProcessLogEntity nextEntity = getAfterEntityByTime(entity.getStartTime());
-        if (ObjectUtils.isNotEmpty(nextEntity)) {
-            // 如果存在下一个时段信息  证明是中间插入
-            // 需要根据下一个entity补充 当前的endTime (ps:下一个时段 向前提一分钟)
-            entity.setEndTime(TimeUtil.getCalcTime(nextEntity.getStartTime(), -1, ConstantBase.MIN));
-        }
-
         // 获取当前操作人员
         UserTokenDTO currentUser = LoginUntil.getCurrentUser();
         if (ObjectUtils.isNotEmpty(currentUser)) {
             String username = currentUser.getUsername();
             entity.setOperator(username);
         } else {
-             throw new CustomException("当前登录状态失效!,请重新登录");
+            throw new CustomException("当前登录状态失效!,请重新登录");
         }
-
 
         // 生成工况编码 逻辑:工况编码=产线数量+换火周期+消泡
         String operatingCode = getOperatingCode(dto);
@@ -161,19 +137,108 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         String binaryCode = getOneHotEncoding(dto);
         entity.setBinaryCode(binaryCode);
 
-        return this.save(entity);
+        if (entity.getReplaceMachine().equals(ReplaceMachineEnum.REPLACED.getValue())) {
+            addReplaceMachineProcessLog(dto, entity);
+        } else {
+            addNormalProcessLog(entity);
+        }
     }
 
-    private ProcessLogEntity getBeforeEntityByTime(String startTime) {
+    @Transactional(rollbackFor = Exception.class)
+    public void addNormalProcessLog(ProcessLogEntity entity) {
+        // 逻辑:新增的是正常工况
+        // 需要  补全上一个正常工况的endTime
+        // 如果当前新增的工况为插入数据  即后续存在其他工况  那么要补充当前工况的endTime
+
+        // 1:获取当前startTime的上一个时段(从大到小  倒序排列)
+        List<ProcessLogEntity> beforeList = getBeforeListByTimeDESC(entity.getStartTime(), 1);
+        // 如果上一个时段是正常的,更新上一个正常时段的endTime  如果上个时段是换机,则不处理(因为换机有默认结束时间)
+        if (beforeList != null && !beforeList.isEmpty()) {
+            // 获取上一个时段信息
+            ProcessLogEntity beforeEntity = beforeList.get(0);
+            // 补充上一个时段的endTime
+            if (beforeEntity.getReplaceMachine().equals(ReplaceMachineEnum.NORMAL.getValue())) {
+                beforeEntity.setEndTime(entity.getStartTime());
+            }
+            this.updateById(beforeEntity);
+        }
+
+        // 2:获取当前startTime的下一个时段(从小到大  正序排列)
+        ProcessLogEntity nextEntity = getAfterEntityByTimeASC(entity.getStartTime());
+        if (ObjectUtils.isNotEmpty(nextEntity)) {
+            // 如果存在下一个时段信息  证明是中间插入
+            // 需要根据下一个entity补充 当前的endTime (ps:下一个时段 向前提一分钟)
+            entity.setEndTime(TimeUtil.getCalcTime(nextEntity.getStartTime(), -1, ConstantBase.MIN));
+        }
+        this.save(entity);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void addReplaceMachineProcessLog(ProcessLogDTO dto, ProcessLogEntity replaceMachineAddEntity) {
+        // 换机状态 换机的结束时间为开始时间+1天  次日的8:30  (ps:正常的工况不设置endTime)
+        // 逻辑: 新增换机状态 需要自动追加 换机后的正常状态 且工况参照换机前的正常状态的工况
+        ArrayList<ProcessLogEntity> addOrUpdateList = new ArrayList<>();
+
+        // 1:添加换机工况
+        String startTime = IntervalTimeUtil.dateFormat(dto.getStartTime(), ConstantTime.DATE_TIME);
+        String endTime = TimeUtil.getCalcTime(startTime, 1, ConstantBase.D);
+        replaceMachineAddEntity.setStartTime(startTime);
+        replaceMachineAddEntity.setEndTime(endTime);
+        addOrUpdateList.add(replaceMachineAddEntity);
+
+        // 获取当前startTime的之前的所有工况  (ps:默认查询前100个,理论上肯定存在正常的数据)
+        List<ProcessLogEntity> beforeList = getBeforeListByTimeDESC(replaceMachineAddEntity.getStartTime(), 100);
+
+        // 2:初始化正常的工况
+        ProcessLogEntity normalAddEntity = null;
+        if (beforeList != null && !beforeList.isEmpty()) {
+            for (ProcessLogEntity processLogEntity : beforeList) {
+                if (processLogEntity.getReplaceMachine().equals(ReplaceMachineEnum.NORMAL.getValue())) {
+                    // 找到之前的数据当中  第一个正常的工况
+                    // 换机还要在新增默认正常的一个工况
+                    normalAddEntity = ConvertUtils.sourceToTarget(processLogEntity, ProcessLogEntity.class);
+
+                    // 开始时间为entity的结束时间 + 1分钟
+                    normalAddEntity.setStartTime(TimeUtil.getCalcTime(endTime, 1, ConstantBase.MIN));
+                    normalAddEntity.setEndTime(null);
+                    normalAddEntity.setOperator("System");
+                    normalAddEntity.setOperationDate(replaceMachineAddEntity.getOperationDate());
+                    addOrUpdateList.add(normalAddEntity);
+                    break;
+                }
+            }
+
+            // 2.1 如果上一个时段是正常的,更新上一个正常时段的endTime  如果上个时段是换机,则不处理(因为换机有默认结束时间)
+            ProcessLogEntity beforeUpdateEntity = beforeList.get(0);
+            if (beforeUpdateEntity.getReplaceMachine().equals(ReplaceMachineEnum.NORMAL.getValue())) {
+                beforeUpdateEntity.setEndTime(replaceMachineAddEntity.getStartTime());
+                addOrUpdateList.add(beforeUpdateEntity);
+            }
+        }
+
+        // 3:如果是中间插入的数据  需要补全新增正常工况的endTime
+        if (normalAddEntity != null) {
+            ProcessLogEntity nextUpdateEntity = getAfterEntityByTimeASC(normalAddEntity.getStartTime());
+            if (ObjectUtils.isNotEmpty(nextUpdateEntity)) {
+                // 如果存在下一个时段信息  证明是中间插入
+                // 需要根据下一个entity补充 当前的endTime (ps:下一个时段 向前提一分钟)
+                normalAddEntity.setEndTime(TimeUtil.getCalcTime(nextUpdateEntity.getStartTime(), -1, ConstantBase.MIN));
+            }
+        }
+
+        saveOrUpdateBatch(addOrUpdateList);
+    }
+
+    private List<ProcessLogEntity> getBeforeListByTimeDESC(String startTime, Integer limit) {
         LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<ProcessLogEntity>()
                 .lt(ProcessLogEntity::getStartTime, startTime)
                 .orderByDesc(ProcessLogEntity::getStartTime)
-                .last("limit 1");
+                .last("limit " + limit);
 
-        return baseMapper.selectOne(wrapper);
+        return baseMapper.selectList(wrapper);
     }
 
-    private ProcessLogEntity getAfterEntityByTime(String startTime) {
+    private ProcessLogEntity getAfterEntityByTimeASC(String startTime) {
         LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<ProcessLogEntity>()
                 .gt(ProcessLogEntity::getStartTime, startTime)
                 .orderByAsc(ProcessLogEntity::getStartTime)
