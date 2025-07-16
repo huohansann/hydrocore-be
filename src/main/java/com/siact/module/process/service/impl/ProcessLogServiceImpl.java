@@ -74,9 +74,9 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
      * @param record
      */
     private static void formatRtnTime(ProcessLogEntity record) {
-        record.setStartTime(IntervalTimeUtil.dateFormat(record.getStartTime(),"yyyy-MM-dd HH点"));
-        record.setEndTime(IntervalTimeUtil.dateFormat(record.getEndTime(),"yyyy-MM-dd HH点"));
-        record.setOperationDate(IntervalTimeUtil.dateFormat(record.getOperationDate(), "yyyy-MM-dd"));
+        record.setStartTime(record.getStartTime() == null ? null : IntervalTimeUtil.dateFormat(record.getStartTime(), "yyyy-MM-dd HH:ss"));
+        record.setEndTime(record.getEndTime() == null ? null : IntervalTimeUtil.dateFormat(record.getEndTime(), "yyyy-MM-dd HH:ss"));
+        record.setOperationDate(record.getOperationDate() == null ? null : IntervalTimeUtil.dateFormat(record.getOperationDate(), "yyyy-MM-dd"));
     }
 
     @Override
