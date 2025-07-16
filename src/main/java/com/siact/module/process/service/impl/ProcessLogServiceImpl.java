@@ -74,8 +74,8 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
      * @param record
      */
     private static void formatRtnTime(ProcessLogEntity record) {
-        record.setStartTime(record.getStartTime() == null ? null : IntervalTimeUtil.dateFormat(record.getStartTime(), "yyyy-MM-dd HH:ss"));
-        record.setEndTime(record.getEndTime() == null ? null : IntervalTimeUtil.dateFormat(record.getEndTime(), "yyyy-MM-dd HH:ss"));
+        record.setStartTime(record.getStartTime() == null ? null : IntervalTimeUtil.dateFormat(record.getStartTime(), "yyyy-MM-dd HH:mm"));
+        record.setEndTime(record.getEndTime() == null ? null : IntervalTimeUtil.dateFormat(record.getEndTime(), "yyyy-MM-dd HH:mm"));
         record.setOperationDate(record.getOperationDate() == null ? null : IntervalTimeUtil.dateFormat(record.getOperationDate(), "yyyy-MM-dd"));
     }
 
@@ -330,8 +330,8 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         Map<String, List<ProcessLogVO>> rtnMap = processLogVOList.stream()
                 .collect(Collectors.groupingBy(o -> IntervalTimeUtil.dateFormat(o.getStartTime(), ConstantTime.DATE_FORMAT)));
         rtnMap.values().stream().flatMap(List::stream).forEach(record->{
-            record.setStartTime(IntervalTimeUtil.dateFormat(record.getStartTime(),"yyyy-MM-dd HH:ss"));
-            record.setEndTime(IntervalTimeUtil.dateFormat(record.getEndTime(),"yyyy-MM-dd HH:ss"));
+            record.setStartTime(IntervalTimeUtil.dateFormat(record.getStartTime(),"yyyy-MM-dd HH:mm"));
+            record.setEndTime(IntervalTimeUtil.dateFormat(record.getEndTime(),"yyyy-MM-dd HH:mm"));
             record.setOperationDate(IntervalTimeUtil.dateFormat(record.getOperationDate(), "yyyy-MM-dd"));
         });
         return rtnMap;
