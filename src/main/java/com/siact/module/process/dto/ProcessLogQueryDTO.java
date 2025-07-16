@@ -10,16 +10,16 @@ import javax.validation.constraints.NotNull;
  * 工艺日志DTO
  */
 @Data
-public class ProcessLogDTO {
+public class ProcessLogQueryDTO {
     private Long id;
 
     @NotBlank(message = "开始日期不能为空")
     @ApiModelProperty(value = "开始日期")
     private String startTime;
 
-//    @NotBlank(message = "结束日期不能为空")
-//    @ApiModelProperty(value = "结束日期")
-//    private String endTime;
+    @NotBlank(message = "结束日期不能为空")
+    @ApiModelProperty(value = "结束日期")
+    private String endTime;
 
     @NotBlank(message = "产线数量不能为空")
     @ApiModelProperty(value = "产线数量(Ⅲ\\Ⅳ)")

@@ -7,16 +7,14 @@ import lombok.Getter;
  */
 @Getter
 public enum DefoamSystemEnum {
-    YES("Y", "1", "有"),
-    NO("X", "0", "无"),
+    YES("Y", "有"),
+    NO("X", "无"),
     ;
     private final String code;
-    private final String binaryCode;
     private final String desc;
 
-    DefoamSystemEnum(String code, String binaryCode, String desc) {
+    DefoamSystemEnum(String code, String desc) {
         this.code = code;
-        this.binaryCode = binaryCode;
         this.desc = desc;
     }
 

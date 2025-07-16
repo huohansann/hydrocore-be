@@ -26,5 +26,5 @@ public interface AuthService {
      * 修改密码
      * @param modifyPwdDTO
      */
-    void modifyPwd(UserModifyPwdDTO modifyPwdDTO);
+    void modifyPwd(HttpServletRequest request, UserModifyPwdDTO modifyPwdDTO);
 }

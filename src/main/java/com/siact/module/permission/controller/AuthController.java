@@ -58,10 +58,10 @@ public class AuthController {
 
     @ApiOperation("修改密码")
     @PostMapping("/modifyPwd")
-    public R modifyPwd(@RequestBody UserModifyPwdDTO modifyPwdDTO) {
+    public R modifyPwd(HttpServletRequest request,@RequestBody UserModifyPwdDTO modifyPwdDTO) {
         R r;
         try {
-            authService.modifyPwd(modifyPwdDTO);
+            authService.modifyPwd(request, modifyPwdDTO);
             return R.success("success");
         } catch (Exception e) {
             log.error(e.getMessage(), e);

@@ -7,15 +7,13 @@ import lombok.Getter;
  */
 @Getter
 public enum ProductLineEnum {
-    THREE("Ⅲ", "0", "三条产线"),
-    FOUR("Ⅳ", "1", "四条产线");
+    THREE("Ⅲ", "三条产线"),
+    FOUR("Ⅳ", "四条产线");
     private final String code;
-    private final String binaryCode;
     private final String desc;
 
-    ProductLineEnum(String code, String binaryCode, String desc) {
+    ProductLineEnum(String code, String desc) {
         this.code = code;
-        this.binaryCode = binaryCode;
         this.desc = desc;
     }
 

@@ -50,6 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 定义豁免路径列表
             List<String> excludedPaths = Arrays.asList(
                     "/kiln-control/**/auth/login",
+                    "/kiln-control/**/auth/modifyPwd",
                     "/kiln-control/**/doc.html",
                     // swagger相关资源文件
                     "/kiln-control/**/webjars/**",

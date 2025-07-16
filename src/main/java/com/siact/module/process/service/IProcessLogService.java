@@ -1,12 +1,13 @@
 package com.siact.module.process.service;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.siact.module.permission.vo.PageVO;
-import com.siact.module.process.dto.ProcessLogPageDTO;
-import com.siact.module.process.entity.ProcessLogEntity;
 import com.siact.module.process.dto.ProcessLogDTO;
+import com.siact.module.process.dto.ProcessLogPageDTO;
+import com.siact.module.process.dto.ProcessLogQueryDTO;
+import com.siact.module.process.entity.ProcessLogEntity;
 import com.siact.module.process.vo.ProcessLogVO;
+
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +27,7 @@ public interface IProcessLogService extends IService<ProcessLogEntity> {
      * @param queryDTO
      * @return
      */
-    List<ProcessLogVO> listAll(ProcessLogDTO queryDTO);
+    List<ProcessLogVO> listAll(ProcessLogQueryDTO queryDTO);
     /**
      * 根据id查询
      * @param id
@@ -84,4 +85,12 @@ public interface IProcessLogService extends IService<ProcessLogEntity> {
      * @return
      */
     List<ProcessLogEntity> getByTimeRange(String startTime, String endTime);
+
+    /**
+     * 查询时间段内的数据,是否换机
+     * @param startTime
+     * @param endTime
+     * @return
+     */
+    List<ProcessLogEntity> getByTimeRange(String startTime, String endTime, int replaceMachine);
 }

@@ -4,6 +4,7 @@ import com.siact.common.result.R;
 import com.siact.module.permission.vo.PageVO;
 import com.siact.module.process.dto.ProcessLogDTO;
 import com.siact.module.process.dto.ProcessLogPageDTO;
+import com.siact.module.process.dto.ProcessLogQueryDTO;
 import com.siact.module.process.entity.ProcessLogEntity;
 import com.siact.module.process.service.IProcessLogService;
 import com.siact.module.process.vo.ProcessLogVO;
@@ -37,7 +38,7 @@ public class ProcessLogController {
 
     @ApiOperation("查询全部工艺日志")
     @PostMapping("/list")
-    public R<List<ProcessLogVO>> list(@RequestBody ProcessLogDTO queryDTO) {
+    public R<List<ProcessLogVO>> list(@RequestBody ProcessLogQueryDTO queryDTO) {
         return R.data(processLogService.listAll(queryDTO));
     }
 

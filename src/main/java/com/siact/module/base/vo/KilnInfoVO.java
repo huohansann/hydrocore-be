@@ -24,6 +24,10 @@ public class KilnInfoVO implements Serializable {
     /** 状态：是否自动状态（1是 0否） */
     @ApiModelProperty(value = "状态：是否自动状态（1是 0否）")
     private Boolean state;
+    /** 天然气DCS运行值 */
+    @ApiModelProperty(value = "天然气DCS运行值")
+    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
+    private BigDecimal gasDcs;
     /** 天然气计算值 */
     @ApiModelProperty(value = "天然气计算值")
     @JsonSerialize(using = BigDecimalTrimmingConverter.class)

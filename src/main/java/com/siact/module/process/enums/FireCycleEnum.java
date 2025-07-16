@@ -4,15 +4,14 @@ import lombok.Getter;
 
 @Getter
 public enum FireCycleEnum {
-    TWENTY("20", "1", "20MIN"),
-    TWENTY_SEVEN("24", "0", "24MIN");
+    TWENTY("20", "20MIN"),
+    TWENTY_FOUR("24", "24MIN"),
+    TWENTY_SEVEN("27", "27MIN");
     private final String code;
-    private final String binaryCode;
     private final String desc;
 
-    FireCycleEnum(String code, String binaryCode, String desc) {
+    FireCycleEnum(String code, String desc) {
         this.code = code;
-        this.binaryCode = binaryCode;
         this.desc = desc;
     }
 

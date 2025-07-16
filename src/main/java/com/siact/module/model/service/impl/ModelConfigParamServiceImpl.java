@@ -30,6 +30,7 @@ import com.siact.module.model.vo.ModelConfigParamSaveVO;
 import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.process.entity.ProcessLogEntity;
+import com.siact.module.process.enums.ReplaceMachineEnum;
 import com.siact.module.process.service.IProcessLogService;
 import com.siact.module.process.utils.ProcessOneHotEncoderEnum;
 import com.siact.sec.dto.IntervalDataDto;
@@ -409,8 +410,14 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
     }
 
     private Map<String, List<Map<String, List<BigDecimal>>>> getAlgorithmDataParam(ModelConfigParamEntity entity, List<String> featuresDataCodeList, LocalDateTime startTime, LocalDateTime endTime) {
-        // 1:查询范围内的工况信息(考虑查询时间在工况中间的场景)
-        List<ProcessLogEntity> processLogList = processLogService.getByTimeRange(startTime.format(ConstantUtil.DATE_FORMATTER), endTime.format(ConstantUtil.DATE_FORMATTER));
+        String startTimeStr = startTime.format(ConstantUtil.DATE_FORMATTER);
+        String endTimeStr = endTime.format(ConstantUtil.DATE_FORMATTER);
+
+        // 1:查询范围内的工况信息(正常时段的)
+        List<ProcessLogEntity> processLogList = processLogService.getByTimeRange(
+                startTimeStr,
+                endTimeStr,
+                ReplaceMachineEnum.NORMAL.getValue());
         if (ObjectUtils.isEmpty(processLogList)) {
             log.error("工况信息未初始化为空,不进行处理");
             return null;
@@ -418,23 +425,20 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
         // 2:整理数据 Map<String, Map<String, List<BigDecimal>>> <工况code , <数据code, 数据值List>>
         Map<String, List<Map<String, List<BigDecimal>>>> algorithmDataValMap = new HashMap<>();
-        for (int i = 0; i < processLogList.size(); i++) {
-            ProcessLogEntity curProcess = processLogList.get(i);
-            if (i + 1 < processLogList.size()) {
-                ProcessLogEntity nextProcess = processLogList.get(i + 1);
-                // 当前工况之后 下一个工况结束之前 为当前工况的运行时间范围
-                String secStartTime = curProcess.getEndTime();
-                String secEndTime = nextProcess.getStartTime();
 
-                buildAlgorithmDataValMap(entity, featuresDataCodeList, secStartTime, secEndTime, curProcess, algorithmDataValMap);
-            } else {
-                // 最后一个工况
-                // 当前工况之后 一直到当前的结束时间 为当前工况的运行时间范围
-                String secStartTime = curProcess.getEndTime();
-                String secEndTime = endTime.format(ConstantUtil.DATE_TIME_FORMATTER);
-
-                buildAlgorithmDataValMap(entity, featuresDataCodeList, secStartTime, secEndTime, curProcess, algorithmDataValMap);
+        for (ProcessLogEntity curProcess : processLogList) {
+            String secStartTime = curProcess.getEndTime();
+            // 如果工艺时间 小于 入参的开始时间, 那么以入参的开始时间为准
+            if (secStartTime.compareTo(startTimeStr) < 0) {
+                secStartTime = startTimeStr;
             }
+            String secEndTime = curProcess.getStartTime();
+            // 如果工艺时间 大于 入参的结束时间, 那么以入参的结束时间为准
+            if (secEndTime.compareTo(endTimeStr) > 0) {
+                secEndTime = endTimeStr;
+            }
+
+            buildAlgorithmDataValMap(entity, featuresDataCodeList, secStartTime, secEndTime, curProcess, algorithmDataValMap);
         }
 
         return algorithmDataValMap;

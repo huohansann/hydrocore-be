@@ -32,6 +32,7 @@ public class KilnInfoController {
             curObj.put("number", kilnInfoVO.getNumber());
             curObj.put("dataCode", kilnInfoVO.getDataCode());
             curObj.put("state", kilnInfoVO.getState());
+            curObj.put("gasDcs", kilnInfoVO.getGasCalc() == null ? null : kilnInfoVO.getGasCalc().doubleValue());
             curObj.put("gasCalc", kilnInfoVO.getGasCalc() == null ? null : kilnInfoVO.getGasCalc().doubleValue());
             curObj.put("gasVal", kilnInfoVO.getGasVal() == null ? null : kilnInfoVO.getGasVal().doubleValue());
             // 天然气变动值 = 当前的设定值 - 上一个的设定值

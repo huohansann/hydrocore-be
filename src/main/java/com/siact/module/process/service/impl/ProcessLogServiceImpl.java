@@ -4,18 +4,22 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.siact.common.constant.ConstantBase;
 import com.siact.common.constant.ConstantTime;
 import com.siact.common.exception.CustomException;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.common.utils.LoginUntil;
+import com.siact.common.utils.TimeUtil;
 import com.siact.module.permission.dto.UserTokenDTO;
 import com.siact.module.permission.vo.PageVO;
 import com.siact.module.process.dto.ProcessLogDTO;
 import com.siact.module.process.dto.ProcessLogPageDTO;
+import com.siact.module.process.dto.ProcessLogQueryDTO;
 import com.siact.module.process.entity.ProcessLogEntity;
 import com.siact.module.process.enums.DefoamSystemEnum;
 import com.siact.module.process.enums.FireCycleEnum;
 import com.siact.module.process.enums.ProductLineEnum;
+import com.siact.module.process.enums.ReplaceMachineEnum;
 import com.siact.module.process.mapper.ProcessLogMapper;
 import com.siact.module.process.service.IProcessLogService;
 import com.siact.module.process.utils.ProcessOneHotEncoderEnum;
@@ -40,7 +44,7 @@ import java.util.stream.Collectors;
 @Service
 public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, ProcessLogEntity> implements IProcessLogService {
 
-    private LambdaQueryWrapper<ProcessLogEntity> buildQueryWrapper(ProcessLogDTO dto) {
+    private LambdaQueryWrapper<ProcessLogEntity> buildQueryWrapper(ProcessLogQueryDTO dto) {
         LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<>();
         // 根据起始日期 终止日期 产线数量 换火周期 消泡系统 换机 进行查询检索
         if (ObjectUtils.isNotEmpty(dto.getStartTime())) {
@@ -91,7 +95,7 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
     }
 
     @Override
-    public List<ProcessLogVO> listAll(ProcessLogDTO queryDTO) {
+    public List<ProcessLogVO> listAll(ProcessLogQueryDTO queryDTO) {
         LambdaQueryWrapper<ProcessLogEntity> wrapper = buildQueryWrapper(queryDTO);
         List<ProcessLogEntity> list = this.list(wrapper);
         for (ProcessLogEntity entity : list) {
@@ -117,6 +121,28 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         ProcessLogEntity entity = new ProcessLogEntity();
         BeanUtils.copyProperties(dto, entity);
 
+        // 换机状态 换机的结束时间为开始时间  次日的8:30  (ps:正常的工况不设置endTime)
+        if (entity.getReplaceMachine().equals(ReplaceMachineEnum.REPLACED.getValue())) {
+            String startTime = IntervalTimeUtil.dateFormat(dto.getStartTime(), ConstantTime.DATE_TIME);
+            String endTime = TimeUtil.getCalcTime(startTime, 1, ConstantBase.D);
+            entity.setStartTime(startTime);
+            entity.setEndTime(endTime);
+        }
+
+        // 获取当前startTime的上一个时段
+        ProcessLogEntity beforeEntity = getBeforeEntityByTime(entity.getStartTime());
+        // 如果上一个时段是正常的,补充上一个正常时段的endTime  如果上个时段是换机,则不处理(因为换机有默认结束时间)
+        if (beforeEntity.getReplaceMachine().equals(ReplaceMachineEnum.NORMAL.getValue())) {
+            beforeEntity.setEndTime(entity.getStartTime());
+        }
+
+        ProcessLogEntity nextEntity = getAfterEntityByTime(entity.getStartTime());
+        if (ObjectUtils.isNotEmpty(nextEntity)) {
+            // 如果存在下一个时段信息  证明是中间插入
+            // 需要根据下一个entity补充 当前的endTime (ps:下一个时段 向前提一分钟)
+            entity.setEndTime(TimeUtil.getCalcTime(nextEntity.getStartTime(), -1, ConstantBase.MIN));
+        }
+
         // 获取当前操作人员
         UserTokenDTO currentUser = LoginUntil.getCurrentUser();
         if (ObjectUtils.isNotEmpty(currentUser)) {
@@ -136,6 +162,24 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         entity.setBinaryCode(binaryCode);
 
         return this.save(entity);
+    }
+
+    private ProcessLogEntity getBeforeEntityByTime(String startTime) {
+        LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<ProcessLogEntity>()
+                .lt(ProcessLogEntity::getStartTime, startTime)
+                .orderByDesc(ProcessLogEntity::getStartTime)
+                .last("limit 1");
+
+        return baseMapper.selectOne(wrapper);
+    }
+
+    private ProcessLogEntity getAfterEntityByTime(String startTime) {
+        LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<ProcessLogEntity>()
+                .gt(ProcessLogEntity::getStartTime, startTime)
+                .orderByAsc(ProcessLogEntity::getStartTime)
+                .last("limit 1");
+
+        return baseMapper.selectOne(wrapper);
     }
 
     @Override
@@ -192,10 +236,8 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         if (ObjectUtils.isNotEmpty(dto.getId())) {
             wrapper.ne(ProcessLogEntity::getId, dto.getId());
         }
-        wrapper.and(w -> w.le(ProcessLogEntity::getStartTime, dto.getEndTime()).and(o -> o.ge(ProcessLogEntity::getEndTime, dto.getStartTime())));
-//                .or(w -> w.ge(ProcessLogEntity::getStartTime, dto.getEndTime()).and(o -> o.le(ProcessLogEntity::getEndTime, dto.getEndTime())));
 
-//        wrapper.and(w -> w.ge(ProcessLogEntity::getStartTime, dto.getStartTime()).and(o -> o.ge(ProcessLogEntity::getEndTime, dto.getEndTime())).or().le(ProcessLogEntity::getStartTime, dto.getStartTime()).and(o -> o.le(ProcessLogEntity::getEndTime, dto.getEndTime())));
+        wrapper.and(w -> w.eq(ProcessLogEntity::getStartTime, dto.getStartTime()).and(o -> o.ge(ProcessLogEntity::getEndTime, dto.getStartTime())));
 
         return baseMapper.selectCount(wrapper) > 0;
     }
@@ -223,8 +265,8 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         Map<String, List<ProcessLogVO>> rtnMap = processLogVOList.stream()
                 .collect(Collectors.groupingBy(o -> IntervalTimeUtil.dateFormat(o.getStartTime(), ConstantTime.DATE_FORMAT)));
         rtnMap.values().stream().flatMap(List::stream).forEach(record->{
-            record.setStartTime(IntervalTimeUtil.dateFormat(record.getStartTime(),"yyyy-MM-dd HH点"));
-            record.setEndTime(IntervalTimeUtil.dateFormat(record.getEndTime(),"yyyy-MM-dd HH点"));
+            record.setStartTime(IntervalTimeUtil.dateFormat(record.getStartTime(),"yyyy-MM-dd HH:ss"));
+            record.setEndTime(IntervalTimeUtil.dateFormat(record.getEndTime(),"yyyy-MM-dd HH:ss"));
             record.setOperationDate(IntervalTimeUtil.dateFormat(record.getOperationDate(), "yyyy-MM-dd"));
         });
         return rtnMap;
@@ -232,9 +274,26 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
 
     public List<ProcessLogEntity> getByTimeRange(String startTime, String endTime) {
         LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.ge(ProcessLogEntity::getStartTime, startTime);
-        wrapper.le(ProcessLogEntity::getEndTime, endTime);
-        // TODO 这里没有考虑跨查询区间的问题
+
+        wrapper.and(w -> w.ge(ProcessLogEntity::getStartTime, startTime).le(ProcessLogEntity::getEndTime, endTime));
+        wrapper.or(o -> o.ge(ProcessLogEntity::getStartTime, startTime).le(ProcessLogEntity::getEndTime, startTime));
+        wrapper.or(o -> o.le(ProcessLogEntity::getStartTime, endTime).ge(ProcessLogEntity::getEndTime, endTime));
+        wrapper.or(o -> o.ge(ProcessLogEntity::getStartTime, startTime).and(o1 -> o1.isNull(ProcessLogEntity::getEndTime)));
+
+        return baseMapper.selectList(wrapper);
+    }
+
+    @Override
+    public List<ProcessLogEntity> getByTimeRange(String startTime, String endTime, int replaceMachine) {
+        LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<>();
+
+        wrapper.eq(ProcessLogEntity::getReplaceMachine, replaceMachine);
+
+        wrapper.and(w -> w.ge(ProcessLogEntity::getStartTime, startTime).le(ProcessLogEntity::getEndTime, endTime));
+        wrapper.or(o -> o.ge(ProcessLogEntity::getStartTime, startTime).le(ProcessLogEntity::getEndTime, startTime));
+        wrapper.or(o -> o.le(ProcessLogEntity::getStartTime, endTime).ge(ProcessLogEntity::getEndTime, endTime));
+        wrapper.or(o -> o.ge(ProcessLogEntity::getStartTime, startTime).and(o1 -> o1.isNull(ProcessLogEntity::getEndTime)));
+
         return baseMapper.selectList(wrapper);
     }
 
