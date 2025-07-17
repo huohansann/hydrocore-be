@@ -62,7 +62,7 @@ public class AuthController {
         R r;
         try {
             authService.modifyPwd(request, modifyPwdDTO);
-            return R.success("success");
+            return R.data(true);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             r = R.fail(e.getMessage());
