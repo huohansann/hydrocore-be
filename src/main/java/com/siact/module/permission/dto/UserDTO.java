@@ -31,7 +31,7 @@ public class UserDTO {
     private String mobile;
 
     @ApiModelProperty(value = "密码", example = "123456")
-    @Size(min = 6, max = 20, message = "密码长度必须在6-20个字符之间")
+    // @Size(min = 6, max = 16, message = "密码长度必须在6-16个字符之间")  由于入参密码是密文,长度暂不限制
     private String password;
 
     @ApiModelProperty(value = "性别（0未知 1男 2女）", example = "1")
