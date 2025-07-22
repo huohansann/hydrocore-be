@@ -4,7 +4,9 @@ spring:
   cloud:
     nacos:
       # nacos IP端口配置
-      server-addr: 192.100.4.26:8848
+      server-addr: 192.100.4.191:8848
+      username: nacos
+      password: nacos
       namespace: ylkz
 
 
