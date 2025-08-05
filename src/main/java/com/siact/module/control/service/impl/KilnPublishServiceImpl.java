@@ -57,6 +57,7 @@ public class KilnPublishServiceImpl implements KilnPublishService {
 
     /**
      * 手动下发(不需要校验条规)
+     *
      * @param list
      * @return
      */
@@ -76,6 +77,7 @@ public class KilnPublishServiceImpl implements KilnPublishService {
 
     /**
      * 自动下发(需要校验条规)
+     *
      * @return
      */
     @Override
@@ -124,7 +126,10 @@ public class KilnPublishServiceImpl implements KilnPublishService {
                 String mapKey = String.join(ConstantSymbol.UNDER_LINE, entity.getDataCode(), xlsShortCode);
                 String propCode = secPropCodeMap.get(mapKey);// 获取属性Code
                 BigDecimal xlsVal = propCodeValObj == null ? null : propCodeValObj.getBigDecimal(propCode);
-                result.add(new ControlSettingGasDTO(entity.getNumber(), entity.getDataCode(), xlsVal, entity.getGasAlgorithmCalcVal(), entity.getGasManualVal(), entity.getAutoState()));
+                Double runningDcsVal = xlsVal == null ? null : xlsVal.doubleValue();
+                Double gasAlgorithmCalcVal = entity.getGasAlgorithmCalcVal() == null ? null : entity.getGasAlgorithmCalcVal().doubleValue();
+                Double gasManualVal = entity.getGasManualVal() == null ? null : entity.getGasManualVal().doubleValue();
+                result.add(new ControlSettingGasDTO(entity.getNumber(), entity.getDataCode(), runningDcsVal, gasAlgorithmCalcVal, gasManualVal, entity.getAutoState()));
             });
         }
 
@@ -164,7 +169,10 @@ public class KilnPublishServiceImpl implements KilnPublishService {
                 BigDecimal xlsVal = propCodeValObj == null ? null : propCodeValObj.getBigDecimal(xlsPropCode);// 风气比设定值
 
                 // ps: 风气比调整值 目前在返回时置空(需求)
-                result.add(new ControlSettingWindDTO(entity.getNumber(), entity.getDataCode(), rateVal, null, xlsVal));
+                result.add(new ControlSettingWindDTO(entity.getNumber(), entity.getDataCode(),
+                        rateVal == null ? null : rateVal.doubleValue(),
+                        null,
+                        xlsVal == null ? null : xlsVal.doubleValue()));
             });
         }
 

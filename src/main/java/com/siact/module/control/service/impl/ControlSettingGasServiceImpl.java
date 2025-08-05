@@ -4,15 +4,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.constant.ConstantNum;
-import com.siact.module.control.mapper.ControlSettingGasMapper;
 import com.siact.module.control.dto.ControlSettingGasDTO;
 import com.siact.module.control.entity.ControlSettingGasEntity;
+import com.siact.module.control.mapper.ControlSettingGasMapper;
 import com.siact.module.control.service.ControlSettingGasService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -55,8 +56,10 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
             gasEntity.setNumber(publishGasSetting.getNumber());
             gasEntity.setDataCode(publishGasSetting.getDataCode());
             gasEntity.setGasPublishCodes("");// TODO 配置到数据字典
-            gasEntity.setGasAlgorithmCalcVal(publishGasSetting.getGasAlgorithmCalcVal());
-            gasEntity.setGasManualVal(publishGasSetting.getGasManualVal());
+            BigDecimal gasAlgorithmCalcVal = publishGasSetting.getGasAlgorithmCalcVal() == null ? null : BigDecimal.valueOf(publishGasSetting.getGasAlgorithmCalcVal());
+            gasEntity.setGasAlgorithmCalcVal(gasAlgorithmCalcVal);
+            BigDecimal gasManualVal = publishGasSetting.getGasManualVal() == null ? null : BigDecimal.valueOf(publishGasSetting.getGasManualVal());
+            gasEntity.setGasManualVal(gasManualVal);
             gasEntity.setAutoState(publishGasSetting.getAutoState());
         }
         saveBatch(addDataList);

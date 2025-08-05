@@ -6,8 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,11 +18,11 @@ public class ControlSettingWindDTO {
     private String dataCode;
 
     @ApiModelProperty("风气比dcs值")
-    private BigDecimal rateDcsVal;
+    private Double rateDcsVal;
 
     @ApiModelProperty("风气比人工调整值")
-    private BigDecimal rateManualVal;
+    private Double rateManualVal;
 
     @ApiModelProperty("设定值dcs值")
-    private BigDecimal settingDcsVal;
+    private Double settingDcsVal;
 }

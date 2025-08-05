@@ -6,8 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,13 +19,13 @@ public class ControlSettingGasDTO {
     private String dataCode;
 
     @ApiModelProperty("dcs运行值")
-    private BigDecimal runningDcsVal;
+    private Double runningDcsVal;
 
     @ApiModelProperty("智控算法计算值")
-    private BigDecimal gasAlgorithmCalcVal;
+    private Double gasAlgorithmCalcVal;
 
     @ApiModelProperty("人工调整值")
-    private BigDecimal gasManualVal;
+    private Double gasManualVal;
 
     @ApiModelProperty("是否自动模式,1:是 0:否")
     private Boolean autoState;

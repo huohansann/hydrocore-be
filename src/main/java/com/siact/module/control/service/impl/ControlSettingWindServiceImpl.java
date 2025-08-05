@@ -4,15 +4,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.constant.ConstantNum;
-import com.siact.module.control.mapper.ControlSettingWindMapper;
 import com.siact.module.control.dto.ControlSettingWindDTO;
 import com.siact.module.control.entity.ControlSettingWindEntity;
+import com.siact.module.control.mapper.ControlSettingWindMapper;
 import com.siact.module.control.service.ControlSettingWindService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -54,7 +55,8 @@ public class ControlSettingWindServiceImpl extends ServiceImpl<ControlSettingWin
             windEntity.setNumber(publishWindSetting.getNumber());
             windEntity.setDataCode(publishWindSetting.getDataCode());
             windEntity.setRatePublishCodes("");// TODO 配置到数据字典
-            windEntity.setRateManualVal(publishWindSetting.getRateManualVal());
+            BigDecimal rateManualVal = publishWindSetting.getRateManualVal() == null ? null : BigDecimal.valueOf(publishWindSetting.getRateManualVal());
+            windEntity.setRateManualVal(rateManualVal);
             windEntity.setDeleteFlag(ConstantNum.ZERO_INT);
             windEntity.setCreateTime(new Date());
             windEntity.setUpdateTime(new Date());
