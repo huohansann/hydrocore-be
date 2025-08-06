@@ -60,6 +60,8 @@ public class ControlSettingWindServiceImpl extends ServiceImpl<ControlSettingWin
             windEntity.setDeleteFlag(ConstantNum.ZERO_INT);
             windEntity.setCreateTime(new Date());
             windEntity.setUpdateTime(new Date());
+
+            addDataList.add(windEntity);
         }
         saveBatch(addDataList);
     }

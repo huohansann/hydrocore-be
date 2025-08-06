@@ -61,6 +61,10 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
             BigDecimal gasManualVal = publishGasSetting.getGasManualVal() == null ? null : BigDecimal.valueOf(publishGasSetting.getGasManualVal());
             gasEntity.setGasManualVal(gasManualVal);
             gasEntity.setAutoState(publishGasSetting.getAutoState());
+            gasEntity.setDeleteFlag(ConstantNum.ZERO_INT);
+            gasEntity.setCreateTime(new Date());
+            gasEntity.setUpdateTime(new Date());
+            addDataList.add(gasEntity);
         }
         saveBatch(addDataList);
     }
