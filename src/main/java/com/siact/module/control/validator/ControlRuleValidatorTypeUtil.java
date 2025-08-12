@@ -2,9 +2,9 @@ package com.siact.module.control.validator;
 
 import com.alibaba.fastjson2.JSON;
 import com.siact.common.utils.JepUtils;
-import com.siact.module.base.dto.KilnInfoDistributeDTO;
 import com.siact.module.base.service.TplService;
 import com.siact.module.control.dto.ControlRuleLocalTplSettingDTO;
+import com.siact.module.control.dto.ControlSettingGasDTO;
 import com.siact.module.control.enums.ControlRuleTypeEnum;
 import com.siact.module.control.vo.ControlRuleVO;
 import lombok.extern.slf4j.Slf4j;
@@ -31,15 +31,15 @@ public class ControlRuleValidatorTypeUtil {
      * @param ruleVO
      * @param errors
      */
-    public void validateStep(List<KilnInfoDistributeDTO> list, ControlRuleVO ruleVO, List<String> errors) {
-        for (KilnInfoDistributeDTO kilnInfoDistributeDTO : list) {
+    public void validateStep(List<ControlSettingGasDTO> list, ControlRuleVO ruleVO, List<String> errors) {
+        for (ControlSettingGasDTO setting : list) {
 //            BigDecimal gasValueChange = kilnInfoDistributeDTO.getGasValueChange();
             // 天然气变动值  自动 = 算法计算值 - DCS运行值  人工 = 人工调整值 - DCS运行值
-            BigDecimal gasValueChange = kilnInfoDistributeDTO.getGasVal().subtract(kilnInfoDistributeDTO.getGasVal()).abs();// TODO 这段逻辑暂未完善
+            BigDecimal gasValueChange = BigDecimal.valueOf(setting.getGasManualVal()).subtract(BigDecimal.valueOf(setting.getRunningDcsVal())).abs();// TODO 这段逻辑暂未完善
 
             if (ObjectUtils.isEmpty(gasValueChange) || gasValueChange.compareTo(BigDecimal.ZERO) == 0) {
                 // 变动值为 null 或者 0 视为无变动 可以下发
-                log.info("{},气量调节无变动,可以直接下发", kilnInfoDistributeDTO.getNumber());
+                log.info("{},气量调节无变动,可以直接下发", setting.getNumber());
                 continue;
             }
 
@@ -51,15 +51,15 @@ public class ControlRuleValidatorTypeUtil {
             // 当前结果 与上次结果 相与
             if (result != null) {
                 if (!result) {
-                    log.error("{},未通过校验!规则:{}", kilnInfoDistributeDTO.getNumber(), JSON.toJSONString(ruleVO));
+                    log.error("{},未通过校验!规则:{}", setting.getNumber(), JSON.toJSONString(ruleVO));
                     String errorMsg = buildErrorMsg(ruleVO);
-                    errors.add(kilnInfoDistributeDTO.getNumber() + "未通过校验!规则:" + errorMsg);
+                    errors.add(setting.getNumber() + "未通过校验!规则:" + errorMsg);
                 }
                 ruleVO.setLegal(ruleVO.getLegal() == null ? result : result && ruleVO.getLegal());
             } else {
-                log.error("{},result结果计算失败!规则:{},公式:{},参数:{}", kilnInfoDistributeDTO.getNumber(), JSON.toJSONString(ruleVO), validFormula, paramValMap);
+                log.error("{},result结果计算失败!规则:{},公式:{},参数:{}", setting.getNumber(), JSON.toJSONString(ruleVO), validFormula, paramValMap);
                 String errorMsg = buildErrorMsg(ruleVO);
-                errors.add(kilnInfoDistributeDTO.getNumber() + "result结果计算失败!规则:" + errorMsg);
+                errors.add(setting.getNumber() + "result结果计算失败!规则:" + errorMsg);
             }
         }
     }

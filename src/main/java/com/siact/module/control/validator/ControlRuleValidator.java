@@ -2,7 +2,7 @@ package com.siact.module.control.validator;
 
 import com.alibaba.fastjson2.JSON;
 import com.siact.common.utils.ConvertUtils;
-import com.siact.module.base.dto.KilnInfoDistributeDTO;
+import com.siact.module.control.dto.ControlSettingGasDTO;
 import com.siact.module.control.entity.ControlRuleEntity;
 import com.siact.module.control.enums.ControlRuleTypeEnum;
 import com.siact.module.control.service.ControlRuleService;
@@ -37,7 +37,7 @@ public class ControlRuleValidator implements RuleValidator {
     private ControlRuleValidatorTypeUtil controlRuleUtil;
 
     @Override
-    public RuleValidateResult validate(List<KilnInfoDistributeDTO> kilnInfoList) {
+    public RuleValidateResult validate(List<ControlSettingGasDTO> settingList) {
 
         List<String> errors = new ArrayList<>();
         // 1: 获取所有的约束规则 (查询所有类型) ps: 已经设置过了换火  液压  炉压 的合法状态
@@ -56,8 +56,8 @@ public class ControlRuleValidator implements RuleValidator {
 
         Map<String, BigDecimal> gasSettingDataValMap = new HashMap<>();
 
-        for (KilnInfoDistributeDTO kilnInfo : kilnInfoList) {
-            gasSettingDataValMap.put(kilnInfo.getDataCode(), kilnInfo.getGasVal());
+        for (ControlSettingGasDTO setting : settingList) {
+            gasSettingDataValMap.put(setting.getDataCode(), BigDecimal.valueOf(setting.getGasManualVal()));
         }
 
         if (ObjectUtils.isEmpty(gasSettingDataValMap)) {
@@ -70,7 +70,7 @@ public class ControlRuleValidator implements RuleValidator {
             if (ControlRuleTypeEnum.STEP.getCode().equals(type)) {
                 // 校验调节步长
                 log.info("校验调节步长:{}", JSON.toJSONString(ruleVO));
-                controlRuleUtil.validateStep(kilnInfoList, ruleVO, errors);
+                controlRuleUtil.validateStep(settingList, ruleVO, errors);
             } else if (ControlRuleTypeEnum.TOTAL_GAS.getCode().equals(type) || ControlRuleTypeEnum.DIFF_GAS.getCode().equals(type)) {
                 // 校验总气量 和 气量差值
                 log.info("校验总气量 和 气量差值:{}", JSON.toJSONString(ruleVO));

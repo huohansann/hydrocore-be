@@ -52,9 +52,9 @@ public class KilnPublishController {
 //    }
 
 
-    @ApiOperation("天然气与风气值下发(自动)")
-    @PostMapping("/autoPublish")
-    public R autoPublish() {
-        return kilnPublishService.autoPublish();
+    @ApiOperation("天然气自动下发")
+    @PostMapping("/gas/autoPublish")
+    public R gasAutoPublish() {
+        return kilnPublishService.gasAutoPublish();
     }
 }

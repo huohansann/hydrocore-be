@@ -55,54 +55,6 @@ public class KilnPublishServiceImpl implements KilnPublishService {
     @Autowired
     private List<RuleValidator> validators;
 
-    /**
-     * 手动下发(不需要校验条规)
-     *
-     * @param list
-     * @return
-     */
-    @Override
-    public R publish(List<KilnInfoDistributeDTO> list) {
-
-        // 1:获取当前DCS运行值  (ps:查询点位)
-
-        // 2. 保存下发参数
-        kilnInfoService.updateDistribute(list);
-
-        // TODO  没有下发记录
-
-        // 3. 下发 暂时不开发
-        return R.success();
-    }
-
-    /**
-     * 自动下发(需要校验条规)
-     *
-     * @return
-     */
-    @Override
-    public R autoPublish() {
-
-        // 1:获取当前智控计算值 (ps:查询算法)
-        List<KilnInfoDistributeDTO> list = new ArrayList<>();
-
-        // 2:获取当前DCS运行值 (ps:查询点位)
-
-        // 3:本次控制变动值 = 智控计算值 - 当前DCS运行值 的绝对值  (ps:这里的逻辑暂时未完成  TODO)
-
-        // 4. 责任链自动校验参数
-        AnnotationAwareOrderComparator.sort(validators);
-        for (RuleValidator validator : validators) {
-            RuleValidateResult result = validator.validate(list);
-            if (!result.isPass()) {
-                return R.success(result.getMessage(), result.getErrors());
-            }
-        }
-
-        // 5. 下发 暂时不开发
-        return R.success();
-    }
-
     @Override
     public List<ControlSettingGasDTO> getKilnGasControlSetting() {
         List<ControlSettingGasDTO> result = new ArrayList<>();
@@ -193,7 +145,7 @@ public class KilnPublishServiceImpl implements KilnPublishService {
         // 1.2:再新增
         controlSettingGasService.saveGasSetting(publishGasSettingList);
 
-        // 手动下发 TODO 目前暂无下发逻辑多节,暂时返回成功
+        // 手动下发 TODO 目前暂无下发逻辑对接,暂时返回成功
         return true;
     }
 
@@ -211,14 +163,14 @@ public class KilnPublishServiceImpl implements KilnPublishService {
         // 1.2:再新增
         controlSettingWindService.saveWindSetting(publishWindSettingList);
 
-        // 手动下发 TODO 目前暂无下发逻辑多节,暂时返回成功
+        // 手动下发 TODO 目前暂无下发逻辑对接,暂时返回成功
         return true;
     }
 
     private Map<String, String> querySecPropCode(List<String> dataCodeList, List<String> propShortCode) {
         InfoListQueryVo infoListQueryVo = new InfoListQueryVo();
         infoListQueryVo.setDataCodes(new HashSet<>(dataCodeList));
-        infoListQueryVo.setPropModelCodes(propShortCode);// TODO 属性短码确认
+        infoListQueryVo.setPropModelCodes(propShortCode);
         Map<String, List<EqDypropInsDTO>> result = secInsService.queryInsDynamicProp(infoListQueryVo);
         log.info("多个实例，一个属性短码，获取对应的属性长码对应,dataCodeList:{},propShortCode:{},result:{}", dataCodeList, propShortCode, result);
 
@@ -237,5 +189,33 @@ public class KilnPublishServiceImpl implements KilnPublishService {
         }
 
         return dataCodeShortMap;
+    }
+
+    /**
+     * 自动下发,仅天然气控制设定值(需要校验条规)
+     *
+     * @return
+     */
+    @Override
+    public R gasAutoPublish() {
+
+        // 1:获取当前智控计算值 (ps:查询算法)
+        List<ControlSettingGasDTO> list = new ArrayList<>();
+
+        // 2:获取当前DCS运行值 (ps:查询点位)
+
+        // 3:本次控制变动值 = 智控计算值 - 当前DCS运行值 的绝对值  (ps:这里的逻辑暂时未完成  TODO)
+
+        // 4. 责任链自动校验参数
+        AnnotationAwareOrderComparator.sort(validators);
+        for (RuleValidator validator : validators) {
+            RuleValidateResult result = validator.validate(list);
+            if (!result.isPass()) {
+                return R.success(result.getMessage(), result.getErrors());
+            }
+        }
+
+        // 5. 下发 暂时不开发
+        return R.success();
     }
 }

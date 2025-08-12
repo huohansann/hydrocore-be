@@ -1,8 +1,8 @@
 package com.siact.module.control.validator;
 
-import com.siact.module.base.dto.KilnInfoDistributeDTO;
 import com.siact.module.base.entity.KilnInfoEntity;
 import com.siact.module.base.service.IKilnInfoService;
+import com.siact.module.control.dto.ControlSettingGasDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,34 +28,34 @@ public class GeneralRuleValidator implements RuleValidator {
     private IKilnInfoService kilnInfoService;
 
     @Override
-    public RuleValidateResult validate(List<KilnInfoDistributeDTO> list) {
+    public RuleValidateResult validate(List<ControlSettingGasDTO> settingList) {
         // 获取总规信息
         List<KilnInfoEntity> kilnInfoEntities = kilnInfoService.list();
 
         // 根据id分组
-        Map<Long, KilnInfoEntity> kilnInfoEntityMap = kilnInfoEntities.stream().collect(Collectors.toMap(KilnInfoEntity::getId,
+        Map<String, KilnInfoEntity> kilnInfoEntityMap = kilnInfoEntities.stream().collect(Collectors.toMap(KilnInfoEntity::getDataCode,
                 vo -> vo, (v1, v2) -> v1));
 
         List<String> errors = new ArrayList<>();
-        for (KilnInfoDistributeDTO distributeDTO : list) {
-            KilnInfoEntity kilnInfoEntity = kilnInfoEntityMap.get(distributeDTO.getId());
+        for (ControlSettingGasDTO setting : settingList) {
+            KilnInfoEntity kilnInfoEntity = kilnInfoEntityMap.get(setting.getDataCode());
             if (kilnInfoEntity == null) {
                 // 没有总规就不校验了
-                log.warn("总规不存在,number :{}", distributeDTO.getNumber());
+                log.warn("总规不存在,number :{}", setting.getNumber());
                 continue;
             }
             // 天然气设定值
-            BigDecimal gasVal = distributeDTO.getGasVal();
+            BigDecimal gasVal = BigDecimal.valueOf(setting.getGasManualVal());
             BigDecimal gasValLow = kilnInfoEntity.getGasValLow();
             BigDecimal gasValUp = kilnInfoEntity.getGasValUp();
             if (kilnInfoEntity.getGasValLow() == null || kilnInfoEntity.getGasValUp() == null) {
-                log.warn("总规没有天然气设定值,number :{}", distributeDTO.getNumber());
+                log.warn("总规没有天然气设定值,number :{}", setting.getNumber());
                 continue;
             }
 
             //  gasValLow  <= gasVal <= gasValUp
             if (gasVal.compareTo(gasValLow) < 0 || gasVal.compareTo(gasValUp) > 0) {
-                errors.add(distributeDTO.getNumber() + "天然气设定值不在总规范围");
+                errors.add(setting.getNumber() + "天然气设定值不在总规范围");
                 continue;
             }
         }

@@ -5,11 +5,11 @@ import com.siact.common.exception.CustomException;
 import com.siact.common.utils.JepUtils;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.dto.GasOperationDTO;
-import com.siact.module.base.dto.KilnInfoDistributeDTO;
 import com.siact.module.base.dto.TempConditionDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.service.IRuleService;
 import com.siact.module.base.vo.RuleDetailVO;
+import com.siact.module.control.dto.ControlSettingGasDTO;
 import com.siact.module.control.dto.RuleFormulaDetailDTO;
 import com.siact.sec.sevice.DataService;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +53,7 @@ public class RuleMetaValidator implements RuleValidator {
      * @return
      */
     @Override
-    public RuleValidateResult validate(List<KilnInfoDistributeDTO> gasWindSetList) {
+    public RuleValidateResult validate(List<ControlSettingGasDTO> gasWindSetList) {
         List<String> errors = new ArrayList<>();
         // 1:查询所有有效的条规配置
         List<RuleDetailVO> ruleDetailVOs = ruleService.listRules();
@@ -115,7 +115,7 @@ public class RuleMetaValidator implements RuleValidator {
      * @param gasOperationDataCodeList
      * @return
      */
-    private HashMap<String, BigDecimal> getParamValMapForJep(List<KilnInfoDistributeDTO> gasWindSetList, ArrayList<String> tempConditionsDataCodeList, ArrayList<String> gasOperationDataCodeList) {
+    private HashMap<String, BigDecimal> getParamValMapForJep(List<ControlSettingGasDTO> gasWindSetList, ArrayList<String> tempConditionsDataCodeList, ArrayList<String> gasOperationDataCodeList) {
         // 查询孪生 获取当前值 (ps:由于温度和天然气设定值  都是查询 瞬时值 ,因此可以同时查询)
         JSONObject dataCodeValObj = querySecLastValByAllDataCode(tempConditionsDataCodeList, gasOperationDataCodeList);
 
@@ -158,14 +158,15 @@ public class RuleMetaValidator implements RuleValidator {
      * @param tempConditionsDataCodeList
      * @return
      */
-    private HashMap<String, BigDecimal> getSetValMap(List<KilnInfoDistributeDTO> gasWindSetList, ArrayList<String> tempConditionsDataCodeList) {
+    private HashMap<String, BigDecimal> getSetValMap(List<ControlSettingGasDTO> gasWindSetList, ArrayList<String> tempConditionsDataCodeList) {
         HashMap<String, BigDecimal> setValMap = new HashMap<>();
         // 1:查询温度设定值
         List<ControlIntervalConfigDTO> temperatureSetList = controlIntervalService.selectListByDataCodeList(tempConditionsDataCodeList);
         Map<String, BigDecimal> temperatureSetMap = temperatureSetList.stream().collect(Collectors.toMap(ControlIntervalConfigDTO::getDataCode, o -> new BigDecimal(o.getTemperatureSet()), (oldValue, newValue) -> newValue));
         setValMap.putAll(temperatureSetMap);
         // 2:查询天然气设定值
-        Map<String, BigDecimal> gasSetValMap = gasWindSetList.stream().collect(Collectors.toMap(KilnInfoDistributeDTO::getDataCode, KilnInfoDistributeDTO::getGasVal, (oldValue, newValue) -> newValue));
+        Map<String, BigDecimal> gasSetValMap = gasWindSetList.stream()
+                .collect(Collectors.toMap(ControlSettingGasDTO::getDataCode, o->BigDecimal.valueOf(o.getGasManualVal()), (oldValue, newValue) -> newValue));
         setValMap.putAll(gasSetValMap);
         return setValMap;
     }
