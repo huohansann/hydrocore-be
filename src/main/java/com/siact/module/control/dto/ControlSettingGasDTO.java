@@ -28,5 +28,5 @@ public class ControlSettingGasDTO {
     private Double gasManualVal;
 
     @ApiModelProperty("是否自动模式,1:是 0:否")
-    private Boolean state;
+    private Boolean autoState;
 }
