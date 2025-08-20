@@ -175,6 +175,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleEntity> impleme
     public List<RoleEntity> listAllRoles() {
         return list(new LambdaQueryWrapper<RoleEntity>()
                 .eq(RoleEntity::getStatus, true)
+                .eq(RoleEntity::getDeleted, false)
                 .orderByAsc(RoleEntity::getSort));
     }
     
