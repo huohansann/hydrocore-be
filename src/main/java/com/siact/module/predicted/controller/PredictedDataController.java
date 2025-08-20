@@ -2,6 +2,7 @@ package com.siact.module.predicted.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.siact.common.R;
+import com.siact.module.predicted.service.AlgorithmPredictedService;
 import com.siact.module.predicted.service.PredictedDataService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -20,6 +21,9 @@ public class PredictedDataController {
     @Autowired
     private PredictedDataService predictedDataService;
 
+    @Autowired
+    private AlgorithmPredictedService algorithmPredictedService;
+
     @ApiOperation(value = "查询模板列表")
     @GetMapping("/handleMessage")
     public R handleMessageData(String topic, String message) {
@@ -33,4 +37,12 @@ public class PredictedDataController {
     public R<List<JSONObject>> getAllTypeList() {
         return R.success(predictedDataService.getAllTypeList());
     }
+
+    @ApiOperation(value = "删除早于time的call_info调用记录")
+    @GetMapping("/deleteAlgorithmCallInfo")
+    public R deleteAlgorithmCallInfoBeforeTime(String time) {
+        algorithmPredictedService.deleteAlgorithmCallInfoBeforeTime(time);
+        return R.success();
+    }
+
 }

@@ -1,9 +1,13 @@
 package com.siact.module.predicted.service.impl;
 
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.siact.common.constant.ConstantBase;
 import com.siact.common.constant.ConstantSymbol;
 import com.siact.common.constant.ConstantTime;
@@ -36,7 +40,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -98,6 +109,18 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         // 3:解析算法返回的数据  并 记录预测数据
         parseCallRespDataAndSavePredictionData(response, modelCallParamDTO, modelInfoEntityList, nowTimeStr);
+    }
+
+    @Override
+    public void deleteAlgorithmCallInfoBeforeTime(String time) {
+        if (StringUtils.isBlank(time)) {
+            // 默认,删除当前时间前一个月的数据
+            DateTime curTime = DateUtil.beginOfMonth(new Date());
+            DateTime beforeMonthTime = DateUtil.offset(curTime, DateField.MONTH, -1);
+            time = beforeMonthTime.toString(ConstantTime.DATE_TIME);
+        }
+
+        algorithmCallInfoService.deleteBeforeTime(time);
     }
 
     @NotNull

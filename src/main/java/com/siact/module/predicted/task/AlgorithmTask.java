@@ -33,4 +33,14 @@ public class AlgorithmTask {
         }
         algorithmPredictedService.algorithmInference();
     }
+
+    /**
+     * 每月1号定时删除之前的调用记录
+     */
+    @Scheduled(cron = "0 0 0 1 * ?")
+    public void deleteAlgorithmCallInfoBeforeTime() {
+        // 默认删除上月前的数据(保留一个月)
+        algorithmPredictedService.deleteAlgorithmCallInfoBeforeTime("");
+    }
+
 }

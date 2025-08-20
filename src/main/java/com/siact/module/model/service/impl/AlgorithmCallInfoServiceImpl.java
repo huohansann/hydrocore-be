@@ -2,6 +2,7 @@ package com.siact.module.model.service.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.constant.ConstantSymbol;
@@ -102,6 +103,15 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
         entity.setCreateTime(new Date());
         baseMapper.insert(entity);
         return callId;
+    }
+
+    @Override
+    public void deleteBeforeTime(String time) {
+        // 删除早于time的数据
+        LambdaQueryWrapper<AlgorithmCallInfoEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.le(AlgorithmCallInfoEntity::getReqTime, time);
+
+        baseMapper.delete(queryWrapper);
     }
 
     private String uploadMinio(String modelPath) {
