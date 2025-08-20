@@ -16,8 +16,17 @@ import com.siact.module.permission.dto.AssignPermissionsDTO;
 import com.siact.module.permission.dto.PageDTO;
 import com.siact.module.permission.dto.UserDTO;
 import com.siact.module.permission.dto.UserUpdateDTO;
-import com.siact.module.permission.entity.*;
-import com.siact.module.permission.mapper.*;
+import com.siact.module.permission.entity.OrganizationEntity;
+import com.siact.module.permission.entity.RoleEntity;
+import com.siact.module.permission.entity.UserEntity;
+import com.siact.module.permission.entity.UserExcelEntity;
+import com.siact.module.permission.entity.UserOrganizationEntity;
+import com.siact.module.permission.entity.UserRoleEntity;
+import com.siact.module.permission.mapper.OrganizationMapper;
+import com.siact.module.permission.mapper.RoleMapper;
+import com.siact.module.permission.mapper.UserMapper;
+import com.siact.module.permission.mapper.UserOrganizationMapper;
+import com.siact.module.permission.mapper.UserRoleMapper;
 import com.siact.module.permission.service.UserService;
 import com.siact.module.permission.vo.PageVO;
 import com.siact.module.permission.vo.UserVO;
@@ -337,7 +346,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
     public UserEntity getUserByAccount(String account) {
         UserEntity user = getOne(new LambdaQueryWrapper<UserEntity>()
                 .eq(UserEntity::getAccount, account)
-                .eq(UserEntity::getStatus, true), false);
+                .eq(UserEntity::getStatus, true)
+                .eq(UserEntity::getDeleted, false)
+                , false);
 
         if (user != null) {
             // 查询用户关联的角色ID列表
