@@ -1,5 +1,6 @@
 package com.siact.module.model.service.impl;
 
+import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -9,14 +10,18 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.constant.ConstantBase;
 import com.siact.common.constant.ConstantTime;
-import com.siact.common.constant.ConstantUtil;
 import com.siact.common.enums.StatusEnum;
 import com.siact.common.exception.CustomException;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.common.utils.TimeUtil;
 import com.siact.module.base.service.TplService;
 import com.siact.module.enmus.ModelStatusEnum;
-import com.siact.module.model.dto.*;
+import com.siact.module.model.dto.AlgorithmDataCodeDTO;
+import com.siact.module.model.dto.AlgorithmGenerateModelParamDTO;
+import com.siact.module.model.dto.ModelConfigParamDTO;
+import com.siact.module.model.dto.ModelConfigParamDetailDTO;
+import com.siact.module.model.dto.ModelConfigParamRtnDTO;
+import com.siact.module.model.dto.ModelInfoDTO;
 import com.siact.module.model.entity.AlgorithmCallInfoEntity;
 import com.siact.module.model.entity.ModelConfigParamEntity;
 import com.siact.module.model.entity.ModelInfoEntity;
@@ -46,10 +51,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -167,6 +176,8 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         entity.setPublicSetting(JSON.toJSONString(configParamSaveVo.getPublicSetting()));
         entity.setAlgorithmSetting(JSON.toJSONString(configParamSaveVo.getAlgorithmSetting()));
         entity.setValid(StatusEnum.VALID.getCode());
+        entity.setTrainDataStartTime(configParamSaveVo.getTrainDataStartTime());
+        entity.setTrainDataEndTime(configParamSaveVo.getTrainDataEndTime());
 
         saveOrUpdate(entity);
 
@@ -342,8 +353,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         Map<String, Object> methodPar = new HashMap<>();
         for (ModelConfigParamDetailDTO detailDTO : selectedAlgorithmConfig.getParamList()) {
             String paramCode = detailDTO.getParamCode();
-            String value = detailDTO.getValue();
-            methodPar.put(paramCode, value);
+            methodPar.put(paramCode, detailDTO.getValue());
         }
         // 设置算法参数
         paramDTO.setMethod_par(methodPar);
@@ -363,29 +373,24 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
         // 取值为参数设置中开始结束滑块时间的长度
         List<ModelConfigParamDetailDTO> timeRange = publicParamDto.getRange();
-        Map<String, String> timeRangeCodeMap = timeRange.stream().collect(Collectors.toMap(ModelConfigParamDetailDTO::getParamCode, ModelConfigParamDetailDTO::getValue));
+        Map<String, Object> timeRangeCodeMap = timeRange.stream().collect(Collectors.toMap(ModelConfigParamDetailDTO::getParamCode, ModelConfigParamDetailDTO::getValue));
 
-        String hisDataStartTimeStr = timeRangeCodeMap.get("hisDataStartTime");
-        String hisDataEndTimeStr = timeRangeCodeMap.get("hisDataEndTime");
+        Integer hisDataStartTime = (Integer) timeRangeCodeMap.get("hisDataStartTime");
+        Integer hisDataEndTime = (Integer) timeRangeCodeMap.get("hisDataEndTime");
 
-        if (hisDataStartTimeStr == null || hisDataEndTimeStr == null) {
+        if (hisDataStartTime == null || hisDataEndTime == null) {
             throw new CustomException("未找到对应的时间范围:" + entity.getPredictedTypeCode());
         }
-        BigDecimal hisDataStartTime = new BigDecimal(hisDataStartTimeStr);
-        BigDecimal hisDataEndTime = new BigDecimal(hisDataEndTimeStr);
 
         // 设置时间范围(页面设置的时间,末-头)
-        BigDecimal past_number = hisDataStartTime.subtract(hisDataEndTime);
-        paramDTO.setPast_number(past_number.stripTrailingZeros().toPlainString());
+        Integer past_number = hisDataStartTime - hisDataEndTime;
+        paramDTO.setPast_number(past_number);
 
-        LocalDateTime nowDateTIme = LocalDateTime.now();
-        // TODO 这里的时间可能要改成区间 hisDataStartTime.intValue()  hisDataEndTime.intValue()
-        LocalDateTime startTime = TimeUtil.offset(nowDateTIme, hisDataStartTime.intValue(), ChronoUnit.MINUTES);
-        LocalDateTime endTime = TimeUtil.offset(nowDateTIme, hisDataEndTime.intValue(), ChronoUnit.MINUTES);
-
+        Date trainDataStartTime = entity.getTrainDataStartTime();
+        Date trainDataEndTime = entity.getTrainDataEndTime();
         // 设置算法需要的数据
         List<String> featuresDataCodeList = featuresDataCodeDtoList.stream().map(AlgorithmDataCodeDTO::getDataCode).collect(Collectors.toList());
-        Map<String, List<Map<String, List<BigDecimal>>>> dataMap = getAlgorithmDataParam(entity, featuresDataCodeList, startTime, endTime);
+        Map<String, List<Map<String, List<Object>>>> dataMap = getAlgorithmDataParam(entity, featuresDataCodeList, trainDataStartTime, trainDataEndTime);
         log.info("组装的算法数据:{}", dataMap);
         paramDTO.setData(dataMap);
 
@@ -409,9 +414,10 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         return featuresDataCodeDtoList;
     }
 
-    private Map<String, List<Map<String, List<BigDecimal>>>> getAlgorithmDataParam(ModelConfigParamEntity entity, List<String> featuresDataCodeList, LocalDateTime startTime, LocalDateTime endTime) {
-        String startTimeStr = startTime.format(ConstantUtil.DATE_FORMATTER);
-        String endTimeStr = endTime.format(ConstantUtil.DATE_FORMATTER);
+    private Map<String, List<Map<String, List<Object>>>> getAlgorithmDataParam(ModelConfigParamEntity entity, List<String> featuresDataCodeList,
+                                                                               Date trainDataStartTime, Date trainDataEndTime) {
+        String startTimeStr = DateUtil.format(trainDataStartTime, ConstantTime.DATE_TIME);
+        String endTimeStr = DateUtil.format(trainDataEndTime, ConstantTime.DATE_TIME);
 
         // 1:查询范围内的工况信息(正常时段的)
         List<ProcessLogEntity> processLogList = processLogService.getByTimeRange(
@@ -420,19 +426,19 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
                 ReplaceMachineEnum.NORMAL.getValue());
         if (ObjectUtils.isEmpty(processLogList)) {
             log.error("工况信息未初始化为空,不进行处理");
-            return null;
+            throw new CustomException("工况信息未初始化为空,不进行处理");
         }
 
         // 2:整理数据 Map<String, Map<String, List<BigDecimal>>> <工况code , <数据code, 数据值List>>
-        Map<String, List<Map<String, List<BigDecimal>>>> algorithmDataValMap = new HashMap<>();
+        Map<String, List<Map<String, List<Object>>>> algorithmDataValMap = new HashMap<>();
 
         for (ProcessLogEntity curProcess : processLogList) {
-            String secStartTime = curProcess.getEndTime();
+            String secStartTime = curProcess.getStartTime();
             // 如果工艺时间 小于 入参的开始时间, 那么以入参的开始时间为准
             if (secStartTime.compareTo(startTimeStr) < 0) {
                 secStartTime = startTimeStr;
             }
-            String secEndTime = curProcess.getStartTime();
+            String secEndTime = curProcess.getEndTime() == null ? TimeUtil.getNow() : curProcess.getEndTime();
             // 如果工艺时间 大于 入参的结束时间, 那么以入参的结束时间为准
             if (secEndTime.compareTo(endTimeStr) > 0) {
                 secEndTime = endTimeStr;
@@ -444,14 +450,14 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         return algorithmDataValMap;
     }
 
-    private void buildAlgorithmDataValMap(ModelConfigParamEntity entity, List<String> featuresDataCodeList, String secStartTime, String secEndTime, ProcessLogEntity curProcess, Map<String, List<Map<String, List<BigDecimal>>>> algorithmDataValMap) {
+    private void buildAlgorithmDataValMap(ModelConfigParamEntity entity, List<String> featuresDataCodeList, String secStartTime, String secEndTime, ProcessLogEntity curProcess, Map<String, List<Map<String, List<Object>>>> algorithmDataValMap) {
         // 2:查询孪生时间范围内的数据
         // 查询时间范围内的孪生数据
         IntervalValParamsDto queryParam = new IntervalValParamsDto();
-        ArrayList<String> allQueryDataCodeList = new ArrayList<>();
-        allQueryDataCodeList.add(entity.getDataCode());
-        allQueryDataCodeList.addAll(featuresDataCodeList);
-        queryParam.setDataCodes(allQueryDataCodeList);
+        HashSet<String> allQueryDataCodeSet = new HashSet<>();
+        allQueryDataCodeSet.add(entity.getDataCode());
+        allQueryDataCodeSet.addAll(featuresDataCodeList);
+        queryParam.setDataCodes(new ArrayList<>(allQueryDataCodeSet));
         queryParam.setStartTime(secStartTime);
         queryParam.setEndTime(secEndTime);
         queryParam.setTs(1);
@@ -459,7 +465,9 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         queryParam.setCalcType(ConstantBase.LAST);// 查询温度,为瞬时值
         queryParam.setFormatVal(ConstantTime.DATE_TIME);
 
-         List<IntervalDataDto> secDataList = dataService.queryIntervalVal(queryParam);
+        List<IntervalDataDto> secDataList = dataService.queryIntervalVal(queryParam);
+        // 将孪生数据根据dataCode进行分组
+        Map<String, List<IntervalDataDto>> dataCodeValMap = secDataList.stream().collect(Collectors.groupingBy(IntervalDataDto::getDataCode));
 
         // 获取当前工况type的one-hot对应的code
         ProcessOneHotEncoderEnum hotEncoderEnum = ProcessOneHotEncoderEnum.getEnumByType(curProcess.getOperatingCode());
@@ -470,24 +478,32 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         // 算法对应的工艺code
         String algorithmProcessCode = hotEncoderEnum.getAlgorithmProcessCode();
 
-        List<Map<String, List<BigDecimal>>> curAlgorithmDataMapList = algorithmDataValMap.getOrDefault(algorithmProcessCode, new ArrayList<>());
+        List<Map<String, List<Object>>> curAlgorithmDataMapList = algorithmDataValMap.getOrDefault(algorithmProcessCode, new ArrayList<>());
 
-        Map<String, List<BigDecimal>> curProcessAlgorithmDataValMap = new HashMap<>();
-        for (IntervalDataDto dataDto : secDataList) {
-            AlgorithmDataCodeDTO algorithmDataCodeDTO = algorithmDataCodeUtil.getByDataCode(dataDto.getDataCode());
+        Map<String, List<Object>> curProcessAlgorithmDataValMap = new HashMap<>();
+        for (String dataCode : allQueryDataCodeSet) {
+
+            AlgorithmDataCodeDTO algorithmDataCodeDTO = algorithmDataCodeUtil.getByDataCode(dataCode);
             if (algorithmDataCodeDTO == null) {
-                log.error("算法数据code未定义,不进行处理,dataCode:{}",dataDto.getDataCode());
+                log.error("算法数据code未定义,不进行处理,dataCode:{}",dataCode);
                 continue;
             }
-            if (ObjectUtils.isEmpty(dataDto.getItemVal())) {
-                log.error("数据值为空,不进行处理,dataCode:{}",dataDto.getDataCode());
-                continue;
+
+            List<IntervalDataDto> dataDtoList = dataCodeValMap.get(dataCode);
+
+            for (IntervalDataDto dataDto : dataDtoList) {
+                Object curDataVal = "";
+                if (dataDto != null) {
+                    // 没有值的话 赋值 ""  有值则为BigDecimal
+                    curDataVal = ObjectUtils.isEmpty(dataDto.getItemVal()) ? "" : dataDto.getItemVal();
+                }
+
+                // 算法对应的参数code
+                String algorithmParamCode = algorithmDataCodeDTO.getAlgorithmCode();
+                List<Object> valList = curProcessAlgorithmDataValMap.getOrDefault(algorithmParamCode, new ArrayList<>());
+                valList.add(curDataVal);
+                curProcessAlgorithmDataValMap.put(algorithmParamCode, valList);
             }
-            // 算法对应的参数code
-            String algorithmParamCode = algorithmDataCodeDTO.getAlgorithmCode();
-            List<BigDecimal> valList = curProcessAlgorithmDataValMap.getOrDefault(algorithmParamCode, new ArrayList<>());
-            valList.add(dataDto.getItemVal());
-            curProcessAlgorithmDataValMap.put(algorithmParamCode, valList);
         }
 
         curAlgorithmDataMapList.add(curProcessAlgorithmDataValMap);

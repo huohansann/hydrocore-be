@@ -88,7 +88,6 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
             formatRtnTime(record);
         }
 
-
         return PageVO.build(entityPage);
     }
 
@@ -344,6 +343,7 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         wrapper.or(o -> o.ge(ProcessLogEntity::getStartTime, startTime).le(ProcessLogEntity::getEndTime, startTime));
         wrapper.or(o -> o.le(ProcessLogEntity::getStartTime, endTime).ge(ProcessLogEntity::getEndTime, endTime));
         wrapper.or(o -> o.ge(ProcessLogEntity::getStartTime, startTime).and(o1 -> o1.isNull(ProcessLogEntity::getEndTime)));
+        wrapper.or(o -> o.le(ProcessLogEntity::getStartTime, startTime).and(o1 -> o1.isNull(ProcessLogEntity::getEndTime)));
 
         return baseMapper.selectList(wrapper);
     }
@@ -358,6 +358,7 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         wrapper.or(o -> o.ge(ProcessLogEntity::getStartTime, startTime).le(ProcessLogEntity::getEndTime, startTime));
         wrapper.or(o -> o.le(ProcessLogEntity::getStartTime, endTime).ge(ProcessLogEntity::getEndTime, endTime));
         wrapper.or(o -> o.ge(ProcessLogEntity::getStartTime, startTime).and(o1 -> o1.isNull(ProcessLogEntity::getEndTime)));
+        wrapper.or(o -> o.le(ProcessLogEntity::getStartTime, startTime).and(o1 -> o1.isNull(ProcessLogEntity::getEndTime)));
 
         return baseMapper.selectList(wrapper);
     }

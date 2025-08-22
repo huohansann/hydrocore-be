@@ -23,12 +23,12 @@ public class AlgorithmGenerateModelParamDTO {
     private Integer work_code_num;
 
     @ApiModelProperty("算法预测需要的点位数据(需要排除换机等日期数据,多组数据需要分组)")
-    private Map<String, List<Map<String, List<BigDecimal>>>> data;
+    private Map<String, List<Map<String, List<Object>>>> data;
 
     @ApiModelProperty("预测类型,单步('single_step')或多步('multiple_step')")
     private String type;
     @ApiModelProperty("预测的数据为前多少分钟")
-    private String past_number;
+    private Integer past_number;
     @ApiModelProperty("预测步数,即步长T20,为20,T40为40")
     private Integer future_number;
 

@@ -17,8 +17,8 @@ public class ModelConfigParamDetailDTO {
     private String name;
     @ApiModelProperty("参数描述")
     private String describe;
-    @ApiModelProperty("字符串类参数值")
-    private String value;
+    @ApiModelProperty("参数值,可能为字符串或int或浮点")
+    private Object value;
     @ApiModelProperty("是否选中(仅选择框使用)")
     private Boolean selected;
     @ApiModelProperty("字符串子集(多选框)")

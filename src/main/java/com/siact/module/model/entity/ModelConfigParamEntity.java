@@ -25,6 +25,12 @@ public class ModelConfigParamEntity {
     private String algorithmSetting;
     // 自定义模型名称
     private String customModelName;
+
+    // 算法生成模型训练集开始时间
+    private Date trainDataStartTime;
+    // 算法生成模型训练集结束时间
+    private Date trainDataEndTime;
+
     // 状态1:有效,0:无效
     private Integer valid;
     private Date createTime;

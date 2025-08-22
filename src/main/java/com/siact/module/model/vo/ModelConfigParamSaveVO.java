@@ -10,6 +10,7 @@ import org.hibernate.validator.constraints.Length;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -42,4 +43,12 @@ public class ModelConfigParamSaveVO {
     @Length(max = 20, message = "自定义模型名称长度不能超过20个字")
     @Pattern(regexp = "^[\\u4E00-\\u9FA5a-zA-Z0-9_]+$", message = "自定义模型名称只能包含中文、字母、数字、下划线")
     private String customModelName;
+
+    @ApiModelProperty(value = "算法生成模型训练集开始时间")
+    @NotNull(message = "算法生成模型训练集开始时间不能为空")
+    private Date trainDataStartTime;
+
+    @ApiModelProperty(value = "算法生成模型训练集结束时间")
+    @NotNull(message = "算法生成模型训练集结束时间不能为空")
+    private Date trainDataEndTime;
 }
