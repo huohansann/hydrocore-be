@@ -17,6 +17,8 @@ public class ModelConfigParamDetailDTO {
     private String paramType;
     @ApiModelProperty("参数名称")
     private String name;
+    @ApiModelProperty("参数描述")
+    private String describe;
     @ApiModelProperty("参数描述,说明参数的类型,浮点/整数等")
     private String message;
     @ApiModelProperty("参数值,可能为字符串或int或浮点")
