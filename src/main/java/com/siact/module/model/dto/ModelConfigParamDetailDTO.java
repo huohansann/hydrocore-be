@@ -9,10 +9,12 @@ import java.util.ArrayList;
 @Data
 @ApiModel("参数设置")
 public class ModelConfigParamDetailDTO {
+    @ApiModelProperty("算法类型")
+    private String type;
     @ApiModelProperty("参数编码")
     private String paramCode;
-    @ApiModelProperty("参数类型")
-    private String type;
+    @ApiModelProperty("参数类型,text/number")
+    private String paramType;
     @ApiModelProperty("参数名称")
     private String name;
     @ApiModelProperty("参数描述")
