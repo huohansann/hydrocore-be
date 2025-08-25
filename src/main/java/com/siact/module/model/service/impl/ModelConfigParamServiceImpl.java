@@ -489,8 +489,11 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
                 continue;
             }
 
-            List<IntervalDataDto> dataDtoList = dataCodeValMap.get(dataCode);
-
+            List<IntervalDataDto> dataDtoList = dataCodeValMap.getOrDefault(dataCode, new ArrayList<>());
+            // 算法对应的参数code
+            String algorithmParamCode = algorithmDataCodeDTO.getAlgorithmCode();
+            // 算法值列表
+            List<Object> valList = new ArrayList<>();
             for (IntervalDataDto dataDto : dataDtoList) {
                 Object curDataVal = "";
                 if (dataDto != null) {
@@ -498,12 +501,10 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
                     curDataVal = ObjectUtils.isEmpty(dataDto.getItemVal()) ? "" : dataDto.getItemVal();
                 }
 
-                // 算法对应的参数code
-                String algorithmParamCode = algorithmDataCodeDTO.getAlgorithmCode();
-                List<Object> valList = curProcessAlgorithmDataValMap.getOrDefault(algorithmParamCode, new ArrayList<>());
+                valList = curProcessAlgorithmDataValMap.getOrDefault(algorithmParamCode, new ArrayList<>());
                 valList.add(curDataVal);
-                curProcessAlgorithmDataValMap.put(algorithmParamCode, valList);
             }
+            curProcessAlgorithmDataValMap.put(algorithmParamCode, valList);
         }
 
         curAlgorithmDataMapList.add(curProcessAlgorithmDataValMap);

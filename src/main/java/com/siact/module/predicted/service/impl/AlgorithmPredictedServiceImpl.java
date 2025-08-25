@@ -34,6 +34,7 @@ import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.predicted.service.AlgorithmPredictedService;
 import com.siact.module.predicted.service.PredictedDataService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -222,7 +223,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
     private void parseCallRespDataAndSavePredictionData(LinkedHashMap<String, Object> response, AlgorithmPublishModelParamDTO modelCallParamDTO, List<ModelInfoEntity> modelInfoEntityList, String nowTimeStr) {
         if (response == null || response.get("result") == null) {
-            log.error("调用模型无预测数据,入参:{},响应:{}", modelCallParamDTO, response);
+            log.error("调用模型无预测数据,入参:{},算法响应:{}", modelCallParamDTO, response);
             return;
         }
         Object result = response.get("result");
@@ -231,11 +232,19 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         String predictionTime = callDataInfo.getTime();
         Map<String, List<BigDecimal>> callDataMap = callDataInfo.getResult();
+        if (ObjectUtils.isEmpty(callDataMap)) {
+            log.error("调用模型无预测数据,入参:{},算法响应:{}", modelCallParamDTO, response);
+            return;
+        }
 
         List<PredictedDataEntity> predictedDataList = new ArrayList<>();
         for (ModelInfoEntity modelInfoEntity : modelInfoEntityList) {
 
             List<BigDecimal> dataValList = callDataMap.get(modelInfoEntity.getId() + "");
+            if (ObjectUtils.isEmpty(dataValList)) {
+                log.error("模型无预测数据,modelId:{},nowTimeStr:{},callDataInfo:{}", modelInfoEntity.getId(), nowTimeStr, callDataInfo);
+                continue;
+            }
 
             // 当前模型如果是非多步  则取第一个预测结果
             String predictedTypeCode = modelInfoEntity.getPredictedTypeCode();
