@@ -8,10 +8,12 @@ import com.siact.module.process.dto.ProcessLogQueryDTO;
 import com.siact.module.process.entity.ProcessLogEntity;
 import com.siact.module.process.service.IProcessLogService;
 import com.siact.module.process.vo.ProcessLogVO;
+import com.siact.sec.utils.IntervalTimeUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -33,19 +35,32 @@ public class ProcessLogController {
     @ApiOperation("分页查询工艺日志")
     @PostMapping("/page")
     public R<PageVO<ProcessLogEntity>> page(@RequestBody ProcessLogPageDTO queryDTO) {
-        return R.data(processLogService.pageQuery(queryDTO));
+        PageVO<ProcessLogEntity> pageVo = processLogService.pageQuery(queryDTO);
+
+        List<ProcessLogEntity> recordsList = pageVo.getRecords();
+        for (ProcessLogEntity logEntity : recordsList) {
+            formatRtnTime(logEntity);
+        }
+        return R.data(pageVo);
     }
 
     @ApiOperation("查询全部工艺日志")
     @PostMapping("/list")
     public R<List<ProcessLogVO>> list(@RequestBody ProcessLogQueryDTO queryDTO) {
-        return R.data(processLogService.listAll(queryDTO));
+        List<ProcessLogVO> dataList = processLogService.listAll(queryDTO);
+
+        for (ProcessLogVO logVO : dataList) {
+            formatRtnTime(logVO);
+        }
+        return R.data(dataList);
     }
 
     @ApiOperation("查询单条工艺日志")
     @GetMapping("getById")
     public R<ProcessLogVO> get(@RequestParam(value = "id") Long id) {
-        return R.data(processLogService.getById(id));
+        ProcessLogVO logVO = processLogService.getById(id);
+        formatRtnTime(logVO);
+        return R.data(logVO);
     }
 
     @ApiOperation("新增工艺日志")
@@ -79,7 +94,9 @@ public class ProcessLogController {
             @ApiImplicitParam(name = "queryDate", value = "查询日期,格式yyyy-MM-dd HH:mm:ss", required = true)
     )
     public R<ProcessLogVO> queryByDate(String queryDate) {
-        return R.data(processLogService.queryByDate(queryDate));
+        ProcessLogVO data = processLogService.queryByDate(queryDate);
+        formatRtnTime(data);
+        return R.data(data);
     }
 
     @ApiOperation("根据期起止日期查找工艺日志")
@@ -90,5 +107,31 @@ public class ProcessLogController {
     })
     public R<Map<String,List<ProcessLogVO>>> queryByDateRange(String startTime, String endTime) {
         return R.data(processLogService.queryByDateRange(startTime,endTime));
+    }
+
+    /**
+     * 转换返回的时间测试
+     * @param record
+     */
+    private static void formatRtnTime(ProcessLogVO record) {
+        if (ObjectUtils.isEmpty(record)) {
+            return;
+        }
+        record.setStartTime(record.getStartTime() == null ? null : IntervalTimeUtil.dateFormat(record.getStartTime(), "yyyy-MM-dd HH:mm"));
+        record.setEndTime(record.getEndTime() == null ? null : IntervalTimeUtil.dateFormat(record.getEndTime(), "yyyy-MM-dd HH:mm"));
+        record.setOperationDate(record.getOperationDate() == null ? null : IntervalTimeUtil.dateFormat(record.getOperationDate(), "yyyy-MM-dd"));
+    }
+
+    /**
+     * 转换返回的时间测试
+     * @param record
+     */
+    private static void formatRtnTime(ProcessLogEntity record) {
+        if (ObjectUtils.isEmpty(record)) {
+            return;
+        }
+        record.setStartTime(record.getStartTime() == null ? null : IntervalTimeUtil.dateFormat(record.getStartTime(), "yyyy-MM-dd HH:mm"));
+        record.setEndTime(record.getEndTime() == null ? null : IntervalTimeUtil.dateFormat(record.getEndTime(), "yyyy-MM-dd HH:mm"));
+        record.setOperationDate(record.getOperationDate() == null ? null : IntervalTimeUtil.dateFormat(record.getOperationDate(), "yyyy-MM-dd"));
     }
 } 

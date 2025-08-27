@@ -35,9 +35,9 @@ import com.siact.module.model.vo.ModelConfigParamSaveVO;
 import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.process.entity.ProcessLogEntity;
+import com.siact.module.process.enums.ProcessOneHotEncoderEnum;
 import com.siact.module.process.enums.ReplaceMachineEnum;
 import com.siact.module.process.service.IProcessLogService;
-import com.siact.module.process.utils.ProcessOneHotEncoderEnum;
 import com.siact.sec.dto.IntervalDataDto;
 import com.siact.sec.dto.IntervalValParamsDto;
 import com.siact.sec.sevice.DataService;
@@ -359,7 +359,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         paramDTO.setMethod_par(methodPar);
 
         // 设置工况总数,目前固定为12 12种工况
-        paramDTO.setWork_code_num(12);
+        paramDTO.setWork_code_num(ProcessOneHotEncoderEnum.values().length);  // 固定12种运行工况 ProcessOneHotEncoderEnum
 
         // 预测类型 单步('single_step')或多步('multiple_step')
         PredictedTypeEnum predictedTypeEnum = PredictedTypeEnum.getEnumByCode(entity.getPredictedTypeCode());
@@ -476,9 +476,9 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
             return;
         }
         // 算法对应的工艺code
-        String algorithmProcessCode = hotEncoderEnum.getAlgorithmProcessCode();
+        Integer algorithmProcessCode = hotEncoderEnum.getAlgorithmProcessCode();
 
-        List<Map<String, List<Object>>> curAlgorithmDataMapList = algorithmDataValMap.getOrDefault(algorithmProcessCode, new ArrayList<>());
+        List<Map<String, List<Object>>> curAlgorithmDataMapList = algorithmDataValMap.getOrDefault(algorithmProcessCode + "", new ArrayList<>());
 
         Map<String, List<Object>> curProcessAlgorithmDataValMap = new HashMap<>();
         for (String dataCode : allQueryDataCodeSet) {
@@ -509,6 +509,6 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
         curAlgorithmDataMapList.add(curProcessAlgorithmDataValMap);
 
-        algorithmDataValMap.put(algorithmProcessCode, curAlgorithmDataMapList);
+        algorithmDataValMap.put(algorithmProcessCode+"", curAlgorithmDataMapList);
     }
 }

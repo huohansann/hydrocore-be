@@ -11,12 +11,14 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.siact.common.constant.ConstantBase;
 import com.siact.common.constant.ConstantSymbol;
 import com.siact.common.constant.ConstantTime;
+import com.siact.common.exception.CustomException;
 import com.siact.common.utils.TimeUtil;
 import com.siact.module.base.service.TplService;
 import com.siact.module.model.dto.AlgorithmDataCodeDTO;
 import com.siact.module.model.dto.AlgorithmPublishModelParamDTO;
 import com.siact.module.model.dto.AlgorithmPublishModelParamDetailDTO;
 import com.siact.module.model.dto.ModelConfigParamDTO;
+import com.siact.module.model.dto.ModelConfigParamDetailDTO;
 import com.siact.module.model.entity.AlgorithmCallInfoEntity;
 import com.siact.module.model.entity.ModelConfigParamEntity;
 import com.siact.module.model.entity.ModelInfoEntity;
@@ -33,6 +35,9 @@ import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.predicted.service.AlgorithmPredictedService;
 import com.siact.module.predicted.service.PredictedDataService;
+import com.siact.module.process.enums.ProcessOneHotEncoderEnum;
+import com.siact.module.process.service.IProcessLogService;
+import com.siact.module.process.vo.ProcessLogVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
@@ -76,11 +81,14 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
     @Autowired
     private ModelPublishInfoService modelPublishInfoService;
 
+    @Autowired
+    private IProcessLogService processLogService;
+
     public void algorithmInference() {
 
         String nowTimeStr = TimeUtil.getNowStr(ConstantTime.DATE_TIME_MM_00);
 
-        // 1:读取模型数据当中的预测相关的模型
+        // 1:读取模型数据当中的预测相关的dataCode MC1/MC5/MC10
         List<AlgorithmPredictionDataCodeTplDTO> predictionDataList = tplService.getListByCode("algorithmPredictionDataCode", AlgorithmPredictionDataCodeTplDTO.class);
 
         List<String> dataCodeList = predictionDataList.stream().map(AlgorithmPredictionDataCodeTplDTO::getDataCode).distinct().collect(Collectors.toList());
@@ -131,12 +139,18 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         Map<Long, ModelConfigParamEntity> paranInfoMap = modelConfigList.stream().collect(Collectors.toMap(ModelConfigParamEntity::getId, o -> o));
 
-        // 所有dataCode 中所有选中的模型
-        List<AlgorithmPublishModelParamDetailDTO> paramList = new ArrayList<>();
-        AlgorithmPublishModelParamDTO modelParamDTO = new AlgorithmPublishModelParamDTO();
-        modelParamDTO.setTime(nowTimeStr);
-        modelParamDTO.setParams(paramList);
+        // 查询当前时间的运行工况
+        ProcessLogVO curTimeProcessLog = processLogService.queryByDate(nowTimeStr);
+        String operatingCode = curTimeProcessLog.getOperatingCode();
+        if (ObjectUtils.isEmpty(operatingCode)) {
+            log.error("没有查询到当前时间对应的运行工况,nowTimeStr:{}", nowTimeStr);
+            throw new CustomException("没有查询到当前时间对应的运行工况,nowTimeStr:" + nowTimeStr);
+        }
 
+        // 初始化调用算法的参数
+        List<AlgorithmPublishModelParamDetailDTO> paramList = new ArrayList<>();
+
+        // 遍历所有匹配到完成回调的模型
         for (ModelInfoEntity modelInfoEntity : modelInfoEntityList) {
 
             AlgorithmPublishModelParamDetailDTO detailParam = new AlgorithmPublishModelParamDetailDTO();
@@ -147,6 +161,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             String modelName = modelInfoEntity.getModelName();
             detailParam.setModel_name(modelName);
 
+            // 设置算法 如:bp,XGBoot,LSTM...
             String algorithmCode = modelInfoEntity.getAlgorithmCode();
             detailParam.setMethod(algorithmCode);
 
@@ -160,6 +175,8 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
                 log.error("模型参数配置不存在,dataCode:{},predictedTypeCode:{}", dataCode, predictedTypeCode);
                 continue;
             }
+
+            // TODO 这里的data格式  没对齐  需要再对一下  hanyibin -> liuchengpeng
             String publicSetting = configParamEntity.getPublicSetting();
             ModelConfigParamDTO publicParamDto = JSONObject.parseObject(publicSetting, ModelConfigParamDTO.class);
             List<AlgorithmDataCodeDTO> featuresDataCodeDtoList = modelConfigParamService.parsePublicParam(publicParamDto);
@@ -169,17 +186,40 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             }
             detailParam.setData(data);
 
-            detailParam.setWork_code_num(9);
-            detailParam.setWork_code(9);
+
+//            detailParam.setStep(predictedTypeEnum.getStep() * 60);// 单位是秒  // TODO 这里需要确认
+
+            // 取值为参数设置中开始结束滑块时间的长度
+            List<ModelConfigParamDetailDTO> timeRange = publicParamDto.getRange();
+            Map<String, Object> timeRangeCodeMap = timeRange.stream().collect(Collectors.toMap(ModelConfigParamDetailDTO::getParamCode, ModelConfigParamDetailDTO::getValue));
+
+            Integer hisDataStartTime = (Integer) timeRangeCodeMap.get("hisDataStartTime");
+            Integer hisDataEndTime = (Integer) timeRangeCodeMap.get("hisDataEndTime");
+            // 设置时间范围(页面设置的时间,末-头)
+            Integer past_number = hisDataStartTime - hisDataEndTime;
+
+            detailParam.setStep(past_number);// 单位是秒  // TODO 这里需要确认
+            // TODO end
+
+            detailParam.setWork_code_num(ProcessOneHotEncoderEnum.values().length); // 固定12种运行工况 ProcessOneHotEncoderEnum
+            // 获取当前时间的运行工况
+            detailParam.setWork_code(ProcessOneHotEncoderEnum.getAlgorithmCodeByType(operatingCode));
 
             PredictedTypeEnum predictedTypeEnum = PredictedTypeEnum.getEnumByCode(predictedTypeCode);
             if (predictedTypeEnum == null) {
                 log.error("模型预测类型不存在,dataCode:{},predictedTypeCode:{}", dataCode, predictedTypeCode);
                 continue;
             }
-            detailParam.setStep(predictedTypeEnum.getStep() * 60);// 单位是秒
+
+            detailParam.setType(predictedTypeEnum.getAlgorithmCode());
+            detailParam.setFuture_number(predictedTypeEnum.getStep());
+
             paramList.add(detailParam);
         }
+
+        AlgorithmPublishModelParamDTO modelParamDTO = new AlgorithmPublishModelParamDTO();
+        modelParamDTO.setTime(nowTimeStr);
+        modelParamDTO.setParams(paramList);
         return modelParamDTO;
     }
 

@@ -45,4 +45,11 @@ public class PredictedDataController {
         return R.success();
     }
 
+    @ApiOperation(value = "调用算法生成预测数据")
+    @GetMapping("/algorithmInference")
+    public R algorithmInference() {
+        algorithmPredictedService.algorithmInference();
+        return R.success();
+    }
+
 }

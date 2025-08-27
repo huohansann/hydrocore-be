@@ -1,6 +1,9 @@
 package com.siact.module.predicted.service;
 
 public interface AlgorithmPredictedService {
+    /**
+     * 算法预测
+     */
     void algorithmInference();
 
     /**
