@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
@@ -28,6 +29,7 @@ import com.siact.module.model.service.AlgorithmCallInfoService;
 import com.siact.module.model.service.ModelConfigParamService;
 import com.siact.module.model.service.ModelInfoService;
 import com.siact.module.model.service.ModelPublishInfoService;
+import com.siact.module.model.utils.AlgorithmDataCodeUtil;
 import com.siact.module.predicted.dto.AlgorithmPredictionCallDataDTO;
 import com.siact.module.predicted.dto.AlgorithmPredictionDataCodeTplDTO;
 import com.siact.module.predicted.entity.PredictedDataEntity;
@@ -83,6 +85,9 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
     @Autowired
     private IProcessLogService processLogService;
+
+    @Autowired
+    private AlgorithmDataCodeUtil algorithmDataCodeUtil;
 
     public void algorithmInference() {
 
@@ -176,6 +181,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
                 continue;
             }
 
+            // 处理公共参数
             // data传的是 k:算法code  v:孪生code 的格式
             String publicSetting = configParamEntity.getPublicSetting();
             ModelConfigParamDTO publicParamDto = JSONObject.parseObject(publicSetting, ModelConfigParamDTO.class);
@@ -213,6 +219,32 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
             detailParam.setType(predictedTypeEnum.getAlgorithmCode());
             detailParam.setFuture_number(predictedTypeEnum.getStep());
+
+
+            // 处理算法配置参数
+            String algorithmSetting = configParamEntity.getAlgorithmSetting();
+            List<ModelConfigParamDetailDTO> algorithmParamDtoList = JSONArray.parseArray(algorithmSetting, ModelConfigParamDetailDTO.class);
+            ModelConfigParamDetailDTO selectedAlgorithmConfig = algorithmParamDtoList.stream().filter(ModelConfigParamDetailDTO::getSelected).findFirst().orElse(null);
+            if (ObjectUtils.isEmpty(selectedAlgorithmConfig)) {
+                throw new CustomException("未选中算法," + configParamEntity.getPredictedTypeCode());
+            }
+
+            // 设置需要计算的目标列
+            // 需要计算的目标列  MC1~MC10  对应的算法code
+            AlgorithmDataCodeDTO algorithmDataCodeDTO = algorithmDataCodeUtil.getByDataCode(configParamEntity.getDataCode());
+            if (ObjectUtils.isEmpty(algorithmDataCodeDTO)) {
+                throw new CustomException("未找到对应的算法数据code:" + configParamEntity.getDataCode());
+            }
+            detailParam.setTarget(algorithmDataCodeDTO.getAlgorithmCode());
+
+            // 算法参数
+            Map<String, Object> methodPar = new HashMap<>();
+            for (ModelConfigParamDetailDTO detailDTO : selectedAlgorithmConfig.getParamList()) {
+                String paramCode = detailDTO.getParamCode();
+                methodPar.put(paramCode, detailDTO.getValue());
+            }
+            // 设置算法参数
+            detailParam.setMethod_par(methodPar);
 
             paramList.add(detailParam);
         }

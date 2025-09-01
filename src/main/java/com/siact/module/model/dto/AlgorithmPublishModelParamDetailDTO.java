@@ -40,4 +40,10 @@ public class AlgorithmPublishModelParamDetailDTO {
 
     @ApiModelProperty("预测步数,即步长T20,为20,T40为40")
     private Integer future_number;
+
+    @ApiModelProperty("需要计算的目标列,这里固定为温度预测对应的code,即MC1..对应的code")
+    private String target;
+
+    @ApiModelProperty("算法参数设置")
+    private Map<String, Object> method_par;
 }
