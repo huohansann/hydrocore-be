@@ -32,6 +32,9 @@ public class AlgorithmPublishModelParamDetailDTO {
     @ApiModelProperty("预测的数据为前多少分钟-结束范围")
     private Integer rangeEnd;
 
+    @ApiModelProperty("预测采样间隔")
+    private String sample;
+
     @ApiModelProperty("预测类型,单步('single_step')或多步('multiple_step')")
     private String type;
 

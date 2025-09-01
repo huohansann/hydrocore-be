@@ -196,6 +196,11 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             detailParam.setRangeStart(hisDataStartTime);// 开始时间范围,单位是分钟
             detailParam.setRangeEnd(hisDataEndTime);// 结束时间范围,单位是分钟
 
+            // TODO 这段代码可能改成根据前端入参进行处理
+            int sampleTime = 60;
+            String sampleUnit = "s";
+            detailParam.setSample(sampleTime + sampleUnit.toLowerCase());
+
             detailParam.setWork_code_num(ProcessOneHotEncoderEnum.values().length); // 固定12种运行工况 ProcessOneHotEncoderEnum
             // 获取当前时间的运行工况
             detailParam.setWork_code(ProcessOneHotEncoderEnum.getAlgorithmCodeByType(operatingCode));
