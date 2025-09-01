@@ -26,8 +26,11 @@ public class AlgorithmPublishModelParamDetailDTO {
     @ApiModelProperty("预测base数据")
     private Map<String, String> data;
 
-    @ApiModelProperty("data的长度,训练时的past_number(预测的数据为前多少分钟)")
-    private Integer step;
+    @ApiModelProperty("预测的数据为前多少分钟-开始范围")
+    private Integer rangeStart;
+
+    @ApiModelProperty("预测的数据为前多少分钟-结束范围")
+    private Integer rangeEnd;
 
     @ApiModelProperty("预测类型,单步('single_step')或多步('multiple_step')")
     private String type;

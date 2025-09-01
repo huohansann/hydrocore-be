@@ -176,7 +176,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
                 continue;
             }
 
-            // TODO 这里的data格式  没对齐  需要再对一下  hanyibin -> liuchengpeng
+            // data传的是 k:算法code  v:孪生code 的格式
             String publicSetting = configParamEntity.getPublicSetting();
             ModelConfigParamDTO publicParamDto = JSONObject.parseObject(publicSetting, ModelConfigParamDTO.class);
             List<AlgorithmDataCodeDTO> featuresDataCodeDtoList = modelConfigParamService.parsePublicParam(publicParamDto);
@@ -186,20 +186,15 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             }
             detailParam.setData(data);
 
-
-//            detailParam.setStep(predictedTypeEnum.getStep() * 60);// 单位是秒  // TODO 这里需要确认
-
             // 取值为参数设置中开始结束滑块时间的长度
             List<ModelConfigParamDetailDTO> timeRange = publicParamDto.getRange();
             Map<String, Object> timeRangeCodeMap = timeRange.stream().collect(Collectors.toMap(ModelConfigParamDetailDTO::getParamCode, ModelConfigParamDetailDTO::getValue));
 
             Integer hisDataStartTime = (Integer) timeRangeCodeMap.get("hisDataStartTime");
             Integer hisDataEndTime = (Integer) timeRangeCodeMap.get("hisDataEndTime");
-            // 设置时间范围(页面设置的时间,末-头)
-            Integer past_number = hisDataStartTime - hisDataEndTime;
 
-            detailParam.setStep(past_number);// 单位是秒  // TODO 这里需要确认
-            // TODO end
+            detailParam.setRangeStart(hisDataStartTime);// 开始时间范围,单位是分钟
+            detailParam.setRangeEnd(hisDataEndTime);// 结束时间范围,单位是分钟
 
             detailParam.setWork_code_num(ProcessOneHotEncoderEnum.values().length); // 固定12种运行工况 ProcessOneHotEncoderEnum
             // 获取当前时间的运行工况
