@@ -50,25 +50,24 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
         if (errMsg != null) {
             log.error("模型调用失败：{}", errMsg);
             // 更新模型信息
-            String modelId = params.get("modelId").toString();
-            ModelInfoEntity modelInfo = modelInfoService.getById(modelId);
-            if (ObjectUtils.isNotEmpty(modelInfo)) {
-                // 3:更新请求记录数据
-                Long algorithmCallId = modelInfo.getAlgorithmCallId();
-                AlgorithmCallInfoEntity callInfo = getById(algorithmCallId);
-                callInfo.setRespTime(TimeUtil.getNow());
-                callInfo.setRespJson(JSON.toJSONString(params));
-                updateById(callInfo);
-            }else {
-                // 新增请求记录
-                AlgorithmCallInfoEntity entity = new AlgorithmCallInfoEntity();
-                entity.setType("modelInfo");
-                entity.setRespTime(TimeUtil.getNow());
-                entity.setRespJson(JSON.toJSONString(params));
-                entity.setCreateTime(new Date());
-                save(entity);
+            Object modelIdObj = params.get("model_id");
+            if (ObjectUtils.isNotEmpty(modelIdObj)) {
+                Long modelId = Long.valueOf(modelIdObj.toString());
+                ModelInfoEntity modelInfo = modelInfoService.getById(modelId);
+                if (ObjectUtils.isNotEmpty(modelInfo)) {
+                    // 3:更新请求记录数据
+                    Long algorithmCallId = modelInfo.getAlgorithmCallId();
+                    AlgorithmCallInfoEntity callInfo = getById(algorithmCallId);
+                    callInfo.setRespTime(TimeUtil.getNow());
+                    callInfo.setRespJson(JSON.toJSONString(params));
+                    updateById(callInfo);
+                } else {
+                    // 新增请求记录
+                    addDefaultRespJson(params);
+                }
+            } else {
+                addDefaultRespJson(params);
             }
-
         }else {
             log.info("模型调用成功：{}", JSON.toJSONString(params));
             // 解析回调当中的数据
@@ -91,6 +90,16 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
             callInfo.setRespJson(JSON.toJSONString(params));
             updateById(callInfo);
         }
+    }
+
+    private void addDefaultRespJson(LinkedHashMap<String, Object> params) {
+        // 新增请求记录
+        AlgorithmCallInfoEntity entity = new AlgorithmCallInfoEntity();
+        entity.setType("modelInfo");
+        entity.setRespTime(TimeUtil.getNow());
+        entity.setRespJson(JSON.toJSONString(params));
+        entity.setCreateTime(new Date());
+        save(entity);
     }
 
     private void updateCallBackModelInfo(ModelInfoEntity modelInfo, AlgorithmCallBackModelInfoDTO backModelInfoDTO) {
