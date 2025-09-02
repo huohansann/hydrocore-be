@@ -16,6 +16,7 @@ import com.siact.module.model.service.AlgorithmCallInfoService;
 import com.siact.module.model.service.ModelInfoService;
 import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,26 +45,52 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
     public void handleCallBackModelInfo(LinkedHashMap<String, Object> params) {
         // 获取参数模板
         log.info("获取模型信息：{}", JSON.toJSONString(params));
-        // 解析回调当中的数据
-        AlgorithmCallBackModelInfoDTO backModelInfoDTO = JSONObject.parseObject(JSON.toJSONString(params), AlgorithmCallBackModelInfoDTO.class);
 
-        // 获取或掉的modelId,需要根据该id,修改模型的信息
-        String modelId = backModelInfoDTO.getModel_id();
+        Object errMsg = params.get("errMsg");
+        if (errMsg != null) {
+            log.error("模型调用失败：{}", errMsg);
+            // 更新模型信息
+            String modelId = params.get("modelId").toString();
+            ModelInfoEntity modelInfo = modelInfoService.getById(modelId);
+            if (ObjectUtils.isNotEmpty(modelInfo)) {
+                // 3:更新请求记录数据
+                Long algorithmCallId = modelInfo.getAlgorithmCallId();
+                AlgorithmCallInfoEntity callInfo = getById(algorithmCallId);
+                callInfo.setRespTime(TimeUtil.getNow());
+                callInfo.setRespJson(JSON.toJSONString(params));
+                updateById(callInfo);
+            }else {
+                // 新增请求记录
+                AlgorithmCallInfoEntity entity = new AlgorithmCallInfoEntity();
+                entity.setType("modelInfo");
+                entity.setRespTime(TimeUtil.getNow());
+                entity.setRespJson(JSON.toJSONString(params));
+                entity.setCreateTime(new Date());
+                save(entity);
+            }
 
-        ModelInfoEntity modelInfo = modelInfoService.getById(modelId);
+        }else {
+            log.info("模型调用成功：{}", JSON.toJSONString(params));
+            // 解析回调当中的数据
+            AlgorithmCallBackModelInfoDTO backModelInfoDTO = JSONObject.parseObject(JSON.toJSONString(params), AlgorithmCallBackModelInfoDTO.class);
 
-        // 1:先失效同算法的其他模型
-        modelInfoService.invalidModelInfo(modelInfo.getDataCode(),modelInfo.getPredictedTypeCode(),modelInfo.getAlgorithmCode());
+            // 获取或掉的modelId,需要根据该id,修改模型的信息
+            String modelId = backModelInfoDTO.getModel_id();
 
-        // 2:再更新 回调模型信息
-        updateCallBackModelInfo(modelInfo, backModelInfoDTO);
+            ModelInfoEntity modelInfo = modelInfoService.getById(modelId);
 
-        // 3:更新请求记录数据
-        Long algorithmCallId = modelInfo.getAlgorithmCallId();
-        AlgorithmCallInfoEntity callInfo = getById(algorithmCallId);
-        callInfo.setRespTime(TimeUtil.getNow());
-        callInfo.setRespJson(JSON.toJSONString(params));
-        updateById(callInfo);
+            // 1:先失效同算法的其他模型
+            modelInfoService.invalidModelInfo(modelInfo.getDataCode(),modelInfo.getPredictedTypeCode(),modelInfo.getAlgorithmCode());
+
+            // 2:再更新 回调模型信息
+            updateCallBackModelInfo(modelInfo, backModelInfoDTO);
+            // 3:更新请求记录数据
+            Long algorithmCallId = modelInfo.getAlgorithmCallId();
+            AlgorithmCallInfoEntity callInfo = getById(algorithmCallId);
+            callInfo.setRespTime(TimeUtil.getNow());
+            callInfo.setRespJson(JSON.toJSONString(params));
+            updateById(callInfo);
+        }
     }
 
     private void updateCallBackModelInfo(ModelInfoEntity modelInfo, AlgorithmCallBackModelInfoDTO backModelInfoDTO) {
