@@ -51,6 +51,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -444,6 +445,11 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
                 secEndTime = endTimeStr;
             }
 
+            if (secStartTime.compareTo(secEndTime) > 0) {
+                log.error("工况时间段错误:{}", curProcess);
+                throw new CustomException("工况时间段错误:" + curProcess + "请核对工况录入");
+            }
+
             buildAlgorithmDataValMap(entity, featuresDataCodeList, secStartTime, secEndTime, curProcess, algorithmDataValMap);
         }
 
@@ -466,6 +472,14 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         queryParam.setFormatVal(ConstantTime.DATE_TIME);
 
         List<IntervalDataDto> secDataList = dataService.queryIntervalVal(queryParam);
+
+        // 测试代码,需要删除  构造孪生返回的数据
+        for (IntervalDataDto dataDto : secDataList) {
+            // 生成BigDecimal类型的  1-10的随机数
+            BigDecimal randomVal = BigDecimal.valueOf(Math.random() * 10);
+            dataDto.setItemVal(randomVal);
+        }
+
         // 将孪生数据根据dataCode进行分组
         Map<String, List<IntervalDataDto>> dataCodeValMap = secDataList.stream().collect(Collectors.groupingBy(IntervalDataDto::getDataCode));
 
