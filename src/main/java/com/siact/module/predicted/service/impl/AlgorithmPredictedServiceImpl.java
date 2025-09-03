@@ -306,7 +306,8 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         AlgorithmPredictionCallDataDTO callDataInfo = JSONObject.parseObject(JSON.toJSONString(result), AlgorithmPredictionCallDataDTO.class);
 
-        String predictionTime = callDataInfo.getTime();
+//        String predictionTime = callDataInfo.getTime();
+        String predictionTime = new DateTime().toString("yyyy-MM-dd HH:mm:00"); // TODO 测试数据 需要删除
         Map<String, List<BigDecimal>> callDataMap = callDataInfo.getResult();
         if (ObjectUtils.isEmpty(callDataMap)) {
             log.error("调用模型无预测数据,入参:{},算法响应:{}", modelCallParamDTO, response);
