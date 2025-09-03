@@ -288,7 +288,6 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         threadIoPoolTaskExecutor.execute(() -> {
             LinkedHashMap<String, Object> projectListByDateRange = null;
             try {
-                log.info("调用算法接口入参.generateModelParamDto:{}", generateModelParamDto);
                 projectListByDateRange = algorithmFeign.train(generateModelParamDto);
                 log.info("调用算法接口返回数据.projectListByDateRange:{}", JSON.toJSONString(projectListByDateRange));
                 algorithmCallInfo.setRespTime(TimeUtil.getNow());
@@ -355,7 +354,18 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         Map<String, Object> methodPar = new HashMap<>();
         for (ModelConfigParamDetailDTO detailDTO : selectedAlgorithmConfig.getParamList()) {
             String paramCode = detailDTO.getParamCode();
-            methodPar.put(paramCode, detailDTO.getValue());
+            String paramType = detailDTO.getParamType();
+
+            Object value = detailDTO.getValue();
+            if ("text".equals(paramType)) {
+                value = value.toString();
+            } else if ("int".equals(paramType)) {
+                value = Integer.parseInt(value.toString());
+            } else if ("float".equals(paramType)) {
+                value = Float.parseFloat(value.toString());
+            }
+            // 这里需要根据配置的paramCode 获取对应的数据类型  并转换成对应的类型
+            methodPar.put(paramCode, value);
         }
         // 设置算法参数
         paramDTO.setMethod_par(methodPar);

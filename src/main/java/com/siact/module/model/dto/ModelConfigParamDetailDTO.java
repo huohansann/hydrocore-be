@@ -13,7 +13,7 @@ public class ModelConfigParamDetailDTO {
     private String type;
     @ApiModelProperty("参数编码")
     private String paramCode;
-    @ApiModelProperty("参数类型,text/number")
+    @ApiModelProperty("参数类型,text/int/float")
     private String paramType;
     @ApiModelProperty("参数名称")
     private String name;
