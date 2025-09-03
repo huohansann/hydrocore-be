@@ -55,7 +55,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -334,12 +333,10 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
                 // 当前模型是单步预测 则取第一个预测结果 数据时间为下一个时间点
                 String dataTime = TimeUtil.getCalcTime(predictionTime, predictedTypeEnum.getStep(), ConstantBase.MIN);
                 BigDecimal curDataVal = dataValList.get(0);
-                curDataVal = dataValList.get(new Random().nextInt(dataValList.size()));// TODO 需要删除 目前算法没有逻辑  因此单步预测先随机获取一个数据
-
                 predictedDataList.add(new PredictedDataEntity(null, modelInfoEntity.getDataCode(), predictedTypeEnum.getType(), predictedTypeEnum.getCode(), dataTime, curDataVal, "℃", new Date()));
             } else {
                 // 当前模型是多步预测  则取多步预测的步长的预测结果
-                for (int i = 1; i <= predictedTypeEnum.getStep(); i++) {
+                for (int i = 0; i < predictedTypeEnum.getStep(); i++) {
                     String dataTime = TimeUtil.getCalcTime(predictionTime, i, ConstantBase.MIN);
                     BigDecimal curDataVal = dataValList.get(i);
                     predictedDataList.add(new PredictedDataEntity(null, modelInfoEntity.getDataCode(), predictedTypeEnum.getType(), predictedTypeEnum.getCode(), dataTime, curDataVal, "℃", new Date()));
@@ -348,12 +345,47 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         }
 
         // 3:保存/更新数据表(同时间点进行覆盖  单步覆盖单步  多步覆盖多步  即 根据typeCode进行 和 time进行覆盖)
+        saveOrUpdateBatchByAlgorithmResult(predictedDataList);
+    }
+
+    /**
+     * 根据算法结果,批量保存/更新数据
+     * @param predictedDataList
+     */
+    private void saveOrUpdateBatchByAlgorithmResult(List<PredictedDataEntity> predictedDataList) {
+        // 1. 根据业务键查询已存在的记录
+        List<PredictedDataEntity> existingList = predictedDataService.list(new LambdaQueryWrapper<PredictedDataEntity>()
+                .in(PredictedDataEntity::getDataCode, predictedDataList.stream().map(PredictedDataEntity::getDataCode).distinct().collect(Collectors.toList()))
+                .in(PredictedDataEntity::getPredictedTypeCode, predictedDataList.stream().map(PredictedDataEntity::getPredictedTypeCode).distinct().collect(Collectors.toList()))
+                .in(PredictedDataEntity::getTime, predictedDataList.stream().map(PredictedDataEntity::getTime).distinct().collect(Collectors.toList())));
+
+        // 2. 构建业务键到实体的映射
+        Map<String, PredictedDataEntity> existingMap = existingList.stream()
+                .collect(Collectors.toMap(
+                        entity -> entity.getDataCode() + "_" + entity.getPredictedTypeCode() + "_" + entity.getTime(),
+                        entity -> entity,
+                        (e1, e2) -> e1 // 处理重复键
+                ));
+
+        // 3. 分离需要插入和更新的数据
+        List<PredictedDataEntity> insertList = new ArrayList<>();
+        List<PredictedDataEntity> updateList = new ArrayList<>();
         for (PredictedDataEntity entity : predictedDataList) {
-            LambdaQueryWrapper<PredictedDataEntity> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(PredictedDataEntity::getDataCode, entity.getDataCode());
-            queryWrapper.eq(PredictedDataEntity::getPredictedTypeCode, entity.getPredictedTypeCode());
-            queryWrapper.eq(PredictedDataEntity::getTime, entity.getTime());
-            predictedDataService.saveOrUpdate(entity, queryWrapper);
+            String existingKey = entity.getDataCode() + "_" + entity.getPredictedTypeCode() + "_" + entity.getTime();
+            if (existingMap.containsKey(existingKey)) {
+                // 设置ID用于更新
+                entity.setId(existingMap.get(existingKey).getId());
+                updateList.add(entity);
+            } else {
+                insertList.add(entity);
+            }
+        }
+        // 4. 批量操作
+        if (!insertList.isEmpty()) {
+            predictedDataService.saveBatch(insertList, 1000);
+        }
+        if (!updateList.isEmpty()) {
+            predictedDataService.updateBatchById(updateList, 1000);
         }
     }
 }
