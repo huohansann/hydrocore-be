@@ -517,8 +517,8 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
                 valList = curProcessAlgorithmDataValMap.getOrDefault(algorithmParamCode, new ArrayList<>());
                 valList.add(curDataVal);
+                curProcessAlgorithmDataValMap.put(algorithmParamCode, valList);
             }
-            curProcessAlgorithmDataValMap.put(algorithmParamCode, valList);
         }
 
         curAlgorithmDataMapList.add(curProcessAlgorithmDataValMap);
