@@ -288,6 +288,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         threadIoPoolTaskExecutor.execute(() -> {
             LinkedHashMap<String, Object> projectListByDateRange = null;
             try {
+                log.info("调用算法接口入参.generateModelParamDto:{}", generateModelParamDto);
                 projectListByDateRange = algorithmFeign.train(generateModelParamDto);
                 log.info("调用算法接口返回数据.projectListByDateRange:{}", JSON.toJSONString(projectListByDateRange));
                 algorithmCallInfo.setRespTime(TimeUtil.getNow());
@@ -385,6 +386,9 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
         // 设置时间范围(页面设置的时间,末-头)
         Integer past_number = hisDataStartTime - hisDataEndTime;
+        if (past_number == 0) {
+            throw new CustomException("past_number范围,不能为0:" + entity.getPredictedTypeCode());
+        }
         paramDTO.setPast_number(past_number);
 
         Date trainDataStartTime = entity.getTrainDataStartTime();
