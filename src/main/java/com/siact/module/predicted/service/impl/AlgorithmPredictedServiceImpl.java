@@ -115,7 +115,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         // 1:构造模型调用的入参
         AlgorithmPublishModelParamDTO modelCallParamDTO = generateModelCallParam(dataCodeList, nowTimeStr, modelInfoEntityList);
-        log.info("调用模型预测,入参:{}", modelCallParamDTO);
+        log.info("调用模型预测,入参:{}", JSON.toJSONString(modelCallParamDTO));
 
         // 2:调用 算法的预测接口  并 记录调用信息
         LinkedHashMap<String, Object> response = callAlgorithmInterFaceData(modelCallParamDTO);
@@ -187,9 +187,13 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             ModelConfigParamDTO publicParamDto = JSONObject.parseObject(publicSetting, ModelConfigParamDTO.class);
             List<AlgorithmDataCodeDTO> featuresDataCodeDtoList = modelConfigParamService.parsePublicParam(publicParamDto);
             Map<String, String> data = new HashMap<>();
-            for (AlgorithmDataCodeDTO dto : featuresDataCodeDtoList) {
-                data.put(dto.getAlgorithmCode(), dto.getDataCode());
-            }
+//            for (AlgorithmDataCodeDTO dto : featuresDataCodeDtoList) {
+//                data.put(dto.getAlgorithmCode(), dto.getDataCode());
+//            }
+            // TODO 测试数据  需要删除
+            data.put("K02_F1TOP_TE_1011", "PGY02013_S0000000_ST00000000_U00000000_EQ000000000000_MPCEM2001");
+            data.put("K02_F1TOP_TE_1019", "PGY02013_S0000000_ST00000000_U00000000_EQ000000000000_MPTJP2001");
+            data.put("K02_F1TOP_TE_1014", "PGY02013_SFLXT001_STFLRBZ001_URBDY1001_EQ000000000000_MPCCG2001");
             detailParam.setData(data);
 
             // 取值为参数设置中开始结束滑块时间的长度
@@ -250,7 +254,8 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         }
 
         AlgorithmPublishModelParamDTO modelParamDTO = new AlgorithmPublishModelParamDTO();
-        modelParamDTO.setTime(nowTimeStr);
+//        modelParamDTO.setTime(nowTimeStr);
+        modelParamDTO.setTime("2025-03-27 00:10:00");// TODO 测试数据 需要删除
         modelParamDTO.setParams(paramList);
         return modelParamDTO;
     }
