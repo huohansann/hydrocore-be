@@ -25,7 +25,7 @@ public class AlgorithmTask {
     /**
      * 每分钟调用一次算法  获取预测数据
      */
-    @Scheduled(cron = "0 0/1 * * * ?")
+//    @Scheduled(cron = "0 0/1 * * * ?")
     public void algorithmInference() {
         if (!algorithmPredictionEnable) {
             log.info("算法预测配置未开启");
@@ -37,7 +37,7 @@ public class AlgorithmTask {
     /**
      * 每月1号定时删除之前的调用记录
      */
-    @Scheduled(cron = "0 0 0 1 * ?")
+//    @Scheduled(cron = "0 0 0 1 * ?")
     public void deleteAlgorithmCallInfoBeforeTime() {
         // 默认删除上月前的数据(保留一个月)
         algorithmPredictedService.deleteAlgorithmCallInfoBeforeTime("");
