@@ -9,10 +9,10 @@ import lombok.Data;
 public class AlgorithmCallBackModelEvaluationInfoDetailDTO {
     @ApiModelProperty("r2")
     private String r2;
-    @ApiModelProperty("mse")
-    private String mse;
-    @ApiModelProperty("mae")
-    private String mae;
+    @ApiModelProperty("MSE")
+    private String MSE;
+    @ApiModelProperty("MAE")
+    private String MAE;
     @ApiModelProperty("accuracy")
     private String accuracy;
 }

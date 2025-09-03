@@ -117,8 +117,8 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
         // 设置评价数据 // TODO 后期确认,目前评价数据 用的是测试集数据
         AlgorithmCallBackModelEvaluationInfoDetailDTO evaluationInfo = backModelInfoDTO.getEvaluation().getTest();
         modelInfo.setDetermination(evaluationInfo.getR2());
-        modelInfo.setMse(evaluationInfo.getMse());
-        modelInfo.setMae(evaluationInfo.getMae());
+        modelInfo.setMse(evaluationInfo.getMSE());
+        modelInfo.setMae(evaluationInfo.getMAE());
         modelInfo.setAccuracy(evaluationInfo.getAccuracy());
         modelInfo.setAlgorithmCallStatus(AlgorithmCallStatusEnum.SUCCESS.getStatus());
 
