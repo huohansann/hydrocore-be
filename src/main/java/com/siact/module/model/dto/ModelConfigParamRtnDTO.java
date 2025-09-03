@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
+import javax.validation.constraints.NotNull;
 import java.util.Date;
 import java.util.List;
 
@@ -29,4 +30,12 @@ public class ModelConfigParamRtnDTO {
 
 //    @ApiModelProperty(value = "创建时间")
 //    private Date createTime;
+
+    @ApiModelProperty(value = "算法生成模型训练集开始时间")
+    @NotNull(message = "算法生成模型训练集开始时间不能为空")
+    private Date trainDataStartTime;
+
+    @ApiModelProperty(value = "算法生成模型训练集结束时间")
+    @NotNull(message = "算法生成模型训练集结束时间不能为空")
+    private Date trainDataEndTime;
 }
