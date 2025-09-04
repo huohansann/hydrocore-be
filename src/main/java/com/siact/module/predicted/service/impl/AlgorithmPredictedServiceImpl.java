@@ -186,13 +186,9 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             ModelConfigParamDTO publicParamDto = JSONObject.parseObject(publicSetting, ModelConfigParamDTO.class);
             List<AlgorithmDataCodeDTO> featuresDataCodeDtoList = modelConfigParamService.parsePublicParam(publicParamDto);
             Map<String, String> data = new HashMap<>();
-//            for (AlgorithmDataCodeDTO dto : featuresDataCodeDtoList) {
-//                data.put(dto.getAlgorithmCode(), dto.getDataCode());
-//            }
-            // TODO 测试数据  需要删除
-            data.put("K02_F1TOP_TE_1011", "PGY02013_S0000000_ST00000000_U00000000_EQ000000000000_MPCEM2001");
-            data.put("K02_F1TOP_TE_1019", "PGY02013_S0000000_ST00000000_U00000000_EQ000000000000_MPTJP2001");
-            data.put("K02_F1TOP_TE_1014", "PGY02013_SFLXT001_STFLRBZ001_URBDY1001_EQ000000000000_MPCCG2001");
+            for (AlgorithmDataCodeDTO dto : featuresDataCodeDtoList) {
+                data.put(dto.getAlgorithmCode(), dto.getDataCode());
+            }
             detailParam.setData(data);
 
             // 取值为参数设置中开始结束滑块时间的长度
@@ -253,8 +249,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         }
 
         AlgorithmPublishModelParamDTO modelParamDTO = new AlgorithmPublishModelParamDTO();
-//        modelParamDTO.setTime(nowTimeStr);
-        modelParamDTO.setTime("2025-03-27 00:10:00");// TODO 测试数据 需要删除
+        modelParamDTO.setTime(nowTimeStr);
         modelParamDTO.setParams(paramList);
         return modelParamDTO;
     }
@@ -306,8 +301,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         AlgorithmPredictionCallDataDTO callDataInfo = JSONObject.parseObject(JSON.toJSONString(result), AlgorithmPredictionCallDataDTO.class);
 
-//        String predictionTime = callDataInfo.getTime();
-        String predictionTime = new DateTime().toString("yyyy-MM-dd HH:mm:00"); // TODO 测试数据 需要删除
+        String predictionTime = callDataInfo.getTime();
         Map<String, List<BigDecimal>> callDataMap = callDataInfo.getResult();
         if (ObjectUtils.isEmpty(callDataMap)) {
             log.error("调用模型无预测数据,入参:{},算法响应:{}", modelCallParamDTO, response);

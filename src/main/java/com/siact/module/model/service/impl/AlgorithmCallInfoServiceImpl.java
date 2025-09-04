@@ -110,7 +110,7 @@ public class AlgorithmCallInfoServiceImpl  extends ServiceImpl<AlgorithmCallInfo
         String modelPath = getModelPath(backModelInfoDTO.getModel_name());
         modelInfo.setModelPath(modelPath);
 
-        // TODO 上传模型文件至minio并保存minio的地址
+        // 保存生成的minio的地址(由算法上传模型文件)
         String minioPath = uploadMinio(modelPath);
         modelInfo.setModelMinioPath(minioPath);
 

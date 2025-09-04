@@ -487,13 +487,6 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
 
         List<IntervalDataDto> secDataList = dataService.queryIntervalVal(queryParam);
 
-        // 测试代码,需要删除  构造孪生返回的数据
-        for (IntervalDataDto dataDto : secDataList) {
-            // 生成BigDecimal类型的  1-10的随机数
-            BigDecimal randomVal = BigDecimal.valueOf(Math.random() * 10);
-            dataDto.setItemVal(randomVal);
-        }
-
         // 将孪生数据根据dataCode进行分组
         Map<String, List<IntervalDataDto>> dataCodeValMap = secDataList.stream().collect(Collectors.groupingBy(IntervalDataDto::getDataCode));
 
