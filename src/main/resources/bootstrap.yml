@@ -1,14 +1,34 @@
 spring:
   application:
     name: kiln-intelligent-control
-  profiles:
-    active: uat
-
-  context:
-    support:
-      admin:
-        enabled: false
-
-
-
-
+  cloud:
+    nacos:
+      # nacos IP端口配置
+      server-addr: 192.100.30.102:8848
+      username: nacos
+      password: nacos
+      namespace: ylkz
+      # 注册中心配置，使用独立命名空间
+      discovery:
+        namespace: ${spring.cloud.nacos.namespace}
+        server-addr: ${spring.cloud.nacos.server-addr}
+      config:
+        file-extension: yml
+        namespace: ${spring.cloud.nacos.namespace}
+        server-addr: ${spring.cloud.nacos.server-addr}
+        # 加载公共配置文件redis、mybatis-plus
+        extension-configs:
+          - data-id: kiln-intelligent-control.yml
+            refresh: true
+          - data-id: redis.yml
+            refresh: true
+          - data-id: mybatis-plus.yml
+            refresh: true
+          - data-id: pagehelper.yml
+            refresh: true
+          - data-id: kiln-constant.yml
+            refresh: true
+          - data-id: sec-knife4j.yml
+            refresh: true
+          - data-id: mqtt.yml
+            refresh: true
