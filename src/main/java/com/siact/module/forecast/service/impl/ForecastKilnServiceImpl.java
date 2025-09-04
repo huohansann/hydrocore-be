@@ -397,21 +397,4 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         return dataService.queryIntervalVal(com.siact.sec.utils.ConvertUtils.sourceToTarget(vo, IntervalValParamsDto.class));
     }
 
-
-    /**
-     * @param vo
-     * @return
-     * @desc: 获取预测数据
-     */
-    public Map<Integer, List<IntervalDataDto>> getForecastIntervalDataVal(CommonChartParamsVo vo) {
-        log.info("查询柱状图、折线图等图表数据(量), params:{}", com.alibaba.fastjson2.JSON.toJSONString(vo));
-        // TODO 查询数据:此处需要替换成预测数据
-        Map<Integer, List<PredictedDataDTO>> predictedData = predictedDataService.getPredictedDataByTypes(vo.getDataCodes(), Arrays.asList(1, 2), vo.getStartTime(), vo.getEndTime());
-        List<IntervalDataDto> historyIntervalDataVal1 = ConvertUtils.sourceToTarget(predictedData.get(1), IntervalDataDto.class);
-        List<IntervalDataDto> historyIntervalDataVal2 = ConvertUtils.sourceToTarget(predictedData.get(2), IntervalDataDto.class);
-        Map<Integer, List<IntervalDataDto>> resultMap = new HashMap<>(2);
-        resultMap.put(1, historyIntervalDataVal1);
-        resultMap.put(2, historyIntervalDataVal2);
-        return resultMap;
-    }
 }
