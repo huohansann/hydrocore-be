@@ -14,7 +14,7 @@ public interface ControlIntervalConfigService {
 
     void add(ControlIntervalConfigDTO configDTO);
 
-    void updateConfig(ControlIntervalConfigDTO configDTO);
+    void updateConfig(List<ControlIntervalConfigDTO> configDTOs);
 
     ControlIntervalConfigDTO get(ControlIntervalConfigVO configVO);
 
