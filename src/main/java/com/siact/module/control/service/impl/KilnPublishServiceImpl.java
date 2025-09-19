@@ -81,7 +81,13 @@ public class KilnPublishServiceImpl implements KilnPublishService {
                 Double runningDcsVal = xlsVal == null ? null : xlsVal.doubleValue();
                 Double gasAlgorithmCalcVal = entity.getGasAlgorithmCalcVal() == null ? null : entity.getGasAlgorithmCalcVal().doubleValue();
                 Double gasManualVal = entity.getGasManualVal() == null ? null : entity.getGasManualVal().doubleValue();
-                result.add(new ControlSettingGasDTO(entity.getNumber(), entity.getDataCode(), runningDcsVal, gasAlgorithmCalcVal, gasManualVal, entity.getAutoState()));
+
+                Double changeValue =
+                        (gasAlgorithmCalcVal == null
+                            || runningDcsVal == null
+                            || gasAlgorithmCalcVal - runningDcsVal == 0
+                        ) ? null : runningDcsVal - gasManualVal;
+                result.add(new ControlSettingGasDTO(entity.getNumber(), entity.getDataCode(), runningDcsVal, gasAlgorithmCalcVal, changeValue,gasManualVal, entity.getAutoState()));
             });
         }
 

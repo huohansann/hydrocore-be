@@ -37,7 +37,7 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
     @Override
     public List<ControlIntervalConfigDTO> selectListByCondition(ControlIntervalConfigVO configVO) {
         LambdaQueryWrapper<ControlIntervalConfigEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(StringUtils.isNoneBlank(configVO.getMeasurePoint()),ControlIntervalConfigEntity::getMeasurePoint, configVO.getMeasurePoint());
+        wrapper.in(StringUtils.isNoneBlank(configVO.getMeasurePoint()),ControlIntervalConfigEntity::getMeasurePoint, configVO.getMeasurePoint().split( ","));
         wrapper.eq(StringUtils.isNoneBlank(configVO.getPointType()),ControlIntervalConfigEntity::getPointType, configVO.getPointType());
         // 没有条件就默认查询全部
         List<ControlIntervalConfigEntity> controlIntervalConfigEntities = baseMapper.selectList(wrapper);
@@ -64,9 +64,9 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
     }
 
     @Override
-    public void updateConfig(ControlIntervalConfigDTO configDTO) {
-        ControlIntervalConfigEntity configEntity = ConvertUtils.sourceToTarget(configDTO, ControlIntervalConfigEntity.class);
-        baseMapper.updateById(configEntity);
+    public void updateConfig(List<ControlIntervalConfigDTO> configDTOs) {
+        List<ControlIntervalConfigEntity> configEntities = ConvertUtils.sourceToTarget(configDTOs, ControlIntervalConfigEntity.class);
+        configEntities.forEach(configEntity ->baseMapper.updateById(configEntity));
     }
 
     @Override

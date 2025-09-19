@@ -46,8 +46,8 @@ public class ControlIntervalConfigController {
 
     @ApiOperation("编辑")
     @PostMapping("/update")
-    public R update(@RequestBody ControlIntervalConfigDTO configDTO) {
-        configService.updateConfig(configDTO);
+    public R update(@RequestBody List<ControlIntervalConfigDTO> configDTOs) {
+        configService.updateConfig(configDTOs);
         return R.success();
     }
 
