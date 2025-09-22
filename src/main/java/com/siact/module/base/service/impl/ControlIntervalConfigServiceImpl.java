@@ -24,7 +24,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * 控制区间设置
@@ -36,8 +35,13 @@ import java.util.stream.Stream;
 public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlIntervalConfigMapper, ControlIntervalConfigEntity> implements ControlIntervalConfigService {
     @Override
     public List<ControlIntervalConfigDTO> selectListByCondition(ControlIntervalConfigVO configVO) {
+        List<String> measurePointList = new ArrayList<>();
+        if (StringUtils.isNoneBlank(configVO.getMeasurePoint())) {
+            measurePointList = Arrays.asList(configVO.getMeasurePoint().split(","));
+        }
+
         LambdaQueryWrapper<ControlIntervalConfigEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(StringUtils.isNoneBlank(configVO.getMeasurePoint()),ControlIntervalConfigEntity::getMeasurePoint, configVO.getMeasurePoint().split( ","));
+        wrapper.in(StringUtils.isNoneBlank(configVO.getMeasurePoint()),ControlIntervalConfigEntity::getMeasurePoint, measurePointList);
         wrapper.eq(StringUtils.isNoneBlank(configVO.getPointType()),ControlIntervalConfigEntity::getPointType, configVO.getPointType());
         // 没有条件就默认查询全部
         List<ControlIntervalConfigEntity> controlIntervalConfigEntities = baseMapper.selectList(wrapper);

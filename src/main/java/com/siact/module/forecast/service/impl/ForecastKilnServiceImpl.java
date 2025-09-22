@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.siact.api.common.api.vo.common.InfoListQueryVo;
 import com.siact.common.constant.ConstantSymbol;
 import com.siact.common.utils.ConvertUtils;
+import com.siact.common.utils.TimeUtil;
 import com.siact.module.base.dto.BasicDataDTO;
 import com.siact.module.base.dto.ColumnChartDTO;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
@@ -14,7 +15,15 @@ import com.siact.module.base.vo.TplVO;
 import com.siact.module.forecast.dto.ForecastKilnParamsDTO;
 import com.siact.module.forecast.dto.PredictionDataShowTplDTO;
 import com.siact.module.forecast.service.ForecastKilnService;
-import com.siact.module.forecast.vo.*;
+import com.siact.module.forecast.vo.AttributeInfoVO;
+import com.siact.module.forecast.vo.ForecastKilnMenuVO;
+import com.siact.module.forecast.vo.KilnDetailVO;
+import com.siact.module.forecast.vo.KilnForecastDetailVO;
+import com.siact.module.forecast.vo.KilnForecastLineChartVO;
+import com.siact.module.forecast.vo.KilnLineChartVO;
+import com.siact.module.forecast.vo.LineChartDataVO;
+import com.siact.module.forecast.vo.LineChartVO;
+import com.siact.module.forecast.vo.SeriesDataVO;
 import com.siact.module.predicted.dto.PredictedDataDTO;
 import com.siact.module.predicted.service.PredictedDataService;
 import com.siact.sec.dto.CommonChartParamsDto;
@@ -34,7 +43,13 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -85,13 +100,20 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
     @Override
     public List<LineChartVO> queryForecastInfo(ForecastKilnParamsDTO projectPropVO) {
         // 解析参数
-        // 获取当前时间：yyyy-MM-dd HH:mm:ss
-        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        // 获取当前时间：yyyy-MM-dd HH:mm:ss // 由于要查询点位数据,因此需要将秒位归0
+        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:00"));
         // 查询历史数据
         CommonChartParamsVo queryHisParamVo = ConvertUtils.sourceToTarget(projectPropVO, CommonChartParamsVo.class);
         // 历史数据截止到当前时刻
         queryHisParamVo.setEndTime(now);
         List<IntervalDataDto> intervalDataDtos = getHistoryIntervalDataVal(queryHisParamVo);
+
+        // 从intervalDataDtos当中解析出来每个dataCode,time最新的一条数据 k:dataCode,v:IntervalDataDto
+        Map<String, IntervalDataDto> latestHistoryDataMap = new HashMap<>();
+        for (IntervalDataDto data : intervalDataDtos) {
+            latestHistoryDataMap.merge(data.getDataCode(), data,
+                    (oldVal, newVal) -> newVal.getTime().compareTo(oldVal.getTime()) > 0 ? newVal : oldVal);
+        }
 
         // 封装数据
         CommonChartParamsDto acturalParamsDto = ConvertUtils.sourceToTarget(queryHisParamVo, CommonChartParamsDto.class);
@@ -104,7 +126,11 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         CommonChartParamsVo queryForecastParams = ConvertUtils.sourceToTarget(projectPropVO, CommonChartParamsVo.class);
         // 预测数据从当前时刻算起
         if (now.compareTo(projectPropVO.getEndTime()) <= 0) {
-            queryForecastParams.setStartTime(now);
+
+            // 25.09.19 逻辑修改,由于要将实际数据和预测数据连接起来,因此预测数据的时间往后移动一分钟查询,后续补充实际值的最后一个点位,latestHistoryDataMap
+            String predictionStartTime = TimeUtil.getCalcTime(now, 1, "MIN");
+            queryForecastParams.setStartTime(predictionStartTime);
+
             // 获取预测数据
             Map<Integer, List<PredictedDataDTO>> predictedData = predictedDataService.getPredictedDataByTypes(projectPropVO.getDataCodes(), Arrays.asList(1, 2), queryForecastParams.getStartTime(), queryForecastParams.getEndTime());
             List<IntervalDataDto> singlePredictionDataList = ConvertUtils.sourceToTarget(predictedData.get(1), IntervalDataDto.class);
@@ -119,7 +145,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         // 获取总的时间轴
         List<String> timeList = IntervalTimeUtil.getIntervalTimeList(projectPropVO.getStartTime(), projectPropVO.getEndTime(), projectPropVO.getTsUnit(), projectPropVO.getTs(), projectPropVO.getFormatVal());
         // 组装结果
-        return buildLineChartVO(projectPropVO, historyData, singlePredictionData, multiPredictionData, timeList);
+        return buildLineChartVO(projectPropVO, historyData, latestHistoryDataMap, singlePredictionData, multiPredictionData, timeList);
     }
 
     @Override
@@ -154,7 +180,13 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
      * @param timeList
      * @return
      */
-    private List<LineChartVO> buildLineChartVO(ForecastKilnParamsDTO projectPropVO, ColumnChartDTO historyData, ColumnChartDTO singlePredictionData, ColumnChartDTO multiPredictionData, List<String> timeList) {
+    private List<LineChartVO> buildLineChartVO(
+            ForecastKilnParamsDTO projectPropVO,
+            ColumnChartDTO historyData,
+            Map<String, IntervalDataDto> latestHistoryDataMap,
+            ColumnChartDTO singlePredictionData,
+            ColumnChartDTO multiPredictionData,
+            List<String> timeList) {
         // 组装结果
         // 获取dataCode
         List<String> dataCodeList = projectPropVO.getDataCodes();
@@ -168,11 +200,32 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
 
         // 获取单步预测属性信息
         List<BasicDataDTO> singlePredictionDataList = singlePredictionData != null && singlePredictionData.getData() != null ? singlePredictionData.getData() : Collections.emptyList();
+        // 单步预测数据 k:dataCode v:时间轴数据
         Map<String, List<Object[]>> singlePredictionDataMap = singlePredictionDataList.stream().collect(Collectors.toMap(BasicDataDTO::getDataCode, BasicDataDTO::getData, (v1, v2) -> v1));
 
         // 获取多步预测属性信息
         List<BasicDataDTO> multiBasicDataDTOList = multiPredictionData != null && multiPredictionData.getData() != null ? multiPredictionData.getData() : Collections.emptyList();
+        // 多步预测数据 k:dataCode v:时间轴数据
         Map<String, List<Object[]>> multiPredictionDataMap = multiBasicDataDTOList.stream().collect(Collectors.toMap(BasicDataDTO::getDataCode, BasicDataDTO::getData, (v1, v2) -> v1));
+
+        // 25.09.19 追加逻辑  预测值的第一个点 取的是 运行值 的最后一个点位的数据值   (目的:折线图展示时需要将实际值和预测值的点位连接起来)
+        // 根据latestHistoryDataMap,向singlePredictionDataMap当中追加第一条数据
+        for (Map.Entry<String, IntervalDataDto> entry : latestHistoryDataMap.entrySet()) {
+            String dataCode = entry.getKey();
+            IntervalDataDto latestData = entry.getValue();
+            // 处理单步预测数据
+            List<Object[]> singleData = singlePredictionDataMap.get(dataCode);
+            if (ObjectUtils.isNotEmpty(singleData)) {
+                // 追加第一条数据
+                singleData.add(0, new Object[]{latestData.getTime(), latestData.getItemVal()});
+            }
+            // 处理多步预测数据
+            List<Object[]> multiData = multiPredictionDataMap.get(dataCode);
+            if (ObjectUtils.isNotEmpty(multiData)) {
+                // 追加第一条数据
+                multiData.add(0, new Object[]{latestData.getTime(), latestData.getItemVal()});
+            }
+        }
 
 
         // 获取上下控制值 上下告警值  温度设定线
