@@ -19,4 +19,5 @@ public interface PredictedDataService extends IService<PredictedDataEntity> {
 
     List<JSONObject> getAllTypeList();
 
+    List<PredictedDataEntity> queryDataByTime(List<String> dataCodeList, List<Integer> predictedTypeList, String time);
 }
