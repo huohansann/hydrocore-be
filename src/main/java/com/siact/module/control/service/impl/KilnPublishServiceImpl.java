@@ -92,6 +92,12 @@ public class KilnPublishServiceImpl implements KilnPublishService {
             Double runningDcsVal = xlsVal == null ? null : xlsVal.doubleValue();
             Double gasAlgorithmCalcVal = entity.getGasAlgorithmCalcVal() == null ? null : entity.getGasAlgorithmCalcVal().doubleValue();
             Double gasManualVal = entity.getGasManualVal() == null ? null : entity.getGasManualVal().doubleValue();
+
+            if (entity.getAutoState()) {
+                // 如果开启了自动下发,则将人工调整值设置为null
+                gasManualVal = entity.getGasAlgorithmCalcVal() == null ? null : entity.getGasAlgorithmCalcVal().doubleValue();
+            }
+
             result.add(new ControlSettingGasDTO(entity.getNumber(), entity.getDataCode(), runningDcsVal, gasAlgorithmCalcVal, gasManualVal, entity.getAutoState()));
         });
 
@@ -173,6 +179,14 @@ public class KilnPublishServiceImpl implements KilnPublishService {
         // ps:手动下发,不校验下发规则
 
         List<ControlSettingGasDTO> publishGasSettingList = list.stream().filter(o -> ObjectUtils.isNotEmpty(o.getGasManualVal())).collect(Collectors.toList());
+
+        for (ControlSettingGasDTO settingGasDTO : publishGasSettingList) {
+            if (settingGasDTO.getAutoState()) {
+                // 如果开启了自动下发,则将人工调整值置为null
+                settingGasDTO.setGasManualVal(null);
+            }
+        }
+
 
         List<String> publishGasDataCodeList = publishGasSettingList.stream().map(ControlSettingGasDTO::getDataCode).collect(Collectors.toList());
 
