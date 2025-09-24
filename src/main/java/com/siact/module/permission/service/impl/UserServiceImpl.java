@@ -231,8 +231,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserEntity> impleme
         Page<UserEntity> page = new Page<>(request.getPageNum(), request.getPageSize());
 
         LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<>();
-        // 姓名
-        queryWrapper.like(StringUtils.isNotBlank(request.getUsername()), UserEntity::getUsername, request.getUsername());
+
+        // 姓名 模糊匹配userName Or account
+        if (StringUtils.isNotBlank(request.getUsername())) {
+            queryWrapper.and(wrapper -> wrapper
+                    .like(UserEntity::getUsername, request.getUsername())
+                    .or()
+                    .like(UserEntity::getAccount, request.getUsername()));
+        }
 
         List<Long> userIdList = new ArrayList<>();
         // 角色查询下对应的人员信息
