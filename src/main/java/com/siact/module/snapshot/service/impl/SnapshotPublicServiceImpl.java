@@ -534,6 +534,11 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
                 nowTime,
                 ConstantBase.LAST);
 
+        if (secDataCodeValJsonObj == null) {
+            log.error("queryBetweenVal查询数据为空,dataCodeList:{}", allDataCodeList);
+            return;
+        }
+
         // 处理窑炉温度相关
         // actualValDataCodeMap k:dataCode v:SnapshotTplSettingDetailDTO
         for (Map.Entry<String, SnapshotTplSettingDetailDTO> settingEntry : actualValDataCodeMap.entrySet()) {

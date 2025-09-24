@@ -29,6 +29,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -70,6 +71,7 @@ public class KilnPublishServiceImpl implements KilnPublishService {
             log.error("获取天然气控制设定值失败, 配置为空");
             return result;
         }
+        settingList.sort(Comparator.comparing(ControlSettingGasEntity::getNumber));
 
         // 收集dataCode
         List<String> dataCodeList = settingList.stream().map(ControlSettingGasEntity::getDataCode).distinct().collect(Collectors.toList());
@@ -108,6 +110,7 @@ public class KilnPublishServiceImpl implements KilnPublishService {
             log.error("获取助燃风控制设定值失败, 配置为空");
             return result;
         }
+        windSettingList.sort(Comparator.comparing(ControlSettingWindEntity::getNumber));
 
         // 收集dataCode
         String zrfShortCode = "XLS";// 助燃风流量设定值短码
