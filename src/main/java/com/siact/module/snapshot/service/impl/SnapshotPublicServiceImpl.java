@@ -241,12 +241,6 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
         return curVal;
     }
 
-    @Nullable
-    private static String handleChartTempVal(String code, String curVal, SnapshotTempEntity tempSnapshot) {
-
-        return curVal;
-    }
-
     /**
      * TODO 模拟测试数据  需要删除
      *
@@ -366,7 +360,7 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
 
             for (ControlSettingGasEntity controlSettingGasEntity : gasControlSetting) {
                 SnapshotGasEntity snapshotGasEntity = gasEntityMap.get(controlSettingGasEntity.getDataCode());
-                if (snapshotGasEntity != null) {
+                if (snapshotGasEntity != null && gasManualValDataCodeList.contains(snapshotGasEntity.getDataCode())) {
                     snapshotGasEntity.setGasManualVal(controlSettingGasEntity.getGasManualVal());
                 }
             }
@@ -413,12 +407,6 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
      */
     private void handlePredictedData(String nowTime, Map<String, SnapshotTempEntity> tempEntityMap) {
         List<PredictedDataEntity> predictedDataList = predictedDataService.queryDataByTime(null, null, nowTime);
-
-//        // TODO 测试数据  需要删除
-//        List<PredictedDataEntity> predictedDataList = predictedDataService.queryDataByTime(null, null, null);
-//        Map<String, PredictedDataEntity> predictedDataMap = predictedDataList.stream().collect(Collectors.toMap(PredictedDataEntity::getPredictedTypeCode, o -> o, (oldVal, newVal) -> oldVal));
-//        predictedDataList = new ArrayList<>(predictedDataMap.values());
-//        // TODO end
 
         if (predictedDataList != null && !predictedDataList.isEmpty()) {
             for (PredictedDataEntity predictedDataEntity : predictedDataList) {
@@ -528,7 +516,7 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
         if (gasDcsValSetting != null && gasDcsValSetting.getQueryDataCode() != null) {
             gasDcsValDataCodeMap
                     = gasDcsValSetting.getQueryDataCode().stream()
-                    .collect(Collectors.toMap(SnapshotTplSettingDetailDTO::getDataCode, o -> o, (oldVal, newVal) -> oldVal));
+                    .collect(Collectors.toMap(SnapshotTplSettingDetailDTO::getPropCode, o -> o, (oldVal, newVal) -> oldVal));
         } else {
             log.error("gasDcsVal没有tpl配置dataCode,无法执行快照任务");
         }
@@ -546,19 +534,13 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
                 nowTime,
                 ConstantBase.LAST);
 
-//        // TODO 需要删除 测试数据
-//        for (String dataCode : allDataCodeList) {
-//            BigDecimal randomVal = new BigDecimal((Math.random() - 0.5) * 400).add(new BigDecimal(1050));
-//            secDataCodeValJsonObj.put(dataCode, randomVal);
-//        }
-//        // TODO end
-
         // 处理窑炉温度相关
         // actualValDataCodeMap k:dataCode v:SnapshotTplSettingDetailDTO
         for (Map.Entry<String, SnapshotTplSettingDetailDTO> settingEntry : actualValDataCodeMap.entrySet()) {
             // 处理温度-实际值
             String dataCode = settingEntry.getKey();
-            SnapshotTempEntity snapshotTempEntity = tempEntityMap.get(dataCode);
+            SnapshotTplSettingDetailDTO settingDetailDTO = settingEntry.getValue();
+            SnapshotTempEntity snapshotTempEntity = tempEntityMap.get(settingDetailDTO.getDataCode());
             if (snapshotTempEntity != null) {
                 // 数字孪生获取数据
                 BigDecimal dataVal = secDataCodeValJsonObj.getBigDecimal(dataCode);
@@ -569,11 +551,12 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
         // gasDcsValDataCodeMap k:dataCode v:SnapshotTplSettingDetailDTO
         for (Map.Entry<String, SnapshotTplSettingDetailDTO> settingEntry : gasDcsValDataCodeMap.entrySet()) {
             // 处理天然气DCS值
-            String dataCode = settingEntry.getKey();
-            SnapshotGasEntity snapshotGasEntity = gasEntityMap.get(dataCode);
+            String propCode = settingEntry.getKey();
+            SnapshotTplSettingDetailDTO settingDetailDTO = settingEntry.getValue();
+            SnapshotGasEntity snapshotGasEntity = gasEntityMap.get(settingDetailDTO.getDataCode());
             if (snapshotGasEntity != null) {
                 // 数字孪生获取数据
-                BigDecimal dataVal = secDataCodeValJsonObj.getBigDecimal(dataCode);
+                BigDecimal dataVal = secDataCodeValJsonObj.getBigDecimal(propCode);
                 snapshotGasEntity.setGasDcsVal(dataVal);
             }
         }
