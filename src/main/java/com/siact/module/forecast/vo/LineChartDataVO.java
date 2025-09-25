@@ -19,15 +19,4 @@ public class LineChartDataVO {
 
     @ApiModelProperty(value = "Y轴数据")
     private SeriesDataVO seriesData;
-
-    @ApiModelProperty(value = "上控制值")
-    private String upControl;
-    @ApiModelProperty(value = "下控制值")
-    private String lowControl;
-    @ApiModelProperty(value = "上告警值")
-    private String upAlarm;
-    @ApiModelProperty(value = "下告警值")
-    private String lowAlarm;
-    @ApiModelProperty(value = "温度设定线")
-    private String temperatureSet;
 }

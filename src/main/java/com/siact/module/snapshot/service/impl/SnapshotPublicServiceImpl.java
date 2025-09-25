@@ -28,13 +28,13 @@ import com.siact.sec.sevice.DataService;
 import com.siact.sec.utils.IntervalTimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -120,6 +120,12 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
                         .collect(Collectors.toMap(o -> o.getDataCode() + ConstantSymbol.UNDER_LINE + IntervalTimeUtil.dateFormat(o.getCreateTime(), queryDTO.getFormatVal()), o -> o, (o1, o2) -> o1));
 
         // 处理返回数据
+        BigDecimal tempMinVal = null;
+        BigDecimal tempMaxVal = null;
+
+        BigDecimal gasMinVal = null;
+        BigDecimal gasMaxVal = null;
+
         for (SnapshotChartQueryDetailDTO queryDetailDTO : queryList) {
             // 查找的数据类型
             String code = queryDetailDTO.getCode();
@@ -152,13 +158,32 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
                         String curVal = calcChartTempVal(tempSnapshot, code);
                         Object[] curTimeVal = new Object[]{time, curVal};
                         curSnapshotTimeValData.add(curTimeVal);
-
+                        if (ObjectUtils.isEmpty(curVal)) {
+                            continue;
+                        }
+                        // 温度数据范围
+                        if (tempMinVal == null || new BigDecimal(curVal).compareTo(tempMinVal) < 0) {
+                            tempMinVal = new BigDecimal(curVal);
+                        }
+                        if (tempMaxVal == null || new BigDecimal(curVal).compareTo(tempMaxVal) > 0) {
+                            tempMaxVal = new BigDecimal(curVal);
+                        }
                     } else if ("GAS".equals(type)) {
                         // gas类型数据
                         SnapshotGasEntity gasSnapshot = gasSnapshotCodeValMap.get(key);
                         String curVal = calcChartGasVal(gasSnapshot, code);
                         Object[] curTimeVal = new Object[]{time, curVal};
                         curSnapshotTimeValData.add(curTimeVal);
+                        if (ObjectUtils.isEmpty(curVal)) {
+                            continue;
+                        }
+                        // gas数据范围
+                        if (gasMinVal == null || new BigDecimal(curVal).compareTo(gasMinVal) < 0) {
+                            gasMinVal = new BigDecimal(curVal);
+                        }
+                        if (gasMaxVal == null || new BigDecimal(curVal).compareTo(gasMaxVal) > 0) {
+                            gasMaxVal = new BigDecimal(curVal);
+                        }
                     }
                 }
                 curSnapshotVo.setData(curSnapshotTimeValData);
@@ -166,8 +191,16 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
             }
         }
 
-        //        initTestChartData(queryList, timeList, chartData);
+        // 数据范围
+        Map<String, List<BigDecimal>> rangeData = new HashMap<>();
+        rangeData.put("TEMP", Arrays.asList(tempMinVal, tempMaxVal));
+
+        rangeData.put("GAS", Arrays.asList(gasMinVal, gasMaxVal));
+
+        chartVO.setRangeData(rangeData);
         chartVO.setChartData(chartData);
+
+//        initTestChartData(queryList, timeList, chartVO);
 
         return chartVO;
     }
@@ -246,12 +279,25 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
      *
      * @param queryList
      * @param timeList
-     * @param chartData
+     * @param chartVO
      */
-    private static void initTestChartData(List<SnapshotChartQueryDetailDTO> queryList, List<String> timeList, ArrayList<SnapshotChartDetailVO> chartData) {
+    private static void initTestChartData(List<SnapshotChartQueryDetailDTO> queryList, List<String> timeList, SnapshotChartVO chartVO) {
+
+        BigDecimal tempMinVal = null;
+        BigDecimal tempMaxVal = null;
+
+        BigDecimal gasMinVal = null;
+        BigDecimal gasMaxVal = null;
+
+        List<SnapshotChartDetailVO> chartData = new ArrayList<>();
+
         for (SnapshotChartQueryDetailDTO queryDetailDTO : queryList) {
+            // 查找的数据类型
+            String code = queryDetailDTO.getCode();
+            String type = queryDetailDTO.getType();
 
             List<String> dataCodeList = queryDetailDTO.getDataCodeList();
+
             ListIterator<String> dataCodeIterator = dataCodeList.listIterator();
 
             while (dataCodeIterator.hasNext()) {
@@ -270,14 +316,49 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
 
                 for (String time : timeList) {
 
-                    BigDecimal randomVal = new BigDecimal((Math.random() - 0.5) * 4).add(new BigDecimal(50));
-                    Object[] curTimeVal = {time, randomVal.setScale(2, BigDecimal.ROUND_HALF_UP).stripTrailingZeros().toPlainString()};
-                    curSnapshotTimeValData.add(curTimeVal);
+                    if ("TEMP".equals(type)) {
+                        // 温度类型数据
+                        BigDecimal randomVal = new BigDecimal((Math.random() - 0.5) * 8).add(new BigDecimal(50));
+                        Object[] curTimeVal = {time, randomVal.setScale(2, BigDecimal.ROUND_HALF_UP).stripTrailingZeros().toPlainString()};
+                        curSnapshotTimeValData.add(curTimeVal);
+
+                        // 温度数据范围
+                        if (tempMinVal == null || randomVal.compareTo(tempMinVal) < 0) {
+                            tempMinVal = randomVal;
+                        }
+                        if (tempMaxVal == null || randomVal.compareTo(tempMaxVal) > 0) {
+                            tempMaxVal = randomVal;
+                        }
+                    } else if ("GAS".equals(type)) {
+                        // gas类型数据
+
+                        BigDecimal randomVal = new BigDecimal((Math.random() - 0.5) * 8).add(new BigDecimal(50));
+                        Object[] curTimeVal = {time, randomVal.setScale(2, BigDecimal.ROUND_HALF_UP).stripTrailingZeros().toPlainString()};
+                        curSnapshotTimeValData.add(curTimeVal);
+                        // gas数据范围
+                        if (gasMinVal == null || randomVal.compareTo(gasMinVal) < 0) {
+                            gasMinVal = randomVal;
+                        }
+                        if (gasMaxVal == null || randomVal.compareTo(gasMaxVal) > 0) {
+                            gasMaxVal = randomVal;
+                        }
+                    }
                 }
                 curSnapshotVo.setData(curSnapshotTimeValData);
                 chartData.add(curSnapshotVo);
             }
         }
+        chartVO.setChartData(chartData);
+
+        // 数据范围
+        Map<String, List<BigDecimal>> rangeData = new HashMap<>();
+        rangeData.put("TEMP", Arrays.asList(tempMinVal.setScale(2, RoundingMode.HALF_UP), tempMaxVal.setScale(2, RoundingMode.HALF_UP)));
+
+        rangeData.put("GAS", Arrays.asList(gasMinVal.setScale(2, RoundingMode.HALF_UP), gasMaxVal.setScale(2, RoundingMode.HALF_UP)));
+
+        chartVO.setRangeData(rangeData);
+        chartVO.setChartData(chartData);
+
     }
 
     @Override

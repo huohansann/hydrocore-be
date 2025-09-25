@@ -71,11 +71,17 @@ public class ControlIntervalConfigEntity {
      * 生效开始日期
      */
     @TableField("start_time")
-    private LocalDateTime startTime;
+    private String startTime;
 
     /**
      * 生效结束时间
      */
     @TableField("end_time")
-    private LocalDateTime endTime;
+    private String endTime;
+
+    /**
+     * 删除状态，0-正常，1-删除
+     */
+    @TableField("delete_flag")
+    private Boolean deleteFlag;
 }
