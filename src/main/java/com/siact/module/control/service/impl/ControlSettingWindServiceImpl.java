@@ -35,7 +35,7 @@ public class ControlSettingWindServiceImpl extends ServiceImpl<ControlSettingWin
     public void deleteByDataCode(List<String> publishWindDataCodeList) {
         LambdaUpdateWrapper<ControlSettingWindEntity> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(ControlSettingWindEntity::getDeleteFlag, ConstantNum.ZERO_INT);
-        updateWrapper.in(ControlSettingWindEntity::getDataCode, publishWindDataCodeList);
+        updateWrapper.in(ControlSettingWindEntity::getWindDataCode, publishWindDataCodeList);
         // 更改删除状态
         updateWrapper.set(ControlSettingWindEntity::getDeleteFlag, ConstantNum.NUMBER_ONE);
         updateWrapper.set(ControlSettingWindEntity::getUpdateTime, new Date());
@@ -53,7 +53,8 @@ public class ControlSettingWindServiceImpl extends ServiceImpl<ControlSettingWin
         for (ControlSettingWindDTO publishWindSetting : publishWindSettingList) {
             ControlSettingWindEntity windEntity = new ControlSettingWindEntity();
             windEntity.setNumber(publishWindSetting.getNumber());
-            windEntity.setDataCode(publishWindSetting.getDataCode());
+            windEntity.setWindDataCode(publishWindSetting.getWindDataCode());
+            windEntity.setGasDataCode(publishWindSetting.getGasDataCode());
             windEntity.setRatePublishCodes("");// TODO 配置到数据字典
             BigDecimal rateManualVal = publishWindSetting.getRateManualVal() == null ? null : BigDecimal.valueOf(publishWindSetting.getRateManualVal());
             windEntity.setRateManualVal(rateManualVal);

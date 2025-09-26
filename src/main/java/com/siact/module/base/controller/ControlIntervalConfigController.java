@@ -5,6 +5,7 @@ import com.siact.module.base.dto.ControlIntervalConfigChartDTO;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.vo.ControlIntervalConfigVO;
+import com.siact.module.base.vo.HistoryConfigChartQueryVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,13 +38,6 @@ public class ControlIntervalConfigController {
         return R.data(chartDTO);
     }
 
-    @ApiOperation("新增")
-    @PostMapping("/add")
-    public R add(@RequestBody ControlIntervalConfigDTO configDTO) {
-        configService.add(configDTO);
-        return R.success();
-    }
-
     @ApiOperation("编辑")
     @PostMapping("/update")
     public R update(@RequestBody List<ControlIntervalConfigDTO> configDTOs) {
@@ -58,17 +52,9 @@ public class ControlIntervalConfigController {
         return R.data(configDTO);
     }
 
-
-    @ApiOperation("根据时间查询测点数据")
-    @PostMapping("/queryBetweenVal")
-    public R queryBetweenVal(@RequestBody ControlIntervalConfigVO configVO) {
-        return R.data(configService.selectListByConditionNew(configVO));
-    }
-
-    @ApiOperation("编辑并保存历史记录")
-    @PostMapping("/updateAndSaveHis")
-    public R updateAndSaveHis(@RequestBody ControlIntervalConfigDTO configDTO) {
-        configService.updateAndSaveHis(configDTO);
-        return R.success();
+    @ApiOperation("查询历史记录图表")
+    @PostMapping("/queryHistoryConfigChart")
+    public R queryHistoryConfigChart(@RequestBody HistoryConfigChartQueryVO queryVO) {
+        return R.data(configService.queryHistoryConfigChart(queryVO.getDataCodeList(), queryVO.getStartTime(), queryVO.getEndTime(), queryVO.getTs(), queryVO.getTsUnit(), queryVO.getFormatVal()));
     }
 }

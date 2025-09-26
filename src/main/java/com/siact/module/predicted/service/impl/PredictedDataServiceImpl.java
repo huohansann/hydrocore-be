@@ -18,7 +18,12 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -180,6 +185,16 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
             rtnList.add(typeEnumObj);
         }
         return rtnList;
+    }
+
+    @Override
+    public List<PredictedDataEntity> queryDataByTime(List<String> dataCodeList, List<Integer> predictedTypeList, String time) {
+        LambdaQueryWrapper<PredictedDataEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(ObjectUtils.isNotEmpty(dataCodeList), PredictedDataEntity::getDataCode, dataCodeList);
+        queryWrapper.in(ObjectUtils.isNotEmpty(predictedTypeList), PredictedDataEntity::getPredictedType, predictedTypeList);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(time), PredictedDataEntity::getTime, time);
+
+        return baseMapper.selectList(queryWrapper);
     }
 
     /**

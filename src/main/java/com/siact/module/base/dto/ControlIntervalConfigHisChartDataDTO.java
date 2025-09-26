@@ -1,26 +1,42 @@
-package com.siact.module.forecast.vo;
+package com.siact.module.base.dto;
 
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * @desc:
- * @author: zhangwentao
- * @create: 2025-05-27 17:21
- */
 @Data
-@ApiModel(description = "折线图数据")
-@JsonPropertyOrder({"xData", "seriesData", "maxUpControlVal", "minLowControlVal", "maxUpAlarmVal", "minLowAlarmVal", "maxTemperatureSetVal", "minTemperatureSetVal"})
-public class LineChartDataVO {
-    @ApiModelProperty(value = "X轴数据")
-    private List<String> xData;
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ControlIntervalConfigHisChartDataDTO {
+    /**
+     * 上控制值
+     */
+    private List<Object[]> upControlChart;
 
-    @ApiModelProperty(value = "Y轴数据")
-    private SeriesDataVO seriesData;
+    /**
+     * 下控制值
+     */
+    private List<Object[]> lowControlChart;
+
+    /**
+     * 上告警值
+     */
+    private List<Object[]> upAlarmChart;
+
+    /**
+     * 下告警值
+     */
+    private List<Object[]> lowAlarmChart;
+
+    /**
+     * 温度设定线
+     */
+    private List<Object[]> temperatureSetChart;
 
     @ApiModelProperty(value = "上控制值(最大)")
     private String maxUpControlVal;
@@ -39,5 +55,4 @@ public class LineChartDataVO {
 
     @ApiModelProperty(value = "温度设定线(最小值)")
     private String minTemperatureSetVal;
-
 }

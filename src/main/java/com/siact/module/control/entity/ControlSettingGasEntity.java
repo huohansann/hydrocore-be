@@ -13,7 +13,7 @@ public class ControlSettingGasEntity {
     private Long id;
     // 炉子编号
     private String number;
-    // 炉子对应的数字孪生编码
+    // 天然气炉子对应的数字孪生insCode
     private String dataCode;
     // 天然气量下发对应的点位编码
     private String gasPublishCodes;
