@@ -62,8 +62,7 @@ public class SnapshotController {
         }
 
         for (DateTime dateTime : timeList) {
-            System.out.println("时间:------"+dateTime.toString(ConstantTime.DATE_TIME_MM_00));
-//            snapshotPublicService.execSnapshotTask(dateTime.toString(ConstantTime.DATE_TIME_MM_00));
+            snapshotPublicService.execSnapshotTask(dateTime.toString(ConstantTime.DATE_TIME_MM_00));
         }
         return R.success();
     }
