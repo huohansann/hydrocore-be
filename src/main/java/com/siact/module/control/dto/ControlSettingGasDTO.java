@@ -24,6 +24,9 @@ public class ControlSettingGasDTO {
     @ApiModelProperty("智控算法计算值")
     private Double gasAlgorithmCalcVal;
 
+    @ApiModelProperty("控制变动值")
+    private Double chageValue;
+
     @ApiModelProperty("人工调整值")
     private Double gasManualVal;
 
