@@ -1,5 +1,6 @@
 package com.siact.module.forecast.vo;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -13,6 +14,7 @@ import java.util.List;
  */
 @Data
 @ApiModel(description = "折线图数据")
+@JsonPropertyOrder({"xData", "seriesData", "maxUpControlVal", "minLowControlVal", "maxUpAlarmVal", "minLowAlarmVal", "maxTemperatureSetVal", "minTemperatureSetVal"})
 public class LineChartDataVO {
     @ApiModelProperty(value = "X轴数据")
     private List<String> xData;

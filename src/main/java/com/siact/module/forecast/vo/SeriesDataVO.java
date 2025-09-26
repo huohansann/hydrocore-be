@@ -1,5 +1,6 @@
 package com.siact.module.forecast.vo;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -11,6 +12,7 @@ import lombok.Data;
  */
 @Data
 @ApiModel(description = "系列数据")
+@JsonPropertyOrder({"actual", "singleForecast", "multiForecast", "upControl", "lowControl", "upAlarm", "lowAlarm", "temperatureSet"})
 public class SeriesDataVO {
     @ApiModelProperty(value = "实际值")
     private AttributeInfoVO actual;
