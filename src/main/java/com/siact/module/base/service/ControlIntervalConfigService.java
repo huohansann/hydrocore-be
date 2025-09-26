@@ -2,11 +2,10 @@ package com.siact.module.base.service;
 
 import com.siact.module.base.dto.ControlIntervalConfigChartDTO;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
-import com.siact.module.base.dto.ControlIntervalConfigHisChartDataDTO;
+import com.siact.module.base.dto.ControlIntervalConfigHisChartDTO;
 import com.siact.module.base.vo.ControlIntervalConfigVO;
 
 import java.util.List;
-import java.util.Map;
 
 public interface ControlIntervalConfigService {
     List<ControlIntervalConfigDTO> selectListByCondition(ControlIntervalConfigVO configVO);
@@ -36,9 +35,9 @@ public interface ControlIntervalConfigService {
      * @param dataCodeList
      * @return k:dataCode,v:ControlIntervalConfigHisChartDataDTO(图表类型数据)
      */
-    Map<String, ControlIntervalConfigHisChartDataDTO> queryHistoryConfigChart(List<String> dataCodeList,
-                                                                              String startTime, String endTime,
-                                                                              Integer ts, String tsUnit, String formatVal);
+    ControlIntervalConfigHisChartDTO queryHistoryConfigChart(List<String> dataCodeList,
+                                                             String startTime, String endTime,
+                                                             Integer ts, String tsUnit, String formatVal);
 
 
 }

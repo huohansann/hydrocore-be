@@ -8,6 +8,7 @@ import com.siact.common.utils.ConvertUtils;
 import com.siact.common.utils.TimeUtil;
 import com.siact.module.base.dto.BasicDataDTO;
 import com.siact.module.base.dto.ColumnChartDTO;
+import com.siact.module.base.dto.ControlIntervalConfigHisChartDTO;
 import com.siact.module.base.dto.ControlIntervalConfigHisChartDataDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.service.TplService;
@@ -229,7 +230,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
 
         // 获取上下控制值 上下告警值  温度设定线
         // k: dataCode v: 各设定值chart格式数据
-        Map<String, ControlIntervalConfigHisChartDataDTO> dataCodeConfigChartMap =
+        ControlIntervalConfigHisChartDTO configHisChartDTO =
                 controlIntervalConfigService.queryHistoryConfigChart(dataCodeList, projectPropVO.getStartTime(), projectPropVO.getEndTime(), projectPropVO.getTs(), projectPropVO.getTsUnit(), projectPropVO.getFormatVal());
 
         List<PredictionDataShowTplDTO> dataShowList = tplService.getListByCode("kilnPredictionDataShow", PredictionDataShowTplDTO.class);
@@ -251,11 +252,18 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
             SeriesDataVO seriesDataVO = new SeriesDataVO();
             List<Object[]> actualChartData = acturalDataMap.get(dataCode);
             // 处理需要返回的数据
-            handleRtnData(dataShowMap, dataCode, seriesDataVO, actualChartData, dataName, singlePredictionDataMap, multiPredictionDataMap, dataCodeConfigChartMap);
+            handleRtnData(dataShowMap, dataCode, seriesDataVO, actualChartData, dataName, singlePredictionDataMap, multiPredictionDataMap, configHisChartDTO);
 
             lineChartDataVO.setSeriesData(seriesDataVO);
-
             lineChartVO.setData(lineChartDataVO);
+            // 设置上下控制值 上下告警值  温度设定线
+            lineChartDataVO.setMaxUpControlVal(configHisChartDTO.getMaxUpControlVal());
+            lineChartDataVO.setMinLowControlVal(configHisChartDTO.getMinLowControlVal());
+            lineChartDataVO.setMaxUpAlarmVal(configHisChartDTO.getMaxUpAlarmVal());
+            lineChartDataVO.setMinLowAlarmVal(configHisChartDTO.getMinLowAlarmVal());
+            lineChartDataVO.setMaxTemperatureSetVal(configHisChartDTO.getMaxTemperatureSetVal());
+            lineChartDataVO.setMinTemperatureSetVal(configHisChartDTO.getMinTemperatureSetVal());
+
             lineChartVOList.add(lineChartVO);
         }
         return lineChartVOList;
@@ -368,7 +376,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
 
         // 获取上下控制值 上下告警值  温度设定线
         // k: dataCode v: 各设定值chart格式数据
-        Map<String, ControlIntervalConfigHisChartDataDTO> dataCodeConfigChartMap =
+        ControlIntervalConfigHisChartDTO configHisChartDTO =
                 controlIntervalConfigService.queryHistoryConfigChart(dataCodeList, projectPropVO.getStartTime(), projectPropVO.getEndTime(), projectPropVO.getTs(), projectPropVO.getTsUnit(), projectPropVO.getFormatVal());
 
 
@@ -387,10 +395,18 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
             SeriesDataVO seriesDataVO = new SeriesDataVO();
             List<Object[]> actualChartData = new  ArrayList<>();
             // 处理需要返回的数据
-            handleRtnData(dataShowMap, dataCode, seriesDataVO, actualChartData, dataName, singlePredictionDataMap, multiPredictionDataMap, dataCodeConfigChartMap);
+            handleRtnData(dataShowMap, dataCode, seriesDataVO, actualChartData, dataName, singlePredictionDataMap, multiPredictionDataMap, configHisChartDTO);
             lineChartDataVO.setSeriesData(seriesDataVO);
-
             lineChartVO.setData(lineChartDataVO);
+
+            // 设置上下控制值 上下告警值  温度设定线
+            lineChartDataVO.setMaxUpControlVal(configHisChartDTO.getMaxUpControlVal());
+            lineChartDataVO.setMinLowControlVal(configHisChartDTO.getMinLowControlVal());
+            lineChartDataVO.setMaxUpAlarmVal(configHisChartDTO.getMaxUpAlarmVal());
+            lineChartDataVO.setMinLowAlarmVal(configHisChartDTO.getMinLowAlarmVal());
+            lineChartDataVO.setMaxTemperatureSetVal(configHisChartDTO.getMaxTemperatureSetVal());
+            lineChartDataVO.setMinTemperatureSetVal(configHisChartDTO.getMinTemperatureSetVal());
+
             lineChartVOList.add(lineChartVO);
         }
         return lineChartVOList;
@@ -405,13 +421,13 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
      * @param dataName
      * @param singlePredictionDataMap
      * @param multiPredictionDataMap
-     * @param dataCodeConfigChartMap
+     * @param configHisChartDTO
      */
     private void handleRtnData(Map<String, PredictionDataShowTplDTO> dataShowMap, String dataCode,
                                SeriesDataVO seriesDataVO, List<Object[]> actualChartData, String dataName,
                                Map<String, List<Object[]>> singlePredictionDataMap,
                                Map<String, List<Object[]>> multiPredictionDataMap,
-                               Map<String, ControlIntervalConfigHisChartDataDTO> dataCodeConfigChartMap) {
+                               ControlIntervalConfigHisChartDTO configHisChartDTO) {
         PredictionDataShowTplDTO dataShowDto = dataShowMap.get(dataCode);
         if (ObjectUtils.isNotEmpty(dataShowDto)) {
 //            seriesDataVO.setActual(parseAttributeInfo(dataShowDto.getShowActual() ? actualChartData : null,
@@ -427,7 +443,11 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
                     singlePredictionDataMap.get(dataCode) : null, "单步预测值"));
             seriesDataVO.setMultiForecast(parseAttributeInfo(dataShowDto.getShowMultiForecast() ?
                     multiPredictionDataMap.get(dataCode) : null, "多步预测值"));
-            ControlIntervalConfigHisChartDataDTO configChartDTO = dataCodeConfigChartMap.get(dataCode);
+            Map<String, ControlIntervalConfigHisChartDataDTO> configChartDataMap = configHisChartDTO.getConfigChartDataMap();
+            if (ObjectUtils.isEmpty(configChartDataMap)) {
+                return;
+            }
+            ControlIntervalConfigHisChartDataDTO configChartDTO = configChartDataMap.get(dataCode);
             if (ObjectUtils.isNotEmpty(configChartDTO)) {
                 seriesDataVO.setUpControl(dataShowDto.getShowUpControl() ? new AttributeInfoVO("上波动限",configChartDTO.getUpControlChart()) : null);
                 seriesDataVO.setLowControl(dataShowDto.getShowLowControl() ? new AttributeInfoVO("下波动限",configChartDTO.getLowControlChart()) : null);

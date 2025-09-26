@@ -1,24 +1,18 @@
-package com.siact.module.forecast.vo;
+package com.siact.module.base.dto;
 
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.util.Map;
 
-/**
- * @desc:
- * @author: zhangwentao
- * @create: 2025-05-27 17:21
- */
 @Data
-@ApiModel(description = "折线图数据")
-public class LineChartDataVO {
-    @ApiModelProperty(value = "X轴数据")
-    private List<String> xData;
-
-    @ApiModelProperty(value = "Y轴数据")
-    private SeriesDataVO seriesData;
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ControlIntervalConfigHisChartDTO {
 
     @ApiModelProperty(value = "上控制值(最大)")
     private String maxUpControlVal;
@@ -37,5 +31,8 @@ public class LineChartDataVO {
 
     @ApiModelProperty(value = "温度设定线(最小值)")
     private String minTemperatureSetVal;
+
+    @ApiModelProperty(value = "控制值图表数据")
+    private Map<String, ControlIntervalConfigHisChartDataDTO> configChartDataMap;
 
 }

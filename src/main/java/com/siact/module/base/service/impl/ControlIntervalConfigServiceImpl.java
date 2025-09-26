@@ -1,12 +1,14 @@
 package com.siact.module.base.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.constant.ConstantTime;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.common.utils.TimeUtil;
 import com.siact.module.base.dto.ControlIntervalConfigChartDTO;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
+import com.siact.module.base.dto.ControlIntervalConfigHisChartDTO;
 import com.siact.module.base.dto.ControlIntervalConfigHisChartDataDTO;
 import com.siact.module.base.entity.ControlIntervalConfigEntity;
 import com.siact.module.base.mapper.ControlIntervalConfigMapper;
@@ -85,12 +87,13 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         String nowStr = TimeUtil.getNowStr(ConstantTime.DATE_TIME_MM_00);
 
         // 逻辑删除,设置删除状态为1(ps:即保留历史数据)
-        configDTOs.forEach(configDTO -> {
-            ControlIntervalConfigEntity updateEntity = ConvertUtils.sourceToTarget(configDTO, ControlIntervalConfigEntity.class);
-            updateEntity.setDeleteFlag(true);
-            updateEntity.setEndTime(nowStr);
-            baseMapper.updateById(updateEntity);
-        });
+        LambdaUpdateWrapper<ControlIntervalConfigEntity> updateWrapper = new LambdaUpdateWrapper<>();
+        List<String> dataCodeList = configDTOs.stream().map(ControlIntervalConfigDTO::getDataCode).collect(Collectors.toList());
+        updateWrapper.set(ControlIntervalConfigEntity::getDeleteFlag, true);
+        updateWrapper.set(ControlIntervalConfigEntity::getEndTime, nowStr);
+        updateWrapper.in(ControlIntervalConfigEntity::getDataCode, dataCodeList);
+        baseMapper.update(null, updateWrapper);
+
         // 再新增
         List<ControlIntervalConfigEntity> configEntities = ConvertUtils.sourceToTarget(configDTOs, ControlIntervalConfigEntity.class);
         for (ControlIntervalConfigEntity insertEntity : configEntities) {
@@ -230,9 +233,9 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
 
 
     @Override
-    public Map<String, ControlIntervalConfigHisChartDataDTO> queryHistoryConfigChart(List<String> dataCodeList,
-                                                                                     String startTime, String endTime,
-                                                                                     Integer ts, String tsUnit, String formatVal) {
+    public ControlIntervalConfigHisChartDTO queryHistoryConfigChart(List<String> dataCodeList,
+                                                                    String startTime, String endTime,
+                                                                    Integer ts, String tsUnit, String formatVal) {
 
         // 1:查询时间范围的所有的数据
         // 2:根据时间范围查询数据 包含 历史事件范围的配置信息 及  当前生效的配置信息(未删除)
@@ -268,9 +271,15 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         Map<String, List<ControlIntervalConfigEntity>> dataCodeConfigMap = configEntities.stream().collect(Collectors.groupingBy(ControlIntervalConfigEntity::getDataCode));
 
         // 3:获取时间轴
-        List<String> timeList = IntervalTimeUtil.queryIntervalTimeList(startTime, endTime, tsUnit, ts, formatVal);
+        List<String> timeList = IntervalTimeUtil.queryIntervalTimeList(startTime, endTime, tsUnit, ts, ConstantTime.DATE_TIME);
 
         // 初始化返回值
+        String maxUpControlVal = null;
+        String minLowControlVal = null;
+        String maxUpAlarmVal = null;
+        String minLowAlarmVal = null;
+        String maxTemperatureSetVal = null;
+        String minTemperatureSetVal = null;
         Map<String, ControlIntervalConfigHisChartDataDTO> result = new HashMap<>();
 
         for (String dataCode : dataCodeList) {
@@ -310,24 +319,41 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
                 while (timeIterator.hasNext()) {
                     String time = timeIterator.next();
                     int index = timeIterator.previousIndex();
-                    String effectiveTime = IntervalTimeUtil.dateFormat(configEntity.getStartTime(), formatVal);
+                    String effectiveTime = IntervalTimeUtil.dateFormat(configEntity.getStartTime(), ConstantTime.DATE_TIME);// 这里要全时间匹配
                     if (time.compareTo(effectiveTime) < 0) {
                         // 时间点早于配置生效时间，不做填充
                         continue;
                     }
                     // 找到该时间点的有效配置项
-                    upControlChart.set(index, new Object[]{time, configEntity.getUpControl()});
-                    downControlChart.set(index, new Object[]{time, configEntity.getLowControl()});
-                    upAlarmChart.set(index, new Object[]{time, configEntity.getUpAlarm()});
-                    downAlarmChart.set(index, new Object[]{time, configEntity.getLowAlarm()});
-                    temperatureSetChart.set(index, new Object[]{time, configEntity.getTemperatureSet()});
+                    String timeFormat = IntervalTimeUtil.dateFormat(time, formatVal);
+                    upControlChart.set(index, new Object[]{timeFormat, configEntity.getUpControl()});
+                    downControlChart.set(index, new Object[]{timeFormat, configEntity.getLowControl()});
+                    upAlarmChart.set(index, new Object[]{timeFormat, configEntity.getUpAlarm()});
+                    downAlarmChart.set(index, new Object[]{timeFormat, configEntity.getLowAlarm()});
+                    temperatureSetChart.set(index, new Object[]{timeFormat, configEntity.getTemperatureSet()});
                 }
+
+                // 更新最大最小值
+                maxUpControlVal = maxUpControlVal == null ? configEntity.getUpControl() : maxUpControlVal.compareTo(configEntity.getUpControl()) > 0 ? maxUpControlVal : configEntity.getUpControl();
+                minLowControlVal = minLowControlVal == null ? configEntity.getLowControl() : minLowControlVal.compareTo(configEntity.getLowControl()) < 0 ? minLowControlVal : configEntity.getLowControl();
+                maxUpAlarmVal = maxUpAlarmVal == null ? configEntity.getUpAlarm() : maxUpAlarmVal.compareTo(configEntity.getUpAlarm()) > 0 ? maxUpAlarmVal : configEntity.getUpAlarm();
+                minLowAlarmVal = minLowAlarmVal == null ? configEntity.getLowAlarm() : minLowAlarmVal.compareTo(configEntity.getLowAlarm()) < 0 ? minLowAlarmVal : configEntity.getLowAlarm();
+                maxTemperatureSetVal = maxTemperatureSetVal == null ? configEntity.getTemperatureSet() : maxTemperatureSetVal.compareTo(configEntity.getTemperatureSet()) > 0 ? maxTemperatureSetVal : configEntity.getTemperatureSet();
+                minTemperatureSetVal = minTemperatureSetVal == null ? configEntity.getTemperatureSet() : minTemperatureSetVal.compareTo(configEntity.getTemperatureSet()) < 0 ? minTemperatureSetVal : configEntity.getTemperatureSet();
             }
 
             result.put(curDataCode, dataDTO);
         }
 
-        return result;
+        return ControlIntervalConfigHisChartDTO.builder()
+                .maxUpControlVal(maxUpControlVal)
+                .minLowControlVal(minLowControlVal)
+                .maxUpAlarmVal(maxUpAlarmVal)
+                .minLowAlarmVal(minLowAlarmVal)
+                .maxTemperatureSetVal(maxTemperatureSetVal)
+                .minTemperatureSetVal(minTemperatureSetVal)
+                .configChartDataMap(result)
+                .build();
     }
 
 //    @NotNull
