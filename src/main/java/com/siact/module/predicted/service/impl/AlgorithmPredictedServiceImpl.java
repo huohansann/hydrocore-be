@@ -3,6 +3,7 @@ package com.siact.module.predicted.service.impl;
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -14,7 +15,12 @@ import com.siact.common.constant.ConstantSymbol;
 import com.siact.common.constant.ConstantTime;
 import com.siact.common.exception.CustomException;
 import com.siact.common.utils.TimeUtil;
+import com.siact.module.base.dto.ControlIntervalConfigDTO;
+import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.service.TplService;
+import com.siact.module.base.vo.ControlIntervalConfigVO;
+import com.siact.module.control.entity.IntelligentComputingEntity;
+import com.siact.module.control.mapper.IntelligentComputingMapper;
 import com.siact.module.model.dto.AlgorithmDataCodeDTO;
 import com.siact.module.model.dto.AlgorithmPublishModelParamDTO;
 import com.siact.module.model.dto.AlgorithmPublishModelParamDetailDTO;
@@ -45,8 +51,9 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,6 +95,13 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
     @Autowired
     private AlgorithmDataCodeUtil algorithmDataCodeUtil;
 
+    @Autowired
+    private IntelligentComputingMapper intelligentComputingMapper;
+
+    @Autowired
+    private ControlIntervalConfigService configService;
+
+    @Override
     public void algorithmInference() {
 
         String nowTimeStr = TimeUtil.getNowStr(ConstantTime.DATE_TIME_MM_00);
@@ -135,6 +149,136 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         algorithmCallInfoService.deleteBeforeTime(time);
     }
+
+    @Value("${algorithm.baseUrl}")
+    private String baseUrl;
+
+    @Override
+    public void getIntelligentComputing() {
+        //组装参数
+        JSONObject params = new JSONObject();
+
+        //当前工艺对应换火周期
+        params.put("fire_change_cycle", 24);
+        params.put("model", "LightGBM2");
+        params.put("method", "model");
+        params.put("data", null);
+
+        LambdaQueryWrapper<IntelligentComputingEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.orderByDesc(IntelligentComputingEntity::getResultTime);
+        queryWrapper.last("limit 5");
+        List<IntelligentComputingEntity> intelligentComputingEntities = intelligentComputingMapper.selectList(queryWrapper);
+        setDeltaC("MC1", params, intelligentComputingEntities);
+        setDeltaC("MC2", params, intelligentComputingEntities);
+        setDeltaC("MC3", params, intelligentComputingEntities);
+        setDeltaC("MC4", params, intelligentComputingEntities);
+        setDeltaC("MC5", params, intelligentComputingEntities);
+        setDeltaC("MC6", params, intelligentComputingEntities);
+        setDeltaC("MC7", params, intelligentComputingEntities);
+        setDeltaC("MC8", params, intelligentComputingEntities);
+        setDeltaC("MC9", params, intelligentComputingEntities);
+        setDeltaC("MC10", params, intelligentComputingEntities);
+
+
+        //调用接口
+//        LinkedHashMap<String, Object> response = null;
+        String responseStr = null;
+        JSONObject response = new JSONObject();
+        AlgorithmCallInfoEntity entity = new AlgorithmCallInfoEntity();
+        long callId = IdWorker.getId(entity);
+        entity.setId(callId);
+        entity.setType("control");
+        entity.setReqTime(TimeUtil.getNow());
+        entity.setReqJson(JSONObject.toJSONString(params));
+        entity.setCreateTime(new Date());
+
+        try {
+            responseStr = HttpUtil.post(baseUrl + "/control", params.toJSONString(), 500000);
+            response = JSONObject.parseObject(responseStr);
+
+            log.info("智控计算参数,:{},结果:{}", params, response);
+            entity.setRespTime(TimeUtil.getNow());
+            entity.setRespJson(JSON.toJSONString(response));
+        } catch (Exception e) {
+            log.error("智控计算参数异常,入参:{},响应:{}", params, responseStr, e);
+            entity.setRespTime(TimeUtil.getNow());
+            entity.setRespJson("出现异常:请求返回" + responseStr + ",异常信息:" + e.getMessage());
+            return ;
+        } finally {
+            algorithmCallInfoService.save(entity);
+        }
+
+        //解析结果
+        String code = response.getString("code");
+        if (!"200".equals(code)) {
+            log.error("智控计算参数异常,入参:{},响应:{}", params, response);
+            entity.setRespTime(TimeUtil.getNow());
+            entity.setRespJson(entity.getRespJson() + "出现异常:请求返回" + responseStr);
+            algorithmCallInfoService.updateById(entity);
+            return;
+        }
+
+        JSONObject resultJson = response.getJSONObject("result");
+        IntelligentComputingEntity intelligentComputingEntity = new IntelligentComputingEntity();
+
+        intelligentComputingEntity.setResultTime(TimeUtil.getNow());
+        intelligentComputingEntity.setMc1(getDeltaC("MC1", resultJson));
+        intelligentComputingEntity.setMc2(getDeltaC("MC2", resultJson));
+        intelligentComputingEntity.setMc3(getDeltaC("MC3", resultJson));
+        intelligentComputingEntity.setMc4(getDeltaC("MC4", resultJson));
+        intelligentComputingEntity.setMc5(getDeltaC("MC5", resultJson));
+        intelligentComputingEntity.setMc6(getDeltaC("MC6", resultJson));
+        intelligentComputingEntity.setMc7(getDeltaC("MC7", resultJson));
+        intelligentComputingEntity.setMc8(getDeltaC("MC8", resultJson));
+        intelligentComputingEntity.setMc9(getDeltaC("MC9", resultJson));
+        intelligentComputingEntity.setMc10(getDeltaC("MC10", resultJson));
+        intelligentComputingEntity.setData(resultJson.toJSONString());
+
+        intelligentComputingMapper.insert(intelligentComputingEntity);
+    }
+
+    private void setDeltaC(String mc, JSONObject params, List<IntelligentComputingEntity> intelligentComputingEntities) {
+        JSONObject deltaCJson = new JSONObject();
+        deltaCJson.put("last10", getDeltaC(mc,intelligentComputingEntities.get(0)));
+        deltaCJson.put("last20", getDeltaC(mc,intelligentComputingEntities.get(1)));
+        deltaCJson.put("last30", getDeltaC(mc,intelligentComputingEntities.get(2)));
+        deltaCJson.put("last40", getDeltaC(mc,intelligentComputingEntities.get(3)));
+        deltaCJson.put("last50", getDeltaC(mc,intelligentComputingEntities.get(4)));
+        params.put(mc + "_last_deltaC", deltaCJson);
+
+        ControlIntervalConfigVO controlIntervalConfigVO = new ControlIntervalConfigVO();
+        controlIntervalConfigVO.setMeasurePoint(mc);
+        ControlIntervalConfigDTO configDTO = configService.get(controlIntervalConfigVO);
+
+        //MC温度上限
+        params.put(mc + "_MAX_THRESHOLD", Double.valueOf(configDTO.getUpControl()));
+        //MC温度下限
+        params.put(mc + "_MIN_THRESHOLD", Double.valueOf(configDTO.getLowControl()));
+        //MC控制目标
+        params.put(mc + "_CONTROL_TARGET", Double.valueOf(configDTO.getTemperatureSet()));
+    }
+
+    private JSONObject getDeltaC(String mc, IntelligentComputingEntity entity) {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("time", entity.getResultTime());
+
+        //entity通过反射拼接get方法
+        String method = "getMc" + mc.replace("MC", "");
+        try {
+            Method method1 = IntelligentComputingEntity.class.getMethod(method);
+            jsonObject.put("delta_C", method1.invoke(entity));
+        } catch (Exception e) {
+            log.error("反射获取方法异常,method:{},entity:{}", method, entity, e);
+        }
+
+        return jsonObject;
+    }
+
+    private Double getDeltaC(String mc, JSONObject resultJson) {
+        JSONObject json = resultJson.getJSONObject(mc);
+        return json.getJSONObject("method2").getDouble("delta_C");
+    }
+
 
     @NotNull
     private AlgorithmPublishModelParamDTO generateModelCallParam(List<String> dataCodeList, String nowTimeStr, List<ModelInfoEntity> modelInfoEntityList) {
@@ -345,6 +489,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
     /**
      * 根据算法结果,批量保存/更新数据
+     *
      * @param predictedDataList
      */
     private void saveOrUpdateBatchByAlgorithmResult(List<PredictedDataEntity> predictedDataList) {

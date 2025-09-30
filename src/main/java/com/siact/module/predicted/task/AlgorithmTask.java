@@ -1,5 +1,6 @@
 package com.siact.module.predicted.task;
 
+import com.siact.common.redis.RedisService;
 import com.siact.module.predicted.service.AlgorithmPredictedService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
@@ -20,6 +23,8 @@ public class AlgorithmTask {
 
     @Autowired
     private AlgorithmPredictedService algorithmPredictedService;
+    @Autowired
+    private RedisService redisService;
 
 
     /**
@@ -41,6 +46,25 @@ public class AlgorithmTask {
     public void deleteAlgorithmCallInfoBeforeTime() {
         // 默认删除上月前的数据(保留一个月)
         algorithmPredictedService.deleteAlgorithmCallInfoBeforeTime("");
+    }
+
+    /**
+     * 每十分钟调用一次算法  获取智能计算值
+     */
+    @Scheduled(cron = "0 0/10 * * * ?")
+    public void getIntelligentComputing() {
+        Object cacheObject = redisService.getCacheObject("getIntelligentComputing");
+
+        if (cacheObject != null) {
+            redisService.setCacheObject("getIntelligentComputing", "1", 10L, TimeUnit.SECONDS);
+        }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                algorithmPredictedService.getIntelligentComputing();
+            }
+        }).start();
     }
 
 }

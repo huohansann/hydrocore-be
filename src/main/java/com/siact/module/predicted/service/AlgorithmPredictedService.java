@@ -12,4 +12,6 @@ public interface AlgorithmPredictedService {
      * @param time
      */
     void deleteAlgorithmCallInfoBeforeTime(String time);
+
+    void getIntelligentComputing();
 }
