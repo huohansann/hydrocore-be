@@ -174,22 +174,34 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
 
         // 2:初始化正常的工况
         ProcessLogEntity normalAddEntity = null;
+        // 换机状态  需要额外新增一个"正常"的工况  产线数量/换火周期/消泡系统的状态  跟此次换机时的状态保持一致  (25-10-15 需求)
+        normalAddEntity = ConvertUtils.sourceToTarget(replaceMachineAddEntity, ProcessLogEntity.class);
+        normalAddEntity.setReplaceMachine(ReplaceMachineEnum.NORMAL.getValue());
+        normalAddEntity.setId(null);// 新增数据 id为null
+        // 开始时间为entity的结束时间 + 1分钟
+        normalAddEntity.setStartTime(TimeUtil.getCalcTime(endTime, 1, ConstantBase.MIN));
+        normalAddEntity.setEndTime(null);
+        normalAddEntity.setOperator("System");
+        normalAddEntity.setOperationDate(replaceMachineAddEntity.getOperationDate());
+        addOrUpdateList.add(normalAddEntity);
+
         if (beforeList != null && !beforeList.isEmpty()) {
-            for (ProcessLogEntity processLogEntity : beforeList) {
-                if (processLogEntity.getReplaceMachine().equals(ReplaceMachineEnum.NORMAL.getValue())) {
-                    // 找到之前的数据当中  第一个正常的工况
-                    // 换机还要在新增默认正常的一个工况
-                    normalAddEntity = ConvertUtils.sourceToTarget(processLogEntity, ProcessLogEntity.class);
-                    normalAddEntity.setId(null);// 新增数据 id为null
-                    // 开始时间为entity的结束时间 + 1分钟
-                    normalAddEntity.setStartTime(TimeUtil.getCalcTime(endTime, 1, ConstantBase.MIN));
-                    normalAddEntity.setEndTime(null);
-                    normalAddEntity.setOperator("System");
-                    normalAddEntity.setOperationDate(replaceMachineAddEntity.getOperationDate());
-                    addOrUpdateList.add(normalAddEntity);
-                    break;
-                }
-            }
+            // (25-07-16 的需求  作废)
+//            for (ProcessLogEntity processLogEntity : beforeList) {
+//                if (processLogEntity.getReplaceMachine().equals(ReplaceMachineEnum.NORMAL.getValue())) {
+//                    // 找到之前的数据当中  第一个正常的工况  (25-07-16 的需求  作废)
+//                    // 换机还要在新增默认正常的一个工况
+//                    normalAddEntity = ConvertUtils.sourceToTarget(processLogEntity, ProcessLogEntity.class);
+//                    normalAddEntity.setId(null);// 新增数据 id为null
+//                    // 开始时间为entity的结束时间 + 1分钟
+//                    normalAddEntity.setStartTime(TimeUtil.getCalcTime(endTime, 1, ConstantBase.MIN));
+//                    normalAddEntity.setEndTime(null);
+//                    normalAddEntity.setOperator("System");
+//                    normalAddEntity.setOperationDate(replaceMachineAddEntity.getOperationDate());
+//                    addOrUpdateList.add(normalAddEntity);
+//                    break;
+//                }
+//            }
 
             // 2.1 如果上一个时段是正常的,更新上一个正常时段的endTime  如果上个时段是换机,则不处理(因为换机有默认结束时间)
             ProcessLogEntity beforeUpdateEntity = beforeList.get(0);

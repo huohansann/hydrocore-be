@@ -371,7 +371,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         paramDTO.setMethod_par(methodPar);
 
         // 设置工况总数,目前固定为12 12种工况
-        paramDTO.setWork_code_num(ProcessOneHotEncoderEnum.values().length);  // 固定12种运行工况 ProcessOneHotEncoderEnum
+        paramDTO.setWork_code_num(ProcessOneHotEncoderEnum.values().length);  // 固定16种运行工况 ProcessOneHotEncoderEnum
 
         // 预测类型 单步('single_step')或多步('multiple_step')
         PredictedTypeEnum predictedTypeEnum = PredictedTypeEnum.getEnumByCode(entity.getPredictedTypeCode());
