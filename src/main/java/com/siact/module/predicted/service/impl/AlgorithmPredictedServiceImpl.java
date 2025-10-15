@@ -55,6 +55,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -162,11 +163,22 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         params.put("fire_change_cycle", 24);
         params.put("model", "LightGBM2");
         params.put("method", "model");
-        params.put("data", null);
+
+        JSONObject intelligentComputingParams = JSONObject.parseObject(tplService.selectTplByCode("intelligentComputingParams").getTplContent());
+        params.put("ts", intelligentComputingParams.getString("ts"));
+        LocalDateTime now = LocalDateTime.now();
+        params.put("startTime", now.plusMinutes(-intelligentComputingParams.getInteger("tracingTime")).format(TimeUtil.df));
+        params.put("endTime", now.format(TimeUtil.df));
+        JSONObject data = new JSONObject();
+        intelligentComputingParams.getJSONArray("keyData").forEach(o -> {
+            JSONObject itemJson = JSONObject.from(o);
+            data.put(itemJson.getString("algorithmCode"), itemJson.getString("dataCode"));
+        });
+        params.put("data", data);
 
         LambdaQueryWrapper<IntelligentComputingEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.orderByDesc(IntelligentComputingEntity::getResultTime);
-        queryWrapper.last("limit 5");
+        queryWrapper.last("limit 7");
         List<IntelligentComputingEntity> intelligentComputingEntities = intelligentComputingMapper.selectList(queryWrapper);
         setDeltaC("MC1", params, intelligentComputingEntities);
         setDeltaC("MC2", params, intelligentComputingEntities);
@@ -244,6 +256,8 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         deltaCJson.put("last30", getDeltaC(mc,intelligentComputingEntities.get(2)));
         deltaCJson.put("last40", getDeltaC(mc,intelligentComputingEntities.get(3)));
         deltaCJson.put("last50", getDeltaC(mc,intelligentComputingEntities.get(4)));
+        deltaCJson.put("last60", getDeltaC(mc,intelligentComputingEntities.get(5)));
+        deltaCJson.put("last70", getDeltaC(mc,intelligentComputingEntities.get(6)));
         params.put(mc + "_last_deltaC", deltaCJson);
 
         ControlIntervalConfigVO controlIntervalConfigVO = new ControlIntervalConfigVO();

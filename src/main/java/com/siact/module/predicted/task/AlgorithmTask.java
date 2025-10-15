@@ -51,7 +51,7 @@ public class AlgorithmTask {
     /**
      * 每十分钟调用一次算法  获取智能计算值
      */
-    @Scheduled(cron = "0 0/10 * * * ?")
+    @Scheduled(cron = "0 0/5 * * * ?")
     public void getIntelligentComputing() {
         Object cacheObject = redisService.getCacheObject("getIntelligentComputing");
 
