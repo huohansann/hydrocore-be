@@ -35,7 +35,8 @@ import com.siact.module.model.vo.ModelConfigParamSaveVO;
 import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.process.entity.ProcessLogEntity;
-import com.siact.module.process.enums.ProcessOneHotEncoderEnum;
+import com.siact.module.process.enums.ProcessConfig;
+import com.siact.module.process.dto.ProcessOneHotEncoderDTO;
 import com.siact.module.process.enums.ReplaceMachineEnum;
 import com.siact.module.process.service.IProcessLogService;
 import com.siact.sec.dto.IntervalDataDto;
@@ -51,7 +52,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -90,6 +90,9 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
     // 异步线程池
     @Resource(name = "threadIoPoolTaskExecutor")
     private ThreadPoolTaskExecutor threadIoPoolTaskExecutor;
+
+    @Autowired
+    private ProcessConfig processConfig;
 
     @Override
     public Map<String, String> getParamTemplate() {
@@ -371,7 +374,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         paramDTO.setMethod_par(methodPar);
 
         // 设置工况总数,目前固定为12 12种工况
-        paramDTO.setWork_code_num(ProcessOneHotEncoderEnum.values().length);  // 固定16种运行工况 ProcessOneHotEncoderEnum
+        paramDTO.setWork_code_num(processConfig.getProcessOneHotEncoder().size());  // 固定16种运行工况 ProcessOneHotEncoderEnum
 
         // 预测类型 单步('single_step')或多步('multiple_step')
         PredictedTypeEnum predictedTypeEnum = PredictedTypeEnum.getEnumByCode(entity.getPredictedTypeCode());
@@ -491,13 +494,13 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         Map<String, List<IntervalDataDto>> dataCodeValMap = secDataList.stream().collect(Collectors.groupingBy(IntervalDataDto::getDataCode));
 
         // 获取当前工况type的one-hot对应的code
-        ProcessOneHotEncoderEnum hotEncoderEnum = ProcessOneHotEncoderEnum.getEnumByType(curProcess.getOperatingCode());
-        if (hotEncoderEnum == null) {
+        ProcessOneHotEncoderDTO hotEncoderDto = processConfig.getProcessOneHotEncoderByType(curProcess.getOperatingCode());
+        if (hotEncoderDto == null) {
             log.error("工况类型未定义,不进行处理,operatingCode:{}", curProcess.getOperatingCode());
             return;
         }
         // 算法对应的工艺code
-        Integer algorithmProcessCode = hotEncoderEnum.getAlgorithmProcessCode();
+        Integer algorithmProcessCode = hotEncoderDto.getAlgorithmProcessCode();
 
         List<Map<String, List<Object>>> curAlgorithmDataMapList = algorithmDataValMap.getOrDefault(algorithmProcessCode + "", new ArrayList<>());
 

@@ -93,4 +93,11 @@ public interface IProcessLogService extends IService<ProcessLogEntity> {
      * @return
      */
     List<ProcessLogEntity> getByTimeRange(String startTime, String endTime, int replaceMachine);
+
+     /**
+     * 获取工艺日志配置
+     * @param type
+     * @return
+     */
+    Object getProcessConfig(String type);
 }

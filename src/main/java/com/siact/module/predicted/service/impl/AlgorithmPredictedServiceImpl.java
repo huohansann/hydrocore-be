@@ -44,7 +44,7 @@ import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.predicted.service.AlgorithmPredictedService;
 import com.siact.module.predicted.service.PredictedDataService;
-import com.siact.module.process.enums.ProcessOneHotEncoderEnum;
+import com.siact.module.process.enums.ProcessConfig;
 import com.siact.module.process.service.IProcessLogService;
 import com.siact.module.process.vo.ProcessLogVO;
 import lombok.extern.slf4j.Slf4j;
@@ -103,6 +103,9 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
     @Autowired
     private ControlIntervalConfigService configService;
+
+    @Autowired
+    private ProcessConfig processConfig;
 
     @Override
     public void algorithmInference() {
@@ -366,9 +369,9 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
             detailParam.setSample(predictionDataParamsDTO.getSample());
 
-            detailParam.setWork_code_num(ProcessOneHotEncoderEnum.values().length); // 固定16种运行工况 ProcessOneHotEncoderEnum
+            detailParam.setWork_code_num(processConfig.getProcessOneHotEncoder().size()); // 固定16种运行工况 ProcessOneHotEncoderEnum
             // 获取当前时间的运行工况
-            detailParam.setWork_code(ProcessOneHotEncoderEnum.getAlgorithmCodeByType(operatingCode));
+            detailParam.setWork_code(processConfig.getProcessAlgorithmCodeByType(operatingCode));
 
             PredictedTypeEnum predictedTypeEnum = PredictedTypeEnum.getEnumByCode(predictedTypeCode);
             if (predictedTypeEnum == null) {

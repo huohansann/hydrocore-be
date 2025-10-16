@@ -16,23 +16,28 @@ import com.siact.module.process.dto.ProcessLogDTO;
 import com.siact.module.process.dto.ProcessLogPageDTO;
 import com.siact.module.process.dto.ProcessLogQueryDTO;
 import com.siact.module.process.entity.ProcessLogEntity;
-import com.siact.module.process.enums.DefoamSystemEnum;
-import com.siact.module.process.enums.FireCycleEnum;
-import com.siact.module.process.enums.ProductLineEnum;
+import com.siact.module.process.dto.DefoamSystemDTO;
+import com.siact.module.process.dto.FireCycleDTO;
+import com.siact.module.process.enums.ProcessConfig;
+import com.siact.module.process.dto.ProductLineDTO;
 import com.siact.module.process.enums.ReplaceMachineEnum;
 import com.siact.module.process.mapper.ProcessLogMapper;
 import com.siact.module.process.service.IProcessLogService;
-import com.siact.module.process.enums.ProcessOneHotEncoderEnum;
 import com.siact.module.process.vo.ProcessLogVO;
 import com.siact.sec.utils.IntervalTimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +46,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, ProcessLogEntity> implements IProcessLogService {
+
+    @Autowired
+    private ProcessConfig processConfig;
 
     private LambdaQueryWrapper<ProcessLogEntity> buildQueryWrapper(ProcessLogQueryDTO dto) {
         LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<>();
@@ -263,10 +271,10 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         return this.updateById(entity);
     }
 
-    private static String getOneHotEncoding(ProcessLogDTO dto) {
-        ProductLineEnum productLineEnum = ProductLineEnum.getByCode(dto.getProductLineNum());
-        FireCycleEnum fireCycleEnum = FireCycleEnum.getByCode(dto.getFireCycle());
-        DefoamSystemEnum defoamSystemEnum = DefoamSystemEnum.getByCode(dto.getDefoamSystem());
+    private String getOneHotEncoding(ProcessLogDTO dto) {
+        ProductLineDTO productLineEnum = processConfig.getByProductLineCode(dto.getProductLineNum());
+        FireCycleDTO fireCycleEnum = processConfig.getByFireCycleCode(dto.getFireCycle());
+        DefoamSystemDTO defoamSystemEnum = processConfig.getDefoamSystemByCode(dto.getDefoamSystem());
         if (ObjectUtils.isEmpty(productLineEnum) || ObjectUtils.isEmpty(fireCycleEnum) || ObjectUtils.isEmpty(defoamSystemEnum)) {
             throw new CustomException("产线数量或换火周期或消泡系统状态错误,无法匹配该类型");
         }
@@ -276,7 +284,7 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
                 productLineEnum.getCode()
                         + fireCycleEnum.getCode()
                         + defoamSystemEnum.getCode();
-        int[] oneHotByType = ProcessOneHotEncoderEnum.getOneHotByType(type);
+        int[] oneHotByType = processConfig.getProcessOneHotByType(type);
         return oneHotByType == null ? null : Arrays.stream(oneHotByType).mapToObj(o -> o + "").collect(Collectors.joining());
     }
 
@@ -355,6 +363,27 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         wrapper.or(o -> o.le(ProcessLogEntity::getStartTime, startTime).and(o1 -> o1.isNull(ProcessLogEntity::getEndTime)));
 
         return baseMapper.selectList(wrapper);
+    }
+
+    @Override
+    public Object getProcessConfig(String type) {
+
+        if (ObjectUtils.isEmpty(type)) {
+            return processConfig.getAllProcessConfig();
+        }
+
+        switch (type) {
+            case "defoamSystem":
+                return ObjectUtils.isEmpty(processConfig.getDefoamSystem()) ? new ArrayList<>() : processConfig.getDefoamSystem();
+            case "fireCycle":
+                return ObjectUtils.isEmpty(processConfig.getFireCycle()) ? new ArrayList<>() : processConfig.getFireCycle();
+            case "productLine":
+                return ObjectUtils.isEmpty(processConfig.getProductLine()) ? new ArrayList<>() : processConfig.getProductLine();
+            case "processOneHotEncoder":
+                return ObjectUtils.isEmpty(processConfig.getProcessOneHotEncoder()) ? new ArrayList<>() : processConfig.getProcessOneHotEncoder();
+            default:
+                return processConfig.getAllProcessConfig();
+        }
     }
 
     @Override
