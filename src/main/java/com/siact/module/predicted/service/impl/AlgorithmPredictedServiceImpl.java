@@ -178,7 +178,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         LambdaQueryWrapper<IntelligentComputingEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.orderByDesc(IntelligentComputingEntity::getResultTime);
-        queryWrapper.last("limit 7");
+        queryWrapper.last("limit 5");
         List<IntelligentComputingEntity> intelligentComputingEntities = intelligentComputingMapper.selectList(queryWrapper);
         setDeltaC("MC1", params, intelligentComputingEntities);
         setDeltaC("MC2", params, intelligentComputingEntities);
@@ -256,8 +256,6 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         deltaCJson.put("last30", getDeltaC(mc,intelligentComputingEntities.get(2)));
         deltaCJson.put("last40", getDeltaC(mc,intelligentComputingEntities.get(3)));
         deltaCJson.put("last50", getDeltaC(mc,intelligentComputingEntities.get(4)));
-        deltaCJson.put("last60", getDeltaC(mc,intelligentComputingEntities.get(5)));
-        deltaCJson.put("last70", getDeltaC(mc,intelligentComputingEntities.get(6)));
         params.put(mc + "_last_deltaC", deltaCJson);
 
         ControlIntervalConfigVO controlIntervalConfigVO = new ControlIntervalConfigVO();
