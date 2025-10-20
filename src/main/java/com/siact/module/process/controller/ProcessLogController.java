@@ -109,6 +109,15 @@ public class ProcessLogController {
         return R.data(processLogService.queryByDateRange(startTime,endTime));
     }
 
+    @ApiOperation("获取工艺日志配置")
+    @GetMapping("/getProcessConfig")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "type", value = "配置类型", required = true)
+    })
+    public R getProcessConfig(String type) {
+        return R.data(processLogService.getProcessConfig(type));
+    }
+
     /**
      * 转换返回的时间测试
      * @param record

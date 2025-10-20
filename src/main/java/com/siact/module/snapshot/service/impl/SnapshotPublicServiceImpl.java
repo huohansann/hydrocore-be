@@ -310,6 +310,13 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
 
     }
 
+    @Override
+    public void clearSnapshotTask(String halfYearAgoTime) {
+        // 删除半年前的快照数据
+        snapshotTempService.remove(new LambdaQueryWrapper<SnapshotTempEntity>().lt(SnapshotTempEntity::getCreateTime, halfYearAgoTime));
+        snapshotGasService.remove(new LambdaQueryWrapper<SnapshotGasEntity>().lt(SnapshotGasEntity::getCreateTime, halfYearAgoTime));
+    }
+
     /**
      * 处理快照数据
      *
