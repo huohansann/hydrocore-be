@@ -52,4 +52,18 @@ public class PredictedDataController {
         return R.success();
     }
 
+    @ApiOperation(value = "调用算法获取智能计算值")
+    @GetMapping("/getIntelligentComputing")
+    public R getIntelligentComputing() {
+        algorithmPredictedService.getIntelligentComputing();
+        return R.success();
+    }
+
+    @ApiOperation(value = "调用算法获取智能计算值")
+    @GetMapping("/initIntelligentComputingCreateTime")
+    public R initIntelligentComputingCreateTime(Boolean isForce) {
+        algorithmPredictedService.initIntelligentComputingCreateTime(isForce);
+        return R.success();
+    }
+
 }

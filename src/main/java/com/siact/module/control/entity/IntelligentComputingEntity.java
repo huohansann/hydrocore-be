@@ -12,6 +12,11 @@ public class IntelligentComputingEntity {
     private Long id;
 
     /**
+     * 创建时间
+     */
+    private String createTime;
+
+    /**
      * 结果时间
      */
     private String resultTime;

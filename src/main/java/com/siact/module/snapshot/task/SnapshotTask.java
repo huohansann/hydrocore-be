@@ -31,4 +31,20 @@ public class SnapshotTask {
 
         log.info("快照任务执行结束");
     }
+
+    /**
+     * 每天凌晨3点清除半年前的快照数据
+     */
+    @Scheduled(cron = "0 0 3 * * ?")
+    public void clearSnapshotTask() {
+        log.info("清除半年前的快照数据开始执行");
+        // 半年前的时间(将秒归0,   防止查询范围有误)
+        String nowTime = IntervalTimeUtil.dateFormat(TimeUtil.getNow(), ConstantTime.DATE_TIME_MM_00);
+
+        String halfYearAgoTime = TimeUtil.getCalcTime(nowTime, -6, "M");
+
+        snapshotService.clearSnapshotTask(halfYearAgoTime);
+
+        log.info("清除半年前的快照数据执行结束");
+    }
 }

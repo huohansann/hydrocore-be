@@ -14,4 +14,6 @@ public interface AlgorithmPredictedService {
     void deleteAlgorithmCallInfoBeforeTime(String time);
 
     void getIntelligentComputing();
+
+    void initIntelligentComputingCreateTime(Boolean isForce);
 }

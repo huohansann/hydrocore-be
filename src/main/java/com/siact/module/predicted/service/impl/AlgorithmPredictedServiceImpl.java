@@ -38,12 +38,13 @@ import com.siact.module.model.service.ModelPublishInfoService;
 import com.siact.module.model.utils.AlgorithmDataCodeUtil;
 import com.siact.module.predicted.dto.AlgorithmPredictionCallDataDTO;
 import com.siact.module.predicted.dto.AlgorithmPredictionDataCodeTplDTO;
+import com.siact.module.predicted.dto.AlgorithmPredictionDataParamsDTO;
 import com.siact.module.predicted.entity.PredictedDataEntity;
 import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.predicted.service.AlgorithmPredictedService;
 import com.siact.module.predicted.service.PredictedDataService;
-import com.siact.module.process.enums.ProcessOneHotEncoderEnum;
+import com.siact.module.process.enums.ProcessConfig;
 import com.siact.module.process.service.IProcessLogService;
 import com.siact.module.process.vo.ProcessLogVO;
 import lombok.extern.slf4j.Slf4j;
@@ -53,9 +54,11 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -101,6 +104,9 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
     @Autowired
     private ControlIntervalConfigService configService;
+
+    @Autowired
+    private ProcessConfig processConfig;
 
     @Override
     public void algorithmInference() {
@@ -166,7 +172,8 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         JSONObject intelligentComputingParams = JSONObject.parseObject(tplService.selectTplByCode("intelligentComputingParams").getTplContent());
         params.put("ts", intelligentComputingParams.getString("ts"));
-        LocalDateTime now = LocalDateTime.now();
+        // 将当前时间的秒 归0处理
+        LocalDateTime now = LocalDateTime.now().withSecond(0);
         params.put("startTime", now.plusMinutes(-intelligentComputingParams.getInteger("tracingTime")).format(TimeUtil.df));
         params.put("endTime", now.format(TimeUtil.df));
         JSONObject data = new JSONObject();
@@ -177,6 +184,17 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         params.put("data", data);
 
         LambdaQueryWrapper<IntelligentComputingEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.le(IntelligentComputingEntity::getCreateTime, now.format(TimeUtil.df));
+        // 查询 lastDeltaC 数据的时间间隔
+        Integer lastDeltaCInterval = intelligentComputingParams.getInteger("lastDeltaCInterval");
+        // 这里时间范围导致数据查不到5条,但是也不能查询所有数据,因此将开始时间尽可能的放大
+        queryWrapper.ge(IntelligentComputingEntity::getCreateTime, now.plusMinutes(-lastDeltaCInterval * 50L).format(TimeUtil.df));
+
+        // 只查询10分钟间隔
+        if (lastDeltaCInterval != null && lastDeltaCInterval > 0) {
+            queryWrapper.apply("MINUTE(create_time) % " + lastDeltaCInterval + " = 0");
+        }
+
         queryWrapper.orderByDesc(IntelligentComputingEntity::getResultTime);
         queryWrapper.last("limit 5");
         List<IntelligentComputingEntity> intelligentComputingEntities = intelligentComputingMapper.selectList(queryWrapper);
@@ -190,7 +208,6 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         setDeltaC("MC8", params, intelligentComputingEntities);
         setDeltaC("MC9", params, intelligentComputingEntities);
         setDeltaC("MC10", params, intelligentComputingEntities);
-
 
         //调用接口
 //        LinkedHashMap<String, Object> response = null;
@@ -233,6 +250,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         JSONObject resultJson = response.getJSONObject("result");
         IntelligentComputingEntity intelligentComputingEntity = new IntelligentComputingEntity();
 
+        intelligentComputingEntity.setCreateTime(now.format(TimeUtil.df));
         intelligentComputingEntity.setResultTime(TimeUtil.getNow());
         intelligentComputingEntity.setMc1(getDeltaC("MC1", resultJson));
         intelligentComputingEntity.setMc2(getDeltaC("MC2", resultJson));
@@ -357,14 +375,14 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             detailParam.setRangeStart(hisDataStartTime);// 开始时间范围,单位是分钟
             detailParam.setRangeEnd(hisDataEndTime);// 结束时间范围,单位是分钟
 
-            // TODO 这段代码可能改成根据前端入参进行处理
-            int sampleTime = 60;
-            String sampleUnit = "s";
-            detailParam.setSample(sampleTime + sampleUnit.toLowerCase());
+            AlgorithmPredictionDataParamsDTO predictionDataParamsDTO =
+                    tplService.getByCode("predictionDataParams", AlgorithmPredictionDataParamsDTO.class);
 
-            detailParam.setWork_code_num(ProcessOneHotEncoderEnum.values().length); // 固定12种运行工况 ProcessOneHotEncoderEnum
+            detailParam.setSample(predictionDataParamsDTO.getSample());
+
+            detailParam.setWork_code_num(processConfig.getProcessOneHotEncoder().size()); // 固定16种运行工况 ProcessOneHotEncoderEnum
             // 获取当前时间的运行工况
-            detailParam.setWork_code(ProcessOneHotEncoderEnum.getAlgorithmCodeByType(operatingCode));
+            detailParam.setWork_code(processConfig.getProcessAlgorithmCodeByType(operatingCode));
 
             PredictedTypeEnum predictedTypeEnum = PredictedTypeEnum.getEnumByCode(predictedTypeCode);
             if (predictedTypeEnum == null) {
@@ -539,5 +557,65 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         if (!updateList.isEmpty()) {
             predictedDataService.updateBatchById(updateList, 1000);
         }
+    }
+
+    /**
+     * 初始化intelligentComputing表的create_time字段
+     * 逻辑 result_time向前取距离最近的5分钟的时间点
+     */
+    public void initIntelligentComputingCreateTime(Boolean isForce) {
+        // 1. 查询所有result_time
+        LambdaQueryWrapper<IntelligentComputingEntity> queryWrapper = new LambdaQueryWrapper<>();
+        if (isForce == null || !isForce) {
+            // 非强制只补充没有create_time的记录
+            queryWrapper.isNull(IntelligentComputingEntity::getCreateTime);
+        }
+
+        List<IntelligentComputingEntity> intelligentComputingList = intelligentComputingMapper.selectList(queryWrapper);
+        if (ObjectUtils.isEmpty(intelligentComputingList)) {
+            return;
+        }
+
+        // 2. 遍历更新create_time
+        for (IntelligentComputingEntity entity : intelligentComputingList) {
+            String resultTime = entity.getResultTime();
+            if (ObjectUtils.isEmpty(resultTime)) {
+                continue;
+            }
+            // 向前取距离最近的5分钟的时间点
+            String createTime = getNearest5MinuteTimeForward(resultTime);
+            entity.setCreateTime(createTime);
+        }
+
+        // 3. 批量更新
+        if (!intelligentComputingList.isEmpty()) {
+            for (IntelligentComputingEntity computingEntity : intelligentComputingList) {
+                intelligentComputingMapper.updateById(computingEntity);
+            }
+        }
+
+    }
+
+    /**
+     * 计算离指定时间最近的5分钟时间点（只向前取）
+     * @param timeString 时间字符串，格式为 "yyyy-MM-dd HH:mm:ss"
+     * @return 最近的5分钟时间点（向前取整）
+     */
+    public String getNearest5MinuteTimeForward(String timeString) {
+        // 定义时间格式
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        // 解析时间字符串
+        LocalDateTime time = LocalDateTime.parse(timeString, formatter);
+
+        // 获取分钟数
+        int minute = time.getMinute();
+
+        // 计算向下取整到最近的5分钟间隔（只向前取）
+        int roundedMinute = (minute / 5) * 5;
+
+        // 设置为计算出的分钟数，并将秒和纳秒置为0
+        time = time.withMinute(roundedMinute).withSecond(0);
+        return time.format(TimeUtil.df);
     }
 }

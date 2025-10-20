@@ -18,4 +18,9 @@ public interface SnapshotPublicService {
      */
     void execSnapshotTask(String nowTime);
 
+    /**
+     * 清除快照数据
+     * @param halfYearAgoTime
+     */
+    void clearSnapshotTask(String halfYearAgoTime);
 }
