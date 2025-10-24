@@ -162,6 +162,9 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
     @Override
     public void getIntelligentComputing() {
+        // 将当前时间的秒 归0处理
+        LocalDateTime now = LocalDateTime.now().withSecond(0);
+        log.info("开始获取智能计算数据,执行时间:{}", now.format(TimeUtil.df));
         //组装参数
         JSONObject params = new JSONObject();
 
@@ -172,8 +175,6 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         JSONObject intelligentComputingParams = JSONObject.parseObject(tplService.selectTplByCode("intelligentComputingParams").getTplContent());
         params.put("ts", intelligentComputingParams.getString("ts"));
-        // 将当前时间的秒 归0处理
-        LocalDateTime now = LocalDateTime.now().withSecond(0);
         params.put("startTime", now.plusMinutes(-intelligentComputingParams.getInteger("tracingTime")).format(TimeUtil.df));
         params.put("endTime", now.format(TimeUtil.df));
         JSONObject data = new JSONObject();
@@ -183,21 +184,20 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         });
         params.put("data", data);
 
+        // 查出末尾25条数据,并根据createTime进行倒序排列
         LambdaQueryWrapper<IntelligentComputingEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.le(IntelligentComputingEntity::getCreateTime, now.format(TimeUtil.df));
-        // 查询 lastDeltaC 数据的时间间隔
-        Integer lastDeltaCInterval = intelligentComputingParams.getInteger("lastDeltaCInterval");
-        // 这里时间范围导致数据查不到5条,但是也不能查询所有数据,因此将开始时间尽可能的放大
-        queryWrapper.ge(IntelligentComputingEntity::getCreateTime, now.plusMinutes(-lastDeltaCInterval * 50L).format(TimeUtil.df));
-
-        // 只查询10分钟间隔
-        if (lastDeltaCInterval != null && lastDeltaCInterval > 0) {
-            queryWrapper.apply("MINUTE(create_time) % " + lastDeltaCInterval + " = 0");
-        }
-
-        queryWrapper.orderByDesc(IntelligentComputingEntity::getResultTime);
-        queryWrapper.last("limit 5");
+        queryWrapper.orderByDesc(IntelligentComputingEntity::getCreateTime);
+        queryWrapper.last("limit 25");
         List<IntelligentComputingEntity> intelligentComputingEntities = intelligentComputingMapper.selectList(queryWrapper);
+
+        // 倒序查询25条数据后, 过滤出createdTime % lastDeltaCInterval ==0 的数据 取后5条
+        Integer lastDeltaCInterval = intelligentComputingParams.getInteger("lastDeltaCInterval");
+        intelligentComputingEntities = intelligentComputingEntities.stream()
+                .filter(o -> LocalDateTime.parse(o.getCreateTime(), TimeUtil.df).getMinute() % lastDeltaCInterval == 0)
+                .limit(5)
+                .collect(Collectors.toList());
+        log.info("间隔:{},过滤出的5条数据:{}", lastDeltaCInterval, intelligentComputingEntities.size());
+
         setDeltaC("MC1", params, intelligentComputingEntities);
         setDeltaC("MC2", params, intelligentComputingEntities);
         setDeltaC("MC3", params, intelligentComputingEntities);
@@ -210,16 +210,25 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         setDeltaC("MC10", params, intelligentComputingEntities);
 
         //调用接口
-//        LinkedHashMap<String, Object> response = null;
         String responseStr = null;
         JSONObject response = new JSONObject();
+
         AlgorithmCallInfoEntity entity = new AlgorithmCallInfoEntity();
         long callId = IdWorker.getId(entity);
+
         entity.setId(callId);
         entity.setType("control");
         entity.setReqTime(TimeUtil.getNow());
         entity.setReqJson(JSONObject.toJSONString(params));
         entity.setCreateTime(new Date());
+        // 异步保存算法调用记录
+        new Thread(() -> {
+            try {
+                algorithmCallInfoService.save(entity);
+            } catch (Exception e) {
+                log.error("智控算法调用记录保存异常,入参:{},异常信息:{}", params, e.getMessage());
+            }
+        }).start();
 
         try {
             responseStr = HttpUtil.post(baseUrl + "/control", params.toJSONString(), 500000);
@@ -234,7 +243,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             entity.setRespJson("出现异常:请求返回" + responseStr + ",异常信息:" + e.getMessage());
             return ;
         } finally {
-            algorithmCallInfoService.save(entity);
+            algorithmCallInfoService.saveOrUpdate(entity);
         }
 
         //解析结果
@@ -290,7 +299,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
     private JSONObject getDeltaC(String mc, IntelligentComputingEntity entity) {
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("time", entity.getResultTime());
+        jsonObject.put("time", entity.getCreateTime());
 
         //entity通过反射拼接get方法
         String method = "getMc" + mc.replace("MC", "");
