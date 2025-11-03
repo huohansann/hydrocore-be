@@ -3,6 +3,7 @@ package com.siact.module.base.controller;
 import com.siact.common.R;
 import com.siact.module.base.service.FrontendCacheService;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,9 +30,9 @@ public class FrontendCacheController {
      */
     @GetMapping("/setConfig")
     @ApiImplicitParams({
-            @io.swagger.annotations.ApiImplicitParam(name = "userId", value = "用户ID", required = true, paramType = "query", dataType = "string"),
-            @io.swagger.annotations.ApiImplicitParam(name = "key", value = "配置键", required = true, paramType = "query", dataType = "string"),
-            @io.swagger.annotations.ApiImplicitParam(name = "value", value = "配置值", required = true, paramType = "query", dataType = "string")
+            @ApiImplicitParam(name = "userId", value = "用户ID", required = true, paramType = "query", dataType = "string"),
+            @ApiImplicitParam(name = "key", value = "配置键", required = true, paramType = "query", dataType = "string"),
+            @ApiImplicitParam(name = "value", value = "配置值", required = true, paramType = "query", dataType = "string")
     })
     public R setConfig(String userId, String key, String value) {
 
@@ -48,8 +49,8 @@ public class FrontendCacheController {
      */
     @GetMapping("/getConfig")
     @ApiImplicitParams({
-            @io.swagger.annotations.ApiImplicitParam(name = "userId", value = "用户ID", required = true, paramType = "query", dataType = "string"),
-            @io.swagger.annotations.ApiImplicitParam(name = "keys", value = "配置键", required = true, paramType = "query", dataType = "string")
+            @ApiImplicitParam(name = "userId", value = "用户ID", required = true, paramType = "query", dataType = "string"),
+            @ApiImplicitParam(name = "keys", value = "配置键", required = true, paramType = "query", dataType = "string")
     })
     public Map<String, String> getConfig(String userId, String keys) {
         return frontendCacheService.getConfig(userId, keys);
@@ -64,8 +65,8 @@ public class FrontendCacheController {
      */
     @GetMapping("/deleteConfig")
     @ApiImplicitParams({
-            @io.swagger.annotations.ApiImplicitParam(name = "userId", value = "用户ID", required = true, paramType = "query", dataType = "string"),
-            @io.swagger.annotations.ApiImplicitParam(name = "key", value = "配置键", required = true, paramType = "query", dataType = "string")
+            @ApiImplicitParam(name = "userId", value = "用户ID", required = true, paramType = "query", dataType = "string"),
+            @ApiImplicitParam(name = "keys", value = "配置键", required = true, paramType = "query", dataType = "string")
     })
     public R deleteConfig(String userId, String keys) {
         frontendCacheService.deleteConfig(userId, keys);
