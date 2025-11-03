@@ -52,8 +52,8 @@ public class FrontendCacheController {
             @ApiImplicitParam(name = "userId", value = "用户ID", required = true, paramType = "query", dataType = "string"),
             @ApiImplicitParam(name = "keys", value = "配置键", required = true, paramType = "query", dataType = "string")
     })
-    public Map<String, String> getConfig(String userId, String keys) {
-        return frontendCacheService.getConfig(userId, keys);
+    public R<Map<String, String>> getConfig(String userId, String keys) {
+        return R.data(frontendCacheService.getConfig(userId, keys));
     }
 
     /**
