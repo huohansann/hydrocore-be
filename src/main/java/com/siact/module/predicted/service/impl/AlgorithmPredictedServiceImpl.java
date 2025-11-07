@@ -169,7 +169,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         JSONObject params = new JSONObject();
 
         //当前工艺对应换火周期
-        params.put("fire_change_cycle", 24);
+        params.put("fire_change_cycle", 21);
         params.put("model", "LightGBM2");
         params.put("method", "model");
 
