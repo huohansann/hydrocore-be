@@ -34,9 +34,9 @@ import com.siact.module.model.utils.AlgorithmDataCodeUtil;
 import com.siact.module.model.vo.ModelConfigParamSaveVO;
 import com.siact.module.predicted.enums.AlgorithmCallStatusEnum;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
+import com.siact.module.process.dto.ProcessOneHotEncoderDTO;
 import com.siact.module.process.entity.ProcessLogEntity;
 import com.siact.module.process.enums.ProcessConfig;
-import com.siact.module.process.dto.ProcessOneHotEncoderDTO;
 import com.siact.module.process.enums.ReplaceMachineEnum;
 import com.siact.module.process.service.IProcessLogService;
 import com.siact.sec.dto.IntervalDataDto;
@@ -47,6 +47,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,6 +66,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMapper, ModelConfigParamEntity> implements ModelConfigParamService {
+
+    @Value("${modelConfig.enable.train:true}")
+    private Boolean defaultValue;
 
     @Autowired
     private TplService tplService;
@@ -186,13 +190,15 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         saveOrUpdate(entity);
 
         // 异步调用算法  生成model
-        threadIoPoolTaskExecutor.execute(() -> {
-            try {
-                sendParamForModel(entity);
-            } catch (Exception e) {
-                log.error("调用算法生成训练模型,线程池任务执行异常，参数: {}", entity, e);
-            }
-        });
+        if (defaultValue) {
+            threadIoPoolTaskExecutor.execute(() -> {
+                try {
+                    sendParamForModel(entity);
+                } catch (Exception e) {
+                    log.error("调用算法生成训练模型,线程池任务执行异常，参数: {}", entity, e);
+                }
+            });
+        }
     }
 
     /**
