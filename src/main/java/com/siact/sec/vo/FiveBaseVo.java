@@ -30,8 +30,8 @@ public class FiveBaseVo {
     @ApiModelProperty(value = "步长")
     private Integer ts;
 
-    @StringContains(limitValues = {"Y" ,"M", "D", "H", "MIN"}, message = "步长单位不正确")
-    @ApiModelProperty(value = "步长单位(Y:年;M:月;D:日;H:小时;MIN:分)")
+    @StringContains(limitValues = {"Y" ,"M", "D", "H", "MIN","S"}, message = "步长单位不正确")
+    @ApiModelProperty(value = "步长单位(Y:年;M:月;D:日;H:小时;MIN:分,S:秒)")
     private String tsUnit;
 
     @StringContains(limitValues = {"AVG", "MAX", "MIN", "LAST", "FIRST", "TOTAL", "INC", "SUM", "COUNT"},message = "计算类型不正确")

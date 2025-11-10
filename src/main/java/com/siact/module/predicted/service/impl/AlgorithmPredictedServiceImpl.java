@@ -514,8 +514,13 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
                 predictedDataList.add(new PredictedDataEntity(null, modelInfoEntity.getDataCode(), predictedTypeEnum.getType(), predictedTypeEnum.getCode(), dataTime, curDataVal, "℃", new Date()));
             } else {
                 // 当前模型是多步预测  则取多步预测的步长的预测结果
-                for (int i = 0; i < predictedTypeEnum.getStep(); i++) {
-                    String dataTime = TimeUtil.getCalcTime(predictionTime, i, ConstantBase.MIN);
+                for (int i = 0; i < predictedTypeEnum.getStep() * 2; i++) {
+
+                    // ps:目前多步预测返回的是160个数据  其中 30s一个点 ,但是数据库当中 1min一个点,因此只保留偶数索引的点
+                    if (i % 2 != 0) {
+                        continue;
+                    }
+                    String dataTime = TimeUtil.getCalcTime(predictionTime, i / 2, ConstantBase.MIN);
                     BigDecimal curDataVal = dataValList.get(i);
                     predictedDataList.add(new PredictedDataEntity(null, modelInfoEntity.getDataCode(), predictedTypeEnum.getType(), predictedTypeEnum.getCode(), dataTime, curDataVal, "℃", new Date()));
                 }
