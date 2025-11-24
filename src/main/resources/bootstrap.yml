@@ -4,9 +4,9 @@ spring:
   cloud:
     nacos:
       # nacos IP端口配置
-      server-addr: 192.100.30.102:8848
+      server-addr: localhost:8848
       username: nacos
-      password: nacos
+      password: 123456
       namespace: ylkz
       # 注册中心配置，使用独立命名空间
       discovery:
@@ -30,5 +30,5 @@ spring:
             refresh: true
           - data-id: sec-knife4j.yml
             refresh: true
-          - data-id: mqtt.yml
+          - data-id: kiln-config.properties
             refresh: true

@@ -15,10 +15,15 @@ public interface ControlIntervalConfigService {
 
     void updateConfig(List<ControlIntervalConfigDTO> configDTOs);
 
+    void sync();
+
+    void saveAndSyncConfig(List<ControlIntervalConfigDTO> configDTOs);
+
     ControlIntervalConfigDTO get(ControlIntervalConfigVO configVO);
 
     /**
      * 查询区间限值呈现图表
+     *
      * @param configVO
      * @return
      */
@@ -30,9 +35,5 @@ public interface ControlIntervalConfigService {
      * @param dataCodeList
      * @return k:dataCode,v:ControlIntervalConfigHisChartDataDTO(图表类型数据)
      */
-    Map<String, ControlIntervalConfigHisChartDataDTO> queryHistoryConfigChart(List<String> dataCodeList,
-                                                                              String startTime, String endTime,
-                                                                              Integer ts, String tsUnit, String formatVal);
-
-
+    Map<String, ControlIntervalConfigHisChartDataDTO> queryHistoryConfigChart(List<String> dataCodeList, String startTime, String endTime, Integer ts, String tsUnit, String formatVal);
 }

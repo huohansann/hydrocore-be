@@ -3,6 +3,9 @@ package com.siact.module.base.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.siact.common.config.KilnProperty;
+import com.siact.common.constant.ConstantDataApi;
+import com.siact.common.constant.ConstantNum;
 import com.siact.common.constant.ConstantTime;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.common.utils.TimeUtil;
@@ -13,6 +16,9 @@ import com.siact.module.base.entity.ControlIntervalConfigEntity;
 import com.siact.module.base.mapper.ControlIntervalConfigMapper;
 import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.vo.ControlIntervalConfigVO;
+import com.siact.sec.dto.IntervalDataDto;
+import com.siact.sec.dto.IntervalValParamsDto;
+import com.siact.sec.sevice.impl.DataServiceImpl;
 import com.siact.sec.utils.IntervalTimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -21,13 +27,12 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
+import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +43,9 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlIntervalConfigMapper, ControlIntervalConfigEntity> implements ControlIntervalConfigService {
+    private @Resource DataServiceImpl dataService;
+    private @Resource KilnProperty property;
+
     @Override
     public List<ControlIntervalConfigDTO> selectListByCondition(ControlIntervalConfigVO configVO) {
         List<String> measurePointList = new ArrayList<>();
@@ -52,6 +60,8 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         wrapper.eq(ControlIntervalConfigEntity::getDeleteFlag, false);
         // 没有条件就默认查询全部
         List<ControlIntervalConfigEntity> controlIntervalConfigEntities = baseMapper.selectList(wrapper);
+        // 根据 measurePoint 进行排序
+        controlIntervalConfigEntities.sort(Comparator.comparingInt(item -> Integer.parseInt(item.getMeasurePoint().replace("MC", ""))));
         return ConvertUtils.sourceToTarget(controlIntervalConfigEntities, ControlIntervalConfigDTO.class);
     }
 
@@ -96,6 +106,43 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
             insertEntity.setDeleteFlag(false);
         }
         saveBatch(configEntities);
+    }
+
+    @Override
+    public @Transactional() void sync() {
+        // 查询当前记录数据
+        LambdaQueryWrapper<ControlIntervalConfigEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ControlIntervalConfigEntity::getDeleteFlag, false);
+        wrapper.eq(ControlIntervalConfigEntity::getPointType, "temperature");
+        List<ControlIntervalConfigEntity> entities = baseMapper.selectList(wrapper);
+        // 获取所有编码
+        List<String> dataCodes = entities.stream().map(ControlIntervalConfigEntity::getDataCode).collect(Collectors.toList());
+
+        IntervalValParamsDto paramDTO = new IntervalValParamsDto();
+        // 当前时间
+        LocalDateTime now = LocalDateTime.now().withSecond(0);
+        paramDTO.setDataCodes(dataCodes);
+        // 开始时间设置到四个换火周期前的时刻
+        paramDTO.setStartTime(now.minusMinutes(property.getConfig().getFireChangeCycle() * 4).format(TimeUtil.df));
+        paramDTO.setEndTime(now.format(TimeUtil.df));
+        paramDTO.setTs(ConstantNum.NUMBER_ONE);
+        paramDTO.setTsUnit(ConstantDataApi.TS_MIN);
+        paramDTO.setCalcType(ConstantDataApi.CALC_LAST);
+        paramDTO.setFormatVal(ConstantTime.DATE_TIME_MM_00);
+        List<IntervalDataDto> intervalList = dataService.queryIntervalVal(paramDTO);
+        // 根据 dataCode 进行分组
+        Map<String, List<IntervalDataDto>> intervalMap = intervalList.stream().collect(Collectors.groupingBy(IntervalDataDto::getDataCode));
+
+        // 更新非关键点位
+        this.updateConfig(buildConfigSyncParams(intervalMap, entities, now));
+    }
+
+    @Override
+    public @Transactional void saveAndSyncConfig(List<ControlIntervalConfigDTO> configDTOs) {
+        // 先保存
+        this.updateConfig(configDTOs);
+        // 再同步其他非关键点
+        this.sync();
     }
 
     @Override
@@ -153,8 +200,8 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
 
     @Override
     public Map<String, ControlIntervalConfigHisChartDataDTO> queryHistoryConfigChart(List<String> dataCodeList,
-                                                                    String startTime, String endTime,
-                                                                    Integer ts, String tsUnit, String formatVal) {
+                                                                                     String startTime, String endTime,
+                                                                                     Integer ts, String tsUnit, String formatVal) {
 
         // 1:根据时间范围查询数据 包含 历史事件范围的配置信息 及  当前生效的配置信息(未删除)
         List<ControlIntervalConfigEntity> configEntities = queryHistoryConfigInRange(dataCodeList, startTime, endTime);
@@ -289,4 +336,96 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         }
     }
 
+    private List<ControlIntervalConfigDTO> buildConfigSyncParams(Map<String, List<IntervalDataDto>> intervalMap, List<ControlIntervalConfigEntity> entities, LocalDateTime now) {
+        // 关键点位
+        List<String> keyPoints = Arrays.asList("MC1", "MC4", "MC5", "MC10");
+        // 换火周期
+        long fireChangeCycle = property.getConfig().getFireChangeCycle();
+        // 自动计算配置
+        Map<String, KilnProperty.IntervalControl> icmap = property.getIntervalControl();
+        // 获取计算参数
+        HashMap<String, Map<String, BigDecimal>> results = new HashMap<>();
+        intervalMap.forEach((dataCode, intervals) -> {
+            // 获取对应配置
+            ControlIntervalConfigEntity configEntity = entities.stream().filter(entity -> entity.getDataCode().equals(dataCode)).collect(Collectors.toList()).get(0);
+            // 获取平均温度换火周期配置
+            List<Integer> range = icmap.get(configEntity.getMeasurePoint()).getRange();
+            HashMap<String, BigDecimal> point = new HashMap<>();
+            // 计算两个换火周期平均温度
+            List<BigDecimal> values = intervals.stream().filter(Objects::nonNull).filter(dto -> {
+                        LocalDateTime time = LocalDateTime.parse(dto.getTime(), DateTimeFormatter.ofPattern(ConstantTime.DATE_TIME_MM_00));
+                        LocalDateTime end = now.minusMinutes(fireChangeCycle * range.get(1)).withNano(0);
+                        LocalDateTime start = end.minusSeconds(fireChangeCycle * range.get(0));
+                        // dto.setItemVal(BigDecimal.valueOf(1450));
+                        return (time.isAfter(start) || time.isEqual(start)) && (time.isBefore(end) || time.isEqual(end));
+                    })
+                    .map(IntervalDataDto::getItemVal)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            // 平均温度
+            BigDecimal Tave = values.stream().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(values.size()), 0, RoundingMode.HALF_UP);
+            // 获取上下限差值一半
+            BigDecimal SPD = ((new BigDecimal(configEntity.getUpControl())).subtract(new BigDecimal(configEntity.getLowControl()))).divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+            point.put("Tave", Tave);
+            point.put("SPD", SPD);
+            if (keyPoints.contains(configEntity.getMeasurePoint())) point.put("SP", new BigDecimal(configEntity.getTemperatureSet()));
+            results.put(configEntity.getMeasurePoint(), point);
+        });
+
+        // 获取关键点位数据
+        Map<String, BigDecimal> mc1 = results.get("MC1");
+        Map<String, BigDecimal> mc4 = results.get("MC4");
+        Map<String, BigDecimal> mc5 = results.get("MC5");
+        Map<String, BigDecimal> mc10 = results.get("MC10");
+
+        // 过滤关键点位, 获取非关键点位控制实体
+        List<ControlIntervalConfigEntity> ncPoints = entities.stream().filter(entity -> !keyPoints.contains(entity.getMeasurePoint())).collect(Collectors.toList());
+        // 计算目标值和上下限
+        for (ControlIntervalConfigEntity entity : ncPoints) {
+            BigDecimal SP;
+            Map<String, BigDecimal> data = results.get(entity.getMeasurePoint());
+            BigDecimal SPD = data.get("SPD");
+            // 获取告警限差值
+            List<Integer> diffValue = icmap.get(entity.getMeasurePoint()).getDiffValue();
+            int low = diffValue.get(0);
+            int up = diffValue.size() > 1 ? diffValue.get(1) : diffValue.get(0);
+
+            BigDecimal coefficient = BigDecimal.valueOf(0.5);
+            // 计算目标值
+            switch (entity.getMeasurePoint()) {
+                case "MC2":
+                case "MC6":
+                    Map<String, BigDecimal> mc1_5 = "MC2".equals(entity.getMeasurePoint()) ? mc1 : mc5;
+                    Map<String, BigDecimal> mc4_10 = "MC2".equals(entity.getMeasurePoint()) ? mc4 : mc10;
+                    SP = data.get("Tave").add(coefficient.multiply(mc1_5.get("SP").subtract(mc1_5.get("Tave"))).multiply(SPD).divide(mc1_5.get("SPD"), 2, RoundingMode.HALF_UP))
+                            .add(coefficient.multiply(mc4_10.get("SP").subtract(mc4_10.get("Tave"))).multiply(SPD).divide(mc4_10.get("SPD"), 2, RoundingMode.HALF_UP));
+                    break;
+                case "MC3":
+                    SP = data.get("Tave").add((mc4.get("SP").subtract(mc4.get("Tave"))).multiply(SPD).divide(mc4.get("SPD"), 2, RoundingMode.HALF_UP));
+                    break;
+                case "MC7":
+                case "MC8":
+                case "MC9":
+                default:
+                    SP = data.get("Tave").add((mc10.get("SP").subtract(mc10.get("Tave"))).multiply(SPD).divide(mc10.get("SPD"), 2, RoundingMode.HALF_UP));
+                    break;
+            }
+            // 设置目标值
+            entity.setTemperatureSet(SP.setScale(0, RoundingMode.HALF_UP).toString());
+            // 计算上控制限
+            BigDecimal SPH = SPD.add(SP).setScale(0, RoundingMode.HALF_UP);
+            // 设置上控制限
+            entity.setUpControl(SPH.toString());
+            // 计算下控制限
+            BigDecimal SPL = SP.subtract(SPD).setScale(0, RoundingMode.HALF_UP);
+            // 设置下控制限
+            entity.setLowControl(SPL.toString());
+            // 设置上告警限
+            entity.setUpAlarm(SPH.add(BigDecimal.valueOf(up)).toString());
+            // 设置下告警限
+            entity.setLowAlarm(SPL.subtract(BigDecimal.valueOf(low)).toString());
+        }
+
+        return ConvertUtils.sourceToTarget(ncPoints, ControlIntervalConfigDTO.class);
+    }
 }

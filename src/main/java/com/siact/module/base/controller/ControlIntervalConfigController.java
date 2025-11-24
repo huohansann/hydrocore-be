@@ -9,10 +9,7 @@ import com.siact.module.base.vo.HistoryConfigChartQueryVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -42,6 +39,18 @@ public class ControlIntervalConfigController {
     @PostMapping("/update")
     public R update(@RequestBody List<ControlIntervalConfigDTO> configDTOs) {
         configService.updateConfig(configDTOs);
+        return R.success();
+    }
+
+    @ApiOperation("保存并同步")
+    public @GetMapping("/sync") R sync() {
+        configService.sync();
+        return R.success();
+    }
+
+    @ApiOperation("保存并同步")
+    public @PostMapping("/saveAndSync") R saveAndSync(@RequestBody List<ControlIntervalConfigDTO> configDTOs) {
+        configService.saveAndSyncConfig(configDTOs);
         return R.success();
     }
 

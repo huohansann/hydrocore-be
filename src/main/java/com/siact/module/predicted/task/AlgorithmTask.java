@@ -49,9 +49,9 @@ public class AlgorithmTask {
     }
 
     /**
-     * 每十分钟调用一次算法  获取智能计算值
+     * 每 3 分钟调用一次算法  获取智能计算值
      */
-    @Scheduled(cron = "0 0/5 * * * ?")
+    @Scheduled(cron = "0 0/3 * * * ?")
     public void getIntelligentComputing() {
         Object cacheObject = redisService.getCacheObject("getIntelligentComputing");
 
@@ -59,12 +59,6 @@ public class AlgorithmTask {
             redisService.setCacheObject("getIntelligentComputing", "1", 10L, TimeUnit.SECONDS);
         }
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                algorithmPredictedService.getIntelligentComputing();
-            }
-        }).start();
+        new Thread(() -> algorithmPredictedService.getIntelligentComputing()).start();
     }
-
 }

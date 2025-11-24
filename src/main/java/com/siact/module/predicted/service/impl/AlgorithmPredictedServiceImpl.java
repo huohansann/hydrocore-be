@@ -10,6 +10,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.siact.common.config.KilnProperty;
 import com.siact.common.constant.ConstantBase;
 import com.siact.common.constant.ConstantSymbol;
 import com.siact.common.constant.ConstantTime;
@@ -21,11 +22,7 @@ import com.siact.module.base.service.TplService;
 import com.siact.module.base.vo.ControlIntervalConfigVO;
 import com.siact.module.control.entity.IntelligentComputingEntity;
 import com.siact.module.control.mapper.IntelligentComputingMapper;
-import com.siact.module.model.dto.AlgorithmDataCodeDTO;
-import com.siact.module.model.dto.AlgorithmPublishModelParamDTO;
-import com.siact.module.model.dto.AlgorithmPublishModelParamDetailDTO;
-import com.siact.module.model.dto.ModelConfigParamDTO;
-import com.siact.module.model.dto.ModelConfigParamDetailDTO;
+import com.siact.module.model.dto.*;
 import com.siact.module.model.entity.AlgorithmCallInfoEntity;
 import com.siact.module.model.entity.ModelConfigParamEntity;
 import com.siact.module.model.entity.ModelInfoEntity;
@@ -55,17 +52,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -107,6 +99,8 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
     @Autowired
     private ProcessConfig processConfig;
+
+    private @Resource KilnProperty property;
 
     @Override
     public void algorithmInference() {
@@ -169,7 +163,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         JSONObject params = new JSONObject();
 
         //当前工艺对应换火周期
-        params.put("fire_change_cycle", 21);
+        params.put("fire_change_cycle", property.getConfig().getFireChangeCycle());
         params.put("model", "LightGBM2");
         params.put("method", "model");
 
@@ -184,34 +178,35 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         });
         params.put("data", data);
 
+        /* 模型调用变更, 去掉 last_deltaC 参数 */
         // 查出末尾25条数据,并根据createTime进行倒序排列
-        LambdaQueryWrapper<IntelligentComputingEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.orderByDesc(IntelligentComputingEntity::getCreateTime);
-        queryWrapper.last("limit 25");
-        List<IntelligentComputingEntity> intelligentComputingEntities = intelligentComputingMapper.selectList(queryWrapper);
+       LambdaQueryWrapper<IntelligentComputingEntity> queryWrapper = new LambdaQueryWrapper<>();
+       queryWrapper.orderByDesc(IntelligentComputingEntity::getCreateTime);
+       queryWrapper.last("limit 25");
+       List<IntelligentComputingEntity> intelligentComputingEntities = intelligentComputingMapper.selectList(queryWrapper);
 
         // 倒序查询25条数据后, 过滤出createdTime % lastDeltaCInterval ==0 的数据 取后5条
-        Integer lastDeltaCInterval = intelligentComputingParams.getInteger("lastDeltaCInterval");
-        intelligentComputingEntities = intelligentComputingEntities.stream()
-                .filter(o -> LocalDateTime.parse(o.getCreateTime(), TimeUtil.df).getMinute() % lastDeltaCInterval == 0)
-                .limit(5)
-                .collect(Collectors.toList());
-        log.info("间隔:{},过滤出的5条数据:{}", lastDeltaCInterval, intelligentComputingEntities.size());
+       Integer lastDeltaCInterval = intelligentComputingParams.getInteger("lastDeltaCInterval");
+       intelligentComputingEntities = intelligentComputingEntities.stream()
+               .filter(o -> LocalDateTime.parse(o.getCreateTime(), TimeUtil.df).getMinute() % lastDeltaCInterval == 0)
+               .limit(5)
+               .collect(Collectors.toList());
+       log.info("间隔:{},过滤出的5条数据:{}", lastDeltaCInterval, intelligentComputingEntities.size());
 
-        setDeltaC("MC1", params, intelligentComputingEntities);
-        setDeltaC("MC2", params, intelligentComputingEntities);
-        setDeltaC("MC3", params, intelligentComputingEntities);
-        setDeltaC("MC4", params, intelligentComputingEntities);
-        setDeltaC("MC5", params, intelligentComputingEntities);
-        setDeltaC("MC6", params, intelligentComputingEntities);
-        setDeltaC("MC7", params, intelligentComputingEntities);
-        setDeltaC("MC8", params, intelligentComputingEntities);
-        setDeltaC("MC9", params, intelligentComputingEntities);
-        setDeltaC("MC10", params, intelligentComputingEntities);
+       setDeltaC("MC1", params, intelligentComputingEntities);
+       setDeltaC("MC2", params, intelligentComputingEntities);
+       setDeltaC("MC3", params, intelligentComputingEntities);
+       setDeltaC("MC4", params, intelligentComputingEntities);
+       setDeltaC("MC5", params, intelligentComputingEntities);
+       setDeltaC("MC6", params, intelligentComputingEntities);
+       setDeltaC("MC7", params, intelligentComputingEntities);
+       setDeltaC("MC8", params, intelligentComputingEntities);
+       setDeltaC("MC9", params, intelligentComputingEntities);
+       setDeltaC("MC10", params, intelligentComputingEntities);
 
         //调用接口
         String responseStr = null;
-        JSONObject response = new JSONObject();
+        JSONObject response;
 
         AlgorithmCallInfoEntity entity = new AlgorithmCallInfoEntity();
         long callId = IdWorker.getId(entity);
@@ -241,7 +236,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             log.error("智控计算参数异常,入参:{},响应:{}", params, responseStr, e);
             entity.setRespTime(TimeUtil.getNow());
             entity.setRespJson("出现异常:请求返回" + responseStr + ",异常信息:" + e.getMessage());
-            return ;
+            return;
         } finally {
             algorithmCallInfoService.saveOrUpdate(entity);
         }
@@ -277,13 +272,13 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
     }
 
     private void setDeltaC(String mc, JSONObject params, List<IntelligentComputingEntity> intelligentComputingEntities) {
-        JSONObject deltaCJson = new JSONObject();
-        deltaCJson.put("last10", getDeltaC(mc,intelligentComputingEntities.get(0)));
-        deltaCJson.put("last20", getDeltaC(mc,intelligentComputingEntities.get(1)));
-        deltaCJson.put("last30", getDeltaC(mc,intelligentComputingEntities.get(2)));
-        deltaCJson.put("last40", getDeltaC(mc,intelligentComputingEntities.get(3)));
-        deltaCJson.put("last50", getDeltaC(mc,intelligentComputingEntities.get(4)));
-        params.put(mc + "_last_deltaC", deltaCJson);
+        // JSONObject deltaCJson = new JSONObject();
+        // deltaCJson.put("last10", getDeltaC(mc, intelligentComputingEntities.get(0)));
+        // deltaCJson.put("last20", getDeltaC(mc, intelligentComputingEntities.get(1)));
+        // deltaCJson.put("last30", getDeltaC(mc, intelligentComputingEntities.get(2)));
+        // deltaCJson.put("last40", getDeltaC(mc, intelligentComputingEntities.get(3)));
+        // deltaCJson.put("last50", getDeltaC(mc, intelligentComputingEntities.get(4)));
+        // params.put(mc + "_last_deltaC", deltaCJson);
 
         ControlIntervalConfigVO controlIntervalConfigVO = new ControlIntervalConfigVO();
         controlIntervalConfigVO.setMeasurePoint(mc);
@@ -612,6 +607,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
     /**
      * 计算离指定时间最近的5分钟时间点（只向前取）
+     *
      * @param timeString 时间字符串，格式为 "yyyy-MM-dd HH:mm:ss"
      * @return 最近的5分钟时间点（向前取整）
      */
