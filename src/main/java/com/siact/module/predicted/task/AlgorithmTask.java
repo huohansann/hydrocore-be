@@ -49,9 +49,9 @@ public class AlgorithmTask {
     }
 
     /**
-     * 每 3 分钟调用一次算法  获取智能计算值
+     * 每 21 分钟调用一次算法  获取智能计算值
      */
-    @Scheduled(cron = "0 0/3 * * * ?")
+    @Scheduled(cron = "0 0/21 * * * ?")
     public void getIntelligentComputing() {
         Object cacheObject = redisService.getCacheObject("getIntelligentComputing");
 
