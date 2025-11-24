@@ -27,6 +27,7 @@ public class KilnProperty {
     @Getter
     @Setter
     public static class Config {
+        private long interval;
         private long fireChangeCycle = 21;
     }
 

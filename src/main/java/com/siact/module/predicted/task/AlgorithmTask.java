@@ -51,7 +51,8 @@ public class AlgorithmTask {
     /**
      * 每 21 分钟调用一次算法  获取智能计算值
      */
-    @Scheduled(cron = "0 0/21 * * * ?")
+    // @Scheduled(cron = "0 0/3 * * * ?")
+    @Scheduled(fixedRateString = "#{${spring.kiln.config.interval} * 60 * 1000}")
     public void getIntelligentComputing() {
         Object cacheObject = redisService.getCacheObject("getIntelligentComputing");
 
