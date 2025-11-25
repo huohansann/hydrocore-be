@@ -1,5 +1,6 @@
 package com.siact.module.base.service.impl;
 
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -348,8 +349,10 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         intervalMap.forEach((dataCode, intervals) -> {
             // 获取对应配置
             ControlIntervalConfigEntity configEntity = entities.stream().filter(entity -> entity.getDataCode().equals(dataCode)).collect(Collectors.toList()).get(0);
+            // 获取当前点位配置项
+            KilnProperty.IntervalControl intervalControl = icmap.get(configEntity.getMeasurePoint());
             // 获取平均温度换火周期配置
-            List<Integer> range = icmap.get(configEntity.getMeasurePoint()).getRange();
+            List<Integer> range = intervalControl.getRange();
             HashMap<String, BigDecimal> point = new HashMap<>();
             // 计算两个换火周期平均温度
             List<BigDecimal> values = intervals.stream().filter(Objects::nonNull).filter(dto -> {
@@ -365,7 +368,8 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
             // 平均温度
             BigDecimal Tave = values.stream().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(values.size()), 0, RoundingMode.HALF_UP);
             // 获取上下限差值一半
-            BigDecimal SPD = ((new BigDecimal(configEntity.getUpControl())).subtract(new BigDecimal(configEntity.getLowControl()))).divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+            // BigDecimal SPD = ((new BigDecimal(configEntity.getUpControl())).subtract(new BigDecimal(configEntity.getLowControl()))).divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+            BigDecimal SPD = intervalControl.getSpd().divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
             point.put("Tave", Tave);
             point.put("SPD", SPD);
             if (keyPoints.contains(configEntity.getMeasurePoint())) point.put("SP", new BigDecimal(configEntity.getTemperatureSet()));
@@ -378,11 +382,9 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         Map<String, BigDecimal> mc5 = results.get("MC5");
         Map<String, BigDecimal> mc10 = results.get("MC10");
 
-        // 过滤关键点位, 获取非关键点位控制实体
-        List<ControlIntervalConfigEntity> ncPoints = entities.stream().filter(entity -> !keyPoints.contains(entity.getMeasurePoint())).collect(Collectors.toList());
         // 计算目标值和上下限
-        for (ControlIntervalConfigEntity entity : ncPoints) {
-            BigDecimal SP;
+        for (ControlIntervalConfigEntity entity : entities) {
+            BigDecimal SP = new BigDecimal(entity.getTemperatureSet());
             Map<String, BigDecimal> data = results.get(entity.getMeasurePoint());
             BigDecimal SPD = data.get("SPD");
             // 获取告警限差值
@@ -406,18 +408,20 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
                 case "MC7":
                 case "MC8":
                 case "MC9":
-                default:
                     SP = data.get("Tave").add((mc10.get("SP").subtract(mc10.get("Tave"))).multiply(SPD).divide(mc10.get("SPD"), 2, RoundingMode.HALF_UP));
                     break;
+                default:
+                    // 关键点位不修改
+                    break;
             }
-            // 设置目标值
-            entity.setTemperatureSet(SP.setScale(0, RoundingMode.HALF_UP).toString());
+            // 设置非关键点位的目标值
+            if (!keyPoints.contains(entity.getMeasurePoint())) entity.setTemperatureSet(SP.setScale(1, RoundingMode.HALF_UP).toString());
             // 计算上控制限
-            BigDecimal SPH = SPD.add(SP).setScale(0, RoundingMode.HALF_UP);
+            BigDecimal SPH = SPD.add(SP).setScale(1, RoundingMode.HALF_UP);
             // 设置上控制限
             entity.setUpControl(SPH.toString());
             // 计算下控制限
-            BigDecimal SPL = SP.subtract(SPD).setScale(0, RoundingMode.HALF_UP);
+            BigDecimal SPL = SP.subtract(SPD).setScale(1, RoundingMode.HALF_UP);
             // 设置下控制限
             entity.setLowControl(SPL.toString());
             // 设置上告警限
@@ -426,6 +430,6 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
             entity.setLowAlarm(SPL.subtract(BigDecimal.valueOf(low)).toString());
         }
 
-        return ConvertUtils.sourceToTarget(ncPoints, ControlIntervalConfigDTO.class);
+        return ConvertUtils.sourceToTarget(entities, ControlIntervalConfigDTO.class);
     }
 }

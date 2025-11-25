@@ -5,6 +5,7 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,8 @@ public class KilnProperty {
     public static class IntervalControl {
         // 计算平均温度的换火周期区间
         private List<Integer> range;
+        // 上下限差值
+        private BigDecimal spd;
         // 告警限与控制限的差值
         private List<Integer> diffValue;
     }
