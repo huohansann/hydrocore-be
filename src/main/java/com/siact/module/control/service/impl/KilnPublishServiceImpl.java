@@ -1,15 +1,22 @@
 package com.siact.module.control.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.siact.api.common.api.vo.common.InfoListQueryVo;
 import com.siact.common.R;
 import com.siact.common.constant.ConstantNum;
 import com.siact.common.constant.ConstantSymbol;
 import com.siact.module.base.service.IKilnInfoService;
+import com.siact.module.base.service.TplService;
+import com.siact.module.base.vo.TplVO;
 import com.siact.module.control.dto.ControlSettingGasDTO;
 import com.siact.module.control.dto.ControlSettingWindDTO;
+import com.siact.module.control.dto.GasKeyCodeDTO;
 import com.siact.module.control.entity.ControlSettingGasEntity;
 import com.siact.module.control.entity.ControlSettingWindEntity;
+import com.siact.module.control.entity.IntelligentComputingEntity;
+import com.siact.module.control.mapper.IntelligentComputingMapper;
 import com.siact.module.control.service.ControlSettingGasService;
 import com.siact.module.control.service.ControlSettingWindService;
 import com.siact.module.control.service.KilnPublishService;
@@ -24,16 +31,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -63,8 +64,25 @@ public class KilnPublishServiceImpl implements KilnPublishService {
     @Autowired
     private List<RuleValidator> validators;
 
+    private @Resource TplService tplService;
+
+    private @Resource IntelligentComputingMapper intelligentComputingMapper;
+
     @Override
     public List<ControlSettingGasDTO> getKilnGasControlSetting() {
+        // 查询天然气编码配置
+        TplVO controlGasDataCode = tplService.selectTplByCode("controlGasDataCode");
+        List<GasKeyCodeDTO> keyCodeDTOs = JSON.parseArray(controlGasDataCode.getTplContent(), GasKeyCodeDTO.class);
+        Map<String, GasKeyCodeDTO> keyCodes = keyCodeDTOs.stream().collect(Collectors.toMap(GasKeyCodeDTO::getCode, o -> o, (v1, v2) -> v1));
+
+        // 查询最后一条智能计算值
+        LambdaQueryWrapper<IntelligentComputingEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(IntelligentComputingEntity::getResultTime);
+        wrapper.last("limit 1");
+        IntelligentComputingEntity intelligentComputingEntity = intelligentComputingMapper.selectOne(wrapper);
+        // 获取结果
+        JSONObject intelliComputingObj = JSON.parseObject(intelligentComputingEntity.getData());
+
         List<ControlSettingGasDTO> result = new ArrayList<>();
         List<ControlSettingGasEntity> settingList = controlSettingGasService.getValidList();
         if (ObjectUtils.isEmpty(settingList)) {
@@ -83,14 +101,17 @@ public class KilnPublishServiceImpl implements KilnPublishService {
         Map<String, String> secPropCodeMap = querySecPropCode(dataCodeList, propShortCode);
         // 查询DCS实时值  根据dataCode 查询
         JSONObject propCodeValObj = dataService.queryRealValue(String.join(",", secPropCodeMap.values()));
-
         // 封装返回结果
         settingList.forEach(entity -> {
             String mapKey = String.join(ConstantSymbol.UNDER_LINE, entity.getDataCode(), xlsShortCode);
             String propCode = secPropCodeMap.get(mapKey);// 获取属性Code
             BigDecimal xlsVal = propCodeValObj == null ? null : propCodeValObj.getBigDecimal(propCode);
             Double runningDcsVal = xlsVal == null ? null : xlsVal.doubleValue();
-            Double gasAlgorithmCalcVal = entity.getGasAlgorithmCalcVal() == null ? null : entity.getGasAlgorithmCalcVal().doubleValue();
+            String key = keyCodes.get(propCode).getKey();
+            // 获取智能计算值
+            BigDecimal deltaC = intelliComputingObj.getJSONObject(key).getJSONObject("method2").getBigDecimal("delta_C");
+            Double gasAlgorithmCalcVal = Objects.isNull(runningDcsVal) ? entity.getGasAlgorithmCalcVal().doubleValue() : deltaC.add(BigDecimal.valueOf(runningDcsVal)).doubleValue();
+            // Double gasAlgorithmCalcVal = entity.getGasAlgorithmCalcVal() == null ? null : entity.getGasAlgorithmCalcVal().doubleValue();
             Double gasManualVal = entity.getGasManualVal() == null ? null : entity.getGasManualVal().doubleValue();
 
             if (entity.getAutoState()) {
