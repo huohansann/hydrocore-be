@@ -20,7 +20,13 @@ import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.service.TplService;
 import com.siact.module.base.vo.ControlIntervalConfigVO;
+import com.siact.module.base.vo.TplVO;
+import com.siact.module.control.dto.GasKeyCodeDTO;
+import com.siact.module.control.entity.ExpertExperienceEntity;
+import com.siact.module.control.entity.GasValueEntity;
 import com.siact.module.control.entity.IntelligentComputingEntity;
+import com.siact.module.control.mapper.ExpertExperienceMapper;
+import com.siact.module.control.mapper.GasValueMapper;
 import com.siact.module.control.mapper.IntelligentComputingMapper;
 import com.siact.module.model.dto.*;
 import com.siact.module.model.entity.AlgorithmCallInfoEntity;
@@ -53,7 +59,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -99,6 +104,10 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
     @Autowired
     private ProcessConfig processConfig;
+
+    private @Resource ExpertExperienceMapper expertExperienceMapper;
+
+    private @Resource GasValueMapper gasValueMapper;
 
     private @Resource KilnProperty property;
 
@@ -180,29 +189,29 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         /* 模型调用变更, 去掉 last_deltaC 参数 */
         // 查出末尾25条数据,并根据createTime进行倒序排列
-       LambdaQueryWrapper<IntelligentComputingEntity> queryWrapper = new LambdaQueryWrapper<>();
-       queryWrapper.orderByDesc(IntelligentComputingEntity::getCreateTime);
-       queryWrapper.last("limit 25");
-       List<IntelligentComputingEntity> intelligentComputingEntities = intelligentComputingMapper.selectList(queryWrapper);
+        // LambdaQueryWrapper<IntelligentComputingEntity> queryWrapper = new LambdaQueryWrapper<>();
+        // queryWrapper.orderByDesc(IntelligentComputingEntity::getCreateTime);
+        // queryWrapper.last("limit 25");
+        // List<IntelligentComputingEntity> intelligentComputingEntities = intelligentComputingMapper.selectList(queryWrapper);
 
         // 倒序查询25条数据后, 过滤出createdTime % lastDeltaCInterval ==0 的数据 取后5条
-       Integer lastDeltaCInterval = intelligentComputingParams.getInteger("lastDeltaCInterval");
-       intelligentComputingEntities = intelligentComputingEntities.stream()
-               .filter(o -> LocalDateTime.parse(o.getCreateTime(), TimeUtil.df).getMinute() % lastDeltaCInterval == 0)
-               .limit(5)
-               .collect(Collectors.toList());
-       log.info("间隔:{},过滤出的5条数据:{}", lastDeltaCInterval, intelligentComputingEntities.size());
+        // Integer lastDeltaCInterval = intelligentComputingParams.getInteger("lastDeltaCInterval");
+        // intelligentComputingEntities = intelligentComputingEntities.stream()
+        //         .filter(o -> LocalDateTime.parse(o.getCreateTime(), TimeUtil.df).getMinute() % lastDeltaCInterval == 0)
+        //         .limit(5)
+        //         .collect(Collectors.toList());
+        // log.info("间隔:{},过滤出的5条数据:{}", lastDeltaCInterval, intelligentComputingEntities.size());
 
-       setDeltaC("MC1", params, intelligentComputingEntities);
-       setDeltaC("MC2", params, intelligentComputingEntities);
-       setDeltaC("MC3", params, intelligentComputingEntities);
-       setDeltaC("MC4", params, intelligentComputingEntities);
-       setDeltaC("MC5", params, intelligentComputingEntities);
-       setDeltaC("MC6", params, intelligentComputingEntities);
-       setDeltaC("MC7", params, intelligentComputingEntities);
-       setDeltaC("MC8", params, intelligentComputingEntities);
-       setDeltaC("MC9", params, intelligentComputingEntities);
-       setDeltaC("MC10", params, intelligentComputingEntities);
+        setDeltaC("MC1", params/* , intelligentComputingEntities */);
+        setDeltaC("MC2", params/* , intelligentComputingEntities */);
+        setDeltaC("MC3", params/* , intelligentComputingEntities */);
+        setDeltaC("MC4", params/* , intelligentComputingEntities */);
+        setDeltaC("MC5", params/* , intelligentComputingEntities */);
+        setDeltaC("MC6", params/* , intelligentComputingEntities */);
+        setDeltaC("MC7", params/* , intelligentComputingEntities */);
+        setDeltaC("MC8", params/* , intelligentComputingEntities */);
+        setDeltaC("MC9", params/* , intelligentComputingEntities */);
+        setDeltaC("MC10", params/* , intelligentComputingEntities */);
 
         //调用接口
         String responseStr = null;
@@ -227,6 +236,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         try {
             responseStr = HttpUtil.post(baseUrl + "/control", params.toJSONString(), 500000);
+            // responseStr = "{\"code\":\"200\",\"status\":\"SUCCESS\",\"message\":\"控制任务执行成功\",\"result\":{\"Experience\":{\"MC1\":{\"mc_id\":1,\"timestamp\":\"2025-11-28T08:32:13.542121\",\"max_temp\":1383.9,\"min_temp\":1383.9,\"Max_Threshold\":1376.0,\"Min_Threshold\":1373.0,\"Control_Target\":1374.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1383.9,\"t1\":1383.9,\"t2\":1383.9,\"mean_temp\":1383.9},\"min_temp\":{\"t0_min\":1383.9,\"t1_min\":1383.8,\"t2_min\":1383.8,\"mean_temp\":1383.9},\"timestamp\":\"2025-11-28T08:32:13.793061\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1383.9,\"t1_max\":1383.9,\"t2_max\":1383.9,\"mean_temp_max\":1383.9,\"t0_min\":1383.9,\"t1_min\":1383.8,\"t2_min\":1383.8,\"mean_temp_min\":1383.9},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1383.9,\"t1_max\":1383.9,\"t2_max\":1383.9,\"mean_temp_max\":1383.9,\"t0_min\":1383.9,\"t1_min\":1383.8,\"t2_min\":1383.8,\"mean_temp_min\":1383.9},\"status\":\"other\"},\"MC2\":{\"mc_id\":2,\"timestamp\":\"2025-11-28T08:32:13.587252\",\"max_temp\":1492.5,\"min_temp\":1489.7,\"Max_Threshold\":1486.0,\"Min_Threshold\":1483.0,\"Control_Target\":1484.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1492.6,\"t1\":1492.5,\"t2\":1492.5,\"mean_temp\":1492.5},\"min_temp\":{\"t0_min\":1489.7,\"t1_min\":1489.6,\"t2_min\":1489.6,\"mean_temp\":1489.7},\"timestamp\":\"2025-11-28T08:32:13.887133\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1492.6,\"t1_max\":1492.5,\"t2_max\":1492.5,\"mean_temp_max\":1492.5,\"t0_min\":1489.7,\"t1_min\":1489.6,\"t2_min\":1489.6,\"mean_temp_min\":1489.7},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1492.6,\"t1_max\":1492.5,\"t2_max\":1492.5,\"mean_temp_max\":1492.5,\"t0_min\":1489.7,\"t1_min\":1489.6,\"t2_min\":1489.6,\"mean_temp_min\":1489.7},\"status\":\"other\"},\"MC3\":{\"mc_id\":3,\"timestamp\":\"2025-11-28T08:32:13.595955\",\"max_temp\":1539.8,\"min_temp\":1538.4,\"Max_Threshold\":1551.0,\"Min_Threshold\":1548.0,\"Control_Target\":1549.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1539.8,\"t1\":1539.8,\"t2\":1539.8,\"mean_temp\":1539.8},\"min_temp\":{\"t0_min\":1538.3,\"t1_min\":1538.4,\"t2_min\":1538.4,\"mean_temp\":1538.4},\"timestamp\":\"2025-11-28T08:32:13.944615\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1539.8,\"t1_max\":1539.8,\"t2_max\":1539.8,\"mean_temp_max\":1539.8,\"t0_min\":1538.3,\"t1_min\":1538.4,\"t2_min\":1538.4,\"mean_temp_min\":1538.4},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1539.8,\"t1_max\":1539.8,\"t2_max\":1539.8,\"mean_temp_max\":1539.8,\"t0_min\":1538.3,\"t1_min\":1538.4,\"t2_min\":1538.4,\"mean_temp_min\":1538.4},\"status\":\"other\"},\"MC4\":{\"mc_id\":4,\"timestamp\":\"2025-11-28T08:32:13.628962\",\"max_temp\":1586.5,\"min_temp\":1585.5,\"Max_Threshold\":1597.0,\"Min_Threshold\":1594.0,\"Control_Target\":1596.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1586.5,\"t1\":1586.5,\"t2\":1586.6,\"mean_temp\":1586.5},\"min_temp\":{\"t0_min\":1585.5,\"t1_min\":1585.5,\"t2_min\":1585.5,\"mean_temp\":1585.5},\"timestamp\":\"2025-11-28T08:32:14.009617\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1586.5,\"t1_max\":1586.5,\"t2_max\":1586.6,\"mean_temp_max\":1586.5,\"t0_min\":1585.5,\"t1_min\":1585.5,\"t2_min\":1585.5,\"mean_temp_min\":1585.5},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1586.5,\"t1_max\":1586.5,\"t2_max\":1586.6,\"mean_temp_max\":1586.5,\"t0_min\":1585.5,\"t1_min\":1585.5,\"t2_min\":1585.5,\"mean_temp_min\":1585.5},\"status\":\"other\"},\"MC5\":{\"mc_id\":5,\"timestamp\":\"2025-11-28T08:32:14.515739\",\"max_temp\":1587.3,\"min_temp\":1585.0,\"Max_Threshold\":1588.0,\"Min_Threshold\":1584.0,\"Control_Target\":1586.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1587.3,\"t1\":1587.2,\"t2\":1587.3,\"mean_temp\":1587.3},\"min_temp\":{\"t0_min\":1585.1,\"t1_min\":1584.9,\"t2_min\":1584.8,\"mean_temp\":1585.0},\"timestamp\":\"2025-11-28T08:32:14.601288\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1587.3,\"t1_max\":1587.2,\"t2_max\":1587.3,\"mean_temp_max\":1587.3,\"t0_min\":1585.1,\"t1_min\":1584.9,\"t2_min\":1584.8,\"mean_temp_min\":1585.0},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1587.3,\"t1_max\":1587.2,\"t2_max\":1587.3,\"mean_temp_max\":1587.3,\"t0_min\":1585.1,\"t1_min\":1584.9,\"t2_min\":1584.8,\"mean_temp_min\":1585.0},\"status\":\"normal\"},\"MC6\":{\"mc_id\":6,\"timestamp\":\"2025-11-28T08:32:14.569737\",\"max_temp\":1567.4,\"min_temp\":1566.1,\"Max_Threshold\":1567.0,\"Min_Threshold\":1565.0,\"Control_Target\":1566.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1567.4,\"t1\":1567.4,\"t2\":1567.5,\"mean_temp\":1567.4},\"min_temp\":{\"t0_min\":1566.0,\"t1_min\":1566.2,\"t2_min\":1566.1,\"mean_temp\":1566.1},\"timestamp\":\"2025-11-28T08:32:14.796939\"}],\"method1\":{\"delta_T\":-2.7,\"delta_C\":0,\"10min_pred_temp\":1563.3,\"t0_max\":1567.4,\"t1_max\":1567.4,\"t2_max\":1567.5,\"mean_temp_max\":1567.4,\"t0_min\":1566.0,\"t1_min\":1566.2,\"t2_min\":1566.1,\"mean_temp_min\":1566.1},\"method2\":{\"delta_T\":1.4,\"delta_C\":0,\"t0_max\":1567.4,\"t1_max\":1567.4,\"t2_max\":1567.5,\"mean_temp_max\":1567.4,\"t0_min\":1566.0,\"t1_min\":1566.2,\"t2_min\":1566.1,\"mean_temp_min\":1566.1},\"status\":\"over_temp\",\"history_correction_method1\":{\"init_adjust\":-6,\"last_deltaCs\":[0.0,0.0,0.0],\"weights\":[0.1,0.2,0.3],\"final_adjust\":-6.0},\"history_correction_method2\":{\"init_adjust\":-6,\"last_deltaCs\":[0.0,0.0,0.0],\"weights\":[0.1,0.2,0.3],\"final_adjust\":-6.0}},\"MC7\":{\"mc_id\":7,\"timestamp\":\"2025-11-28T08:32:14.592290\",\"max_temp\":1566.8,\"min_temp\":1566.0,\"Max_Threshold\":1567.0,\"Min_Threshold\":1565.0,\"Control_Target\":1566.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1566.7,\"t1\":1566.8,\"t2\":1566.8,\"mean_temp\":1566.8},\"min_temp\":{\"t0_min\":1566.1,\"t1_min\":1566.1,\"t2_min\":1566.0,\"mean_temp\":1566.0},\"timestamp\":\"2025-11-28T08:32:14.744928\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1566.7,\"t1_max\":1566.8,\"t2_max\":1566.8,\"mean_temp_max\":1566.8,\"t0_min\":1566.1,\"t1_min\":1566.1,\"t2_min\":1566.0,\"mean_temp_min\":1566.0},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1566.7,\"t1_max\":1566.8,\"t2_max\":1566.8,\"mean_temp_max\":1566.8,\"t0_min\":1566.1,\"t1_min\":1566.1,\"t2_min\":1566.0,\"mean_temp_min\":1566.0},\"status\":\"normal\"},\"MC8\":{\"mc_id\":8,\"timestamp\":\"2025-11-28T08:32:14.682289\",\"max_temp\":1540.9,\"min_temp\":1540.2,\"Max_Threshold\":1539.0,\"Min_Threshold\":1537.0,\"Control_Target\":1538.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1541.0,\"t1\":1540.8,\"t2\":1541.0,\"mean_temp\":1540.9},\"min_temp\":{\"t0_min\":1540.3,\"t1_min\":1540.2,\"t2_min\":1540.2,\"mean_temp\":1540.2},\"timestamp\":\"2025-11-28T08:32:14.977111\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1541.0,\"t1_max\":1540.8,\"t2_max\":1541.0,\"mean_temp_max\":1540.9,\"t0_min\":1540.3,\"t1_min\":1540.2,\"t2_min\":1540.2,\"mean_temp_min\":1540.2},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1541.0,\"t1_max\":1540.8,\"t2_max\":1541.0,\"mean_temp_max\":1540.9,\"t0_min\":1540.3,\"t1_min\":1540.2,\"t2_min\":1540.2,\"mean_temp_min\":1540.2},\"status\":\"other\"},\"MC9\":{\"mc_id\":9,\"timestamp\":\"2025-11-28T08:32:15.314902\",\"max_temp\":1501.6,\"min_temp\":1501.1,\"Max_Threshold\":1502.0,\"Min_Threshold\":1500.0,\"Control_Target\":1501.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1501.5,\"t1\":1501.7,\"t2\":1501.6,\"mean_temp\":1501.6},\"min_temp\":{\"t0_min\":1501.0,\"t1_min\":1501.1,\"t2_min\":1501.1,\"mean_temp\":1501.1},\"timestamp\":\"2025-11-28T08:32:15.385964\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1501.5,\"t1_max\":1501.7,\"t2_max\":1501.6,\"mean_temp_max\":1501.6,\"t0_min\":1501.0,\"t1_min\":1501.1,\"t2_min\":1501.1,\"mean_temp_min\":1501.1},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1501.5,\"t1_max\":1501.7,\"t2_max\":1501.6,\"mean_temp_max\":1501.6,\"t0_min\":1501.0,\"t1_min\":1501.1,\"t2_min\":1501.1,\"mean_temp_min\":1501.1},\"status\":\"normal\"},\"MC10\":{\"mc_id\":10,\"timestamp\":\"2025-11-28T08:32:15.407966\",\"max_temp\":1451.0,\"min_temp\":1450.3,\"Max_Threshold\":1453.0,\"Min_Threshold\":1452.0,\"Control_Target\":1452.5,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1451.0,\"t1\":1451.0,\"t2\":1451.0,\"mean_temp\":1451.0},\"min_temp\":{\"t0_min\":1450.3,\"t1_min\":1450.3,\"t2_min\":1450.4,\"mean_temp\":1450.3},\"timestamp\":\"2025-11-28T08:32:15.558111\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1451.0,\"t1_max\":1451.0,\"t2_max\":1451.0,\"mean_temp_max\":1451.0,\"t0_min\":1450.3,\"t1_min\":1450.3,\"t2_min\":1450.4,\"mean_temp_min\":1450.3},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1451.0,\"t1_max\":1451.0,\"t2_max\":1451.0,\"mean_temp_max\":1451.0,\"t0_min\":1450.3,\"t1_min\":1450.3,\"t2_min\":1450.4,\"mean_temp_min\":1450.3},\"status\":\"other\"},\"last_gasSetValue\":[900.0,981.0,986.0,1000.0,995.0,985.0,940.0,415.0]},\"Model\":{\"MC1\":{\"mc_id\":1,\"timestamp\":\"2025-11-28T08:32:13.542121\",\"max_temp\":1383.9,\"min_temp\":1383.9,\"Max_Threshold\":1376.0,\"Min_Threshold\":1373.0,\"Control_Target\":1374.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1383.9,\"t1\":1383.9,\"t2\":1383.9,\"mean_temp\":1383.9},\"min_temp\":{\"t0_min\":1383.9,\"t1_min\":1383.8,\"t2_min\":1383.8,\"mean_temp\":1383.9},\"timestamp\":\"2025-11-28T08:32:13.793061\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1383.9,\"t1_max\":1383.9,\"t2_max\":1383.9,\"mean_temp_max\":1383.9,\"t0_min\":1383.9,\"t1_min\":1383.8,\"t2_min\":1383.8,\"mean_temp_min\":1383.9},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1383.9,\"t1_max\":1383.9,\"t2_max\":1383.9,\"mean_temp_max\":1383.9,\"t0_min\":1383.9,\"t1_min\":1383.8,\"t2_min\":1383.8,\"mean_temp_min\":1383.9},\"status\":\"other\"},\"MC2\":{\"mc_id\":2,\"timestamp\":\"2025-11-28T08:32:13.587252\",\"max_temp\":1492.5,\"min_temp\":1489.7,\"Max_Threshold\":1486.0,\"Min_Threshold\":1483.0,\"Control_Target\":1484.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1492.6,\"t1\":1492.5,\"t2\":1492.5,\"mean_temp\":1492.5},\"min_temp\":{\"t0_min\":1489.7,\"t1_min\":1489.6,\"t2_min\":1489.6,\"mean_temp\":1489.7},\"timestamp\":\"2025-11-28T08:32:13.887133\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1492.6,\"t1_max\":1492.5,\"t2_max\":1492.5,\"mean_temp_max\":1492.5,\"t0_min\":1489.7,\"t1_min\":1489.6,\"t2_min\":1489.6,\"mean_temp_min\":1489.7},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1492.6,\"t1_max\":1492.5,\"t2_max\":1492.5,\"mean_temp_max\":1492.5,\"t0_min\":1489.7,\"t1_min\":1489.6,\"t2_min\":1489.6,\"mean_temp_min\":1489.7},\"status\":\"other\"},\"MC3\":{\"mc_id\":3,\"timestamp\":\"2025-11-28T08:32:13.595955\",\"max_temp\":1539.8,\"min_temp\":1538.4,\"Max_Threshold\":1551.0,\"Min_Threshold\":1548.0,\"Control_Target\":1549.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1539.8,\"t1\":1539.8,\"t2\":1539.8,\"mean_temp\":1539.8},\"min_temp\":{\"t0_min\":1538.3,\"t1_min\":1538.4,\"t2_min\":1538.4,\"mean_temp\":1538.4},\"timestamp\":\"2025-11-28T08:32:13.944615\"}],\"method1\":{\"delta_T\":null,\"delta_C\":-1,\"10min_pred_temp\":null,\"t0_max\":1539.8,\"t1_max\":1539.8,\"t2_max\":1539.8,\"mean_temp_max\":1539.8,\"t0_min\":1538.3,\"t1_min\":1538.4,\"t2_min\":1538.4,\"mean_temp_min\":1538.4},\"method2\":{\"delta_T\":null,\"delta_C\":-1,\"t0_max\":1539.8,\"t1_max\":1539.8,\"t2_max\":1539.8,\"mean_temp_max\":1539.8,\"t0_min\":1538.3,\"t1_min\":1538.4,\"t2_min\":1538.4,\"mean_temp_min\":1538.4},\"status\":\"other\"},\"MC4\":{\"mc_id\":4,\"timestamp\":\"2025-11-28T08:32:13.628962\",\"max_temp\":1586.5,\"min_temp\":1585.5,\"Max_Threshold\":1597.0,\"Min_Threshold\":1594.0,\"Control_Target\":1596.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1586.5,\"t1\":1586.5,\"t2\":1586.6,\"mean_temp\":1586.5},\"min_temp\":{\"t0_min\":1585.5,\"t1_min\":1585.5,\"t2_min\":1585.5,\"mean_temp\":1585.5},\"timestamp\":\"2025-11-28T08:32:14.009617\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1586.5,\"t1_max\":1586.5,\"t2_max\":1586.6,\"mean_temp_max\":1586.5,\"t0_min\":1585.5,\"t1_min\":1585.5,\"t2_min\":1585.5,\"mean_temp_min\":1585.5},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1586.5,\"t1_max\":1586.5,\"t2_max\":1586.6,\"mean_temp_max\":1586.5,\"t0_min\":1585.5,\"t1_min\":1585.5,\"t2_min\":1585.5,\"mean_temp_min\":1585.5},\"status\":\"other\"},\"MC5\":{\"mc_id\":5,\"timestamp\":\"2025-11-28T08:32:14.515739\",\"max_temp\":1587.3,\"min_temp\":1585.0,\"Max_Threshold\":1588.0,\"Min_Threshold\":1584.0,\"Control_Target\":1586.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1587.3,\"t1\":1587.2,\"t2\":1587.3,\"mean_temp\":1587.3},\"min_temp\":{\"t0_min\":1585.1,\"t1_min\":1584.9,\"t2_min\":1584.8,\"mean_temp\":1585.0},\"timestamp\":\"2025-11-28T08:32:14.601288\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1587.3,\"t1_max\":1587.2,\"t2_max\":1587.3,\"mean_temp_max\":1587.3,\"t0_min\":1585.1,\"t1_min\":1584.9,\"t2_min\":1584.8,\"mean_temp_min\":1585.0},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1587.3,\"t1_max\":1587.2,\"t2_max\":1587.3,\"mean_temp_max\":1587.3,\"t0_min\":1585.1,\"t1_min\":1584.9,\"t2_min\":1584.8,\"mean_temp_min\":1585.0},\"status\":\"normal\"},\"MC6\":{\"mc_id\":6,\"timestamp\":\"2025-11-28T08:32:14.569737\",\"max_temp\":1567.4,\"min_temp\":1566.1,\"Max_Threshold\":1567.0,\"Min_Threshold\":1565.0,\"Control_Target\":1566.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1567.4,\"t1\":1567.4,\"t2\":1567.5,\"mean_temp\":1567.4},\"min_temp\":{\"t0_min\":1566.0,\"t1_min\":1566.2,\"t2_min\":1566.1,\"mean_temp\":1566.1},\"timestamp\":\"2025-11-28T08:32:14.796939\"}],\"method1\":{\"delta_T\":-2.7,\"delta_C\":-6,\"10min_pred_temp\":1563.3,\"t0_max\":1567.4,\"t1_max\":1567.4,\"t2_max\":1567.5,\"mean_temp_max\":1567.4,\"t0_min\":1566.0,\"t1_min\":1566.2,\"t2_min\":1566.1,\"mean_temp_min\":1566.1},\"method2\":{\"delta_T\":1.4,\"delta_C\":-6,\"t0_max\":1567.4,\"t1_max\":1567.4,\"t2_max\":1567.5,\"mean_temp_max\":1567.4,\"t0_min\":1566.0,\"t1_min\":1566.2,\"t2_min\":1566.1,\"mean_temp_min\":1566.1},\"status\":\"over_temp\",\"history_correction_method1\":{\"init_adjust\":-6,\"last_deltaCs\":[0.0,0.0,0.0],\"weights\":[0.1,0.2,0.3],\"final_adjust\":-6.0},\"history_correction_method2\":{\"init_adjust\":-6,\"last_deltaCs\":[0.0,0.0,0.0],\"weights\":[0.1,0.2,0.3],\"final_adjust\":-6.0}},\"MC7\":{\"mc_id\":7,\"timestamp\":\"2025-11-28T08:32:14.592290\",\"max_temp\":1566.8,\"min_temp\":1566.0,\"Max_Threshold\":1567.0,\"Min_Threshold\":1565.0,\"Control_Target\":1566.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1566.7,\"t1\":1566.8,\"t2\":1566.8,\"mean_temp\":1566.8},\"min_temp\":{\"t0_min\":1566.1,\"t1_min\":1566.1,\"t2_min\":1566.0,\"mean_temp\":1566.0},\"timestamp\":\"2025-11-28T08:32:14.744928\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1566.7,\"t1_max\":1566.8,\"t2_max\":1566.8,\"mean_temp_max\":1566.8,\"t0_min\":1566.1,\"t1_min\":1566.1,\"t2_min\":1566.0,\"mean_temp_min\":1566.0},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1566.7,\"t1_max\":1566.8,\"t2_max\":1566.8,\"mean_temp_max\":1566.8,\"t0_min\":1566.1,\"t1_min\":1566.1,\"t2_min\":1566.0,\"mean_temp_min\":1566.0},\"status\":\"normal\"},\"MC8\":{\"mc_id\":8,\"timestamp\":\"2025-11-28T08:32:14.682289\",\"max_temp\":1540.9,\"min_temp\":1540.2,\"Max_Threshold\":1539.0,\"Min_Threshold\":1537.0,\"Control_Target\":1538.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1541.0,\"t1\":1540.8,\"t2\":1541.0,\"mean_temp\":1540.9},\"min_temp\":{\"t0_min\":1540.3,\"t1_min\":1540.2,\"t2_min\":1540.2,\"mean_temp\":1540.2},\"timestamp\":\"2025-11-28T08:32:14.977111\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1541.0,\"t1_max\":1540.8,\"t2_max\":1541.0,\"mean_temp_max\":1540.9,\"t0_min\":1540.3,\"t1_min\":1540.2,\"t2_min\":1540.2,\"mean_temp_min\":1540.2},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1541.0,\"t1_max\":1540.8,\"t2_max\":1541.0,\"mean_temp_max\":1540.9,\"t0_min\":1540.3,\"t1_min\":1540.2,\"t2_min\":1540.2,\"mean_temp_min\":1540.2},\"status\":\"other\"},\"MC9\":{\"mc_id\":9,\"timestamp\":\"2025-11-28T08:32:15.314902\",\"max_temp\":1501.6,\"min_temp\":1501.1,\"Max_Threshold\":1502.0,\"Min_Threshold\":1500.0,\"Control_Target\":1501.0,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1501.5,\"t1\":1501.7,\"t2\":1501.6,\"mean_temp\":1501.6},\"min_temp\":{\"t0_min\":1501.0,\"t1_min\":1501.1,\"t2_min\":1501.1,\"mean_temp\":1501.1},\"timestamp\":\"2025-11-28T08:32:15.385964\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1501.5,\"t1_max\":1501.7,\"t2_max\":1501.6,\"mean_temp_max\":1501.6,\"t0_min\":1501.0,\"t1_min\":1501.1,\"t2_min\":1501.1,\"mean_temp_min\":1501.1},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1501.5,\"t1_max\":1501.7,\"t2_max\":1501.6,\"mean_temp_max\":1501.6,\"t0_min\":1501.0,\"t1_min\":1501.1,\"t2_min\":1501.1,\"mean_temp_min\":1501.1},\"status\":\"normal\"},\"MC10\":{\"mc_id\":10,\"timestamp\":\"2025-11-28T08:32:15.407966\",\"max_temp\":1451.0,\"min_temp\":1450.3,\"Max_Threshold\":1453.0,\"Min_Threshold\":1452.0,\"Control_Target\":1452.5,\"predict_history\":[{\"attempt\":1,\"max_temp\":{\"t0\":1451.0,\"t1\":1451.0,\"t2\":1451.0,\"mean_temp\":1451.0},\"min_temp\":{\"t0_min\":1450.3,\"t1_min\":1450.3,\"t2_min\":1450.4,\"mean_temp\":1450.3},\"timestamp\":\"2025-11-28T08:32:15.558111\"}],\"method1\":{\"delta_T\":null,\"delta_C\":0,\"10min_pred_temp\":null,\"t0_max\":1451.0,\"t1_max\":1451.0,\"t2_max\":1451.0,\"mean_temp_max\":1451.0,\"t0_min\":1450.3,\"t1_min\":1450.3,\"t2_min\":1450.4,\"mean_temp_min\":1450.3},\"method2\":{\"delta_T\":null,\"delta_C\":0,\"t0_max\":1451.0,\"t1_max\":1451.0,\"t2_max\":1451.0,\"mean_temp_max\":1451.0,\"t0_min\":1450.3,\"t1_min\":1450.3,\"t2_min\":1450.4,\"mean_temp_min\":1450.3},\"status\":\"other\"},\"last_gasSetValue\":[900.0,981.0,986.0,1000.0,995.0,985.0,940.0,415.0]}},\"success\":true}";
             response = JSONObject.parseObject(responseStr);
 
             log.info("智控计算参数,:{},结果:{}", params, response);
@@ -251,27 +261,66 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             return;
         }
 
-        JSONObject resultJson = response.getJSONObject("result");
+        JSONObject result = response.getJSONObject("result");
+        // 基于 model
+        JSONObject result1Json = result.getJSONObject("Model");
+        // 基于专家经验
+        JSONObject result2Json = result.getJSONObject("Experience");
+
         IntelligentComputingEntity intelligentComputingEntity = new IntelligentComputingEntity();
+        ExpertExperienceEntity expertExperienceEntity = new ExpertExperienceEntity();
 
-        intelligentComputingEntity.setCreateTime(now.format(TimeUtil.df));
-        intelligentComputingEntity.setResultTime(TimeUtil.getNow());
-        intelligentComputingEntity.setMc1(getDeltaC("MC1", resultJson));
-        intelligentComputingEntity.setMc2(getDeltaC("MC2", resultJson));
-        intelligentComputingEntity.setMc3(getDeltaC("MC3", resultJson));
-        intelligentComputingEntity.setMc4(getDeltaC("MC4", resultJson));
-        intelligentComputingEntity.setMc5(getDeltaC("MC5", resultJson));
-        intelligentComputingEntity.setMc6(getDeltaC("MC6", resultJson));
-        intelligentComputingEntity.setMc7(getDeltaC("MC7", resultJson));
-        intelligentComputingEntity.setMc8(getDeltaC("MC8", resultJson));
-        intelligentComputingEntity.setMc9(getDeltaC("MC9", resultJson));
-        intelligentComputingEntity.setMc10(getDeltaC("MC10", resultJson));
-        intelligentComputingEntity.setData(resultJson.toJSONString());
+        String createTime = now.format(TimeUtil.df);
+        String resultTime = TimeUtil.getNow();
 
+        intelligentComputingEntity.setCreateTime(createTime);
+        intelligentComputingEntity.setResultTime(resultTime);
+        intelligentComputingEntity.setMc1(getDeltaC("MC1", result1Json));
+        intelligentComputingEntity.setMc2(getDeltaC("MC2", result1Json));
+        intelligentComputingEntity.setMc3(getDeltaC("MC3", result1Json));
+        intelligentComputingEntity.setMc4(getDeltaC("MC4", result1Json));
+        intelligentComputingEntity.setMc5(getDeltaC("MC5", result1Json));
+        intelligentComputingEntity.setMc6(getDeltaC("MC6", result1Json));
+        intelligentComputingEntity.setMc7(getDeltaC("MC7", result1Json));
+        intelligentComputingEntity.setMc8(getDeltaC("MC8", result1Json));
+        intelligentComputingEntity.setMc9(getDeltaC("MC9", result1Json));
+        intelligentComputingEntity.setMc10(getDeltaC("MC10", result1Json));
+        intelligentComputingEntity.setData(result1Json.toJSONString());
         intelligentComputingMapper.insert(intelligentComputingEntity);
+
+
+        expertExperienceEntity.setCreateTime(createTime);
+        expertExperienceEntity.setResultTime(resultTime);
+        expertExperienceEntity.setMc1(getDeltaC("MC1", result2Json));
+        expertExperienceEntity.setMc2(getDeltaC("MC2", result2Json));
+        expertExperienceEntity.setMc3(getDeltaC("MC3", result2Json));
+        expertExperienceEntity.setMc4(getDeltaC("MC4", result2Json));
+        expertExperienceEntity.setMc5(getDeltaC("MC5", result2Json));
+        expertExperienceEntity.setMc6(getDeltaC("MC6", result2Json));
+        expertExperienceEntity.setMc7(getDeltaC("MC7", result2Json));
+        expertExperienceEntity.setMc8(getDeltaC("MC8", result2Json));
+        expertExperienceEntity.setMc9(getDeltaC("MC9", result2Json));
+        expertExperienceEntity.setMc10(getDeltaC("MC10", result2Json));
+        expertExperienceEntity.setData(result2Json.toJSONString());
+        expertExperienceMapper.insert(expertExperienceEntity);
+
+        // 保存天然气数据
+        JSONArray lastGasSetValue = result1Json.getJSONArray("last_gasSetValue");
+        TplVO controlGasDataCode = tplService.selectTplByCode("controlGasDataCode");
+        Map<String, GasKeyCodeDTO> gasKeyCodes = JSON.parseArray(controlGasDataCode.getTplContent(), GasKeyCodeDTO.class).stream().collect(Collectors.toMap(GasKeyCodeDTO::getKey, o -> o, (v1, v2) -> v1));
+
+        List<GasValueEntity> gasValues = new ArrayList<>();
+        for (int i = 0; i < lastGasSetValue.size(); i++) {
+            String key = "MC" + (i + 1);
+            GasKeyCodeDTO dto = gasKeyCodes.get(key);
+            GasValueEntity gasValueentity = GasValueEntity.builder().time(resultTime).dataKey(dto.getKey()).dataCode(dto.getCode()).gasValue(lastGasSetValue.getBigDecimal(i)).build();
+            entity.setId(IdWorker.getId(gasValueentity));
+            gasValues.add(gasValueentity);
+        }
+        gasValueMapper.insertBatch(gasValues);
     }
 
-    private void setDeltaC(String mc, JSONObject params, List<IntelligentComputingEntity> intelligentComputingEntities) {
+    private void setDeltaC(String mc, JSONObject params/* , List<IntelligentComputingEntity> intelligentComputingEntities */) {
         // JSONObject deltaCJson = new JSONObject();
         // deltaCJson.put("last10", getDeltaC(mc, intelligentComputingEntities.get(0)));
         // deltaCJson.put("last20", getDeltaC(mc, intelligentComputingEntities.get(1)));
@@ -292,21 +341,21 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         params.put(mc + "_CONTROL_TARGET", Double.valueOf(configDTO.getTemperatureSet()));
     }
 
-    private JSONObject getDeltaC(String mc, IntelligentComputingEntity entity) {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("time", entity.getCreateTime());
-
-        //entity通过反射拼接get方法
-        String method = "getMc" + mc.replace("MC", "");
-        try {
-            Method method1 = IntelligentComputingEntity.class.getMethod(method);
-            jsonObject.put("delta_C", method1.invoke(entity));
-        } catch (Exception e) {
-            log.error("反射获取方法异常,method:{},entity:{}", method, entity, e);
-        }
-
-        return jsonObject;
-    }
+    // private JSONObject getDeltaC(String mc, IntelligentComputingEntity entity) {
+    //     JSONObject jsonObject = new JSONObject();
+    //     jsonObject.put("time", entity.getCreateTime());
+    //
+    //     //entity通过反射拼接get方法
+    //     String method = "getMc" + mc.replace("MC", "");
+    //     try {
+    //         Method method1 = IntelligentComputingEntity.class.getMethod(method);
+    //         jsonObject.put("delta_C", method1.invoke(entity));
+    //     } catch (Exception e) {
+    //         log.error("反射获取方法异常,method:{},entity:{}", method, entity, e);
+    //     }
+    //
+    //     return jsonObject;
+    // }
 
     private Double getDeltaC(String mc, JSONObject resultJson) {
         JSONObject json = resultJson.getJSONObject(mc);
