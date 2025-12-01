@@ -1,15 +1,24 @@
 package com.siact.module.snapshot.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.siact.common.constant.ConstantBase;
 import com.siact.common.constant.ConstantSymbol;
+import com.siact.common.utils.CollectionUtils;
+import com.siact.common.utils.JacksonUtils;
 import com.siact.common.utils.TimeUtil;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.service.TplService;
 import com.siact.module.control.entity.ControlSettingGasEntity;
+import com.siact.module.control.entity.ExpertExperienceEntity;
+import com.siact.module.control.entity.GasValueEntity;
+import com.siact.module.control.entity.IntelligentComputingEntity;
 import com.siact.module.control.service.ControlSettingGasService;
+import com.siact.module.control.service.ExpertExperienceService;
+import com.siact.module.control.service.GasValueService;
+import com.siact.module.control.service.IntelligentComputingService;
 import com.siact.module.predicted.entity.PredictedDataEntity;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.predicted.service.PredictedDataService;
@@ -28,17 +37,13 @@ import com.siact.sec.sevice.DataService;
 import com.siact.sec.utils.IntervalTimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -50,27 +55,16 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class SnapshotPublicServiceImpl implements SnapshotPublicService {
-
-    @Autowired
-    private TplService tplService;
-
-    @Autowired
-    private DataService dataService;
-
-    @Autowired
-    private PredictedDataService predictedDataService;
-
-    @Autowired
-    private ControlIntervalConfigService controlIntervalConfigService;
-
-    @Autowired
-    private ControlSettingGasService controlSettingGasService;
-
-    @Autowired
-    private SnapshotTempService snapshotTempService;
-
-    @Autowired
-    private SnapshotGasService snapshotGasService;
+    private @Resource TplService tplService;
+    private @Resource DataService dataService;
+    private @Resource PredictedDataService predictedDataService;
+    private @Resource ControlIntervalConfigService controlIntervalConfigService;
+    private @Resource ControlSettingGasService controlSettingGasService;
+    private @Resource SnapshotTempService snapshotTempService;
+    private @Resource SnapshotGasService snapshotGasService;
+    private @Resource IntelligentComputingService intelligentComputingService;
+    private @Resource ExpertExperienceService expertExperienceService;
+    private @Resource GasValueService gasValueService;
 
     @Override
     public SnapshotChartVO queryChart(SnapshotChartQueryDTO queryDTO) {
@@ -117,7 +111,7 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
         }
         // gas数据map key: dataCode_createTime value: SnapshotGasEntity
         Map<String, SnapshotGasEntity> gasSnapshotCodeValMap = gasSnapshotList.stream()
-                        .collect(Collectors.toMap(o -> o.getDataCode() + ConstantSymbol.UNDER_LINE + IntervalTimeUtil.dateFormat(o.getCreateTime(), queryDTO.getFormatVal()), o -> o, (o1, o2) -> o1));
+                .collect(Collectors.toMap(o -> o.getDataCode() + ConstantSymbol.UNDER_LINE + IntervalTimeUtil.dateFormat(o.getCreateTime(), queryDTO.getFormatVal()), o -> o, (o1, o2) -> o1));
 
         // 处理返回数据
         BigDecimal tempMinVal = null;
@@ -262,9 +256,10 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
                 // 天然气DCS值
                 BigDecimal val = gasSnapshot.getGasDcsVal();
                 curVal = ObjectUtils.isEmpty(val) ? null : val.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
-            } else if ("gasAlgorithmCalcVal".equals(code)) {
-                // 天然气智控(后期算法部门提供接口查询,暂时没有逻辑)
-                curVal = null;
+                // } else if ("gasAlgorithmCalcVal".equals(code)) {
+            } else if (StringUtils.startsWith(code, "gasAlgorithmCalcVal")) {
+                @SuppressWarnings("unchecked") Map<String, BigDecimal> map = JacksonUtils.fromJson(StringUtils.defaultIfEmpty(gasSnapshot.getAlgorithmCalcVal(), "{}"), Map.class);
+                curVal = map.getOrDefault(code, BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
             } else if ("gasManualVal".equals(code)) {
                 // 天然气人工值
                 BigDecimal val = gasSnapshot.getGasManualVal();
@@ -465,13 +460,19 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
 
     /**
      * 初始化gas天然气类型的实体数据
-     *
-     * @param gasSetValList
-     * @return
      */
     private Map<String, SnapshotGasEntity> initSnapshotGasEntity(List<SnapshotTplSettingDTO> gasSetValList, String nowTime) {
         // 根据snapshotQuery初始化gas天然气类型的实体数据 k:dataCode v:SnapshotGasEntity
         Map<String, SnapshotGasEntity> gasEntityMap = new HashMap<>();
+        // 获取最后一次的智能计算结果和专家经验结果
+        IntelligentComputingEntity intelligentComputingEntity = intelligentComputingService.queryWithResultTime();
+        ExpertExperienceEntity expertExperienceEntity = expertExperienceService.queryWithResultTime();
+        JSONObject intelliComputedJson = JSON.parseObject(intelligentComputingEntity.getData());
+        JSONObject experienceJson = JSON.parseObject(expertExperienceEntity.getData());
+        // 获取天然气运行值
+        List<GasValueEntity> gasValueEntities = gasValueService.queryByTime(expertExperienceEntity.getResultTime());
+        Map<String, GasValueEntity> gasValueMap = gasValueEntities.stream().collect(Collectors.toMap(GasValueEntity::getDataCode, v -> v, (v1, v2) -> v1));
+
         for (SnapshotTplSettingDTO gasSetVal : gasSetValList) {
             if (gasSetVal != null && gasSetVal.getQueryDataCode() != null) {
                 gasSetVal.getQueryDataCode().forEach(queryDetailDTO -> {
@@ -479,11 +480,36 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
                     snapshotGasEntity.setDataCode(queryDetailDTO.getDataCode());
                     snapshotGasEntity.setName(queryDetailDTO.getName());
                     snapshotGasEntity.setCreateTime(nowTime);
+
+                    GasValueEntity gas = gasValueMap.get(queryDetailDTO.getDataCode());
+                    if (!Objects.isNull(gas)) {
+                        // 计算智能控制值
+                        BigDecimal modelAlgorithmCalcValue1 = getAlgorithmCalcValue(intelliComputedJson, gas.getDataKey(), "method1");
+                        BigDecimal modelAlgorithmCalcValue2 = getAlgorithmCalcValue(intelliComputedJson, gas.getDataKey(), "method2");
+                        BigDecimal experienceAlgorithmCalcValue1 = getAlgorithmCalcValue(experienceJson, gas.getDataKey(), "method1");
+                        BigDecimal experienceAlgorithmCalcValue2 = getAlgorithmCalcValue(experienceJson, gas.getDataKey(), "method2");
+                        // 基于 Model method1
+                        BigDecimal modelValue1 = gas.getGasValue().add(modelAlgorithmCalcValue1);
+                        BigDecimal modelValue2 = gas.getGasValue().add(modelAlgorithmCalcValue2);
+                        // 基于专家经验
+                        BigDecimal experienceValue1 = gas.getGasValue().add(experienceAlgorithmCalcValue1);
+                        BigDecimal experienceValue2 = gas.getGasValue().add(experienceAlgorithmCalcValue2);
+
+                        Map<String, BigDecimal> algorithmCalcVal = CollectionUtils.Map.of("gasAlgorithmCalcValM1", modelValue1, "gasAlgorithmCalcValM2", modelValue2, "gasAlgorithmCalcValE1", experienceValue1, "gasAlgorithmCalcValE2", experienceValue2);
+                        snapshotGasEntity.setGasAlgorithmCalcVal(modelValue2);
+                        snapshotGasEntity.setAlgorithmCalcVal(JacksonUtils.toJson(algorithmCalcVal));
+                    }
                     gasEntityMap.put(queryDetailDTO.getDataCode(), snapshotGasEntity);
                 });
             }
         }
         return gasEntityMap;
+    }
+
+    private BigDecimal getAlgorithmCalcValue(JSONObject json, String dataKey, String method) {
+        JSONObject obj = json.getJSONObject(dataKey);
+        JSONObject methodObj = obj.getJSONObject(method);
+        return methodObj.getBigDecimal("delta_C");
     }
 
     /**

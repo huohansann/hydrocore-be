@@ -2,7 +2,6 @@ package com.siact.module.control.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.siact.api.common.api.vo.common.InfoListQueryVo;
 import com.siact.common.R;
 import com.siact.common.constant.ConstantNum;
@@ -13,11 +12,7 @@ import com.siact.module.control.entity.ControlSettingGasEntity;
 import com.siact.module.control.entity.ControlSettingWindEntity;
 import com.siact.module.control.entity.GasValueEntity;
 import com.siact.module.control.entity.IntelligentComputingEntity;
-import com.siact.module.control.mapper.GasValueMapper;
-import com.siact.module.control.mapper.IntelligentComputingMapper;
-import com.siact.module.control.service.ControlSettingGasService;
-import com.siact.module.control.service.ControlSettingWindService;
-import com.siact.module.control.service.KilnPublishService;
+import com.siact.module.control.service.*;
 import com.siact.module.control.validator.RuleValidateResult;
 import com.siact.module.control.validator.RuleValidator;
 import com.siact.sec.dto.EqDypropInsDTO;
@@ -58,24 +53,18 @@ public class KilnPublishServiceImpl implements KilnPublishService {
     @Autowired
     private List<RuleValidator> validators;
 
-    private @Resource IntelligentComputingMapper intelligentComputingMapper;
+    private @Resource IntelligentComputingService intelligentComputingService;
 
-    private @Resource GasValueMapper gasValueMapper;
+    private @Resource GasValueService gasValueService;
 
     @Override
     public List<ControlSettingGasDTO> getKilnGasControlSetting() {
         // 查询最后一条智能计算值
-        LambdaQueryWrapper<IntelligentComputingEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.orderByDesc(IntelligentComputingEntity::getResultTime);
-        wrapper.last("limit 1");
-        IntelligentComputingEntity intelligentComputingEntity = intelligentComputingMapper.selectOne(wrapper);
+        IntelligentComputingEntity intelligentComputingEntity = intelligentComputingService.queryWithResultTime();
         // 获取结果
         JSONObject intelliComputingObj = JSON.parseObject(intelligentComputingEntity.getData());
         // 获取调用时刻的 dcs 天然气值
-        LambdaQueryWrapper<GasValueEntity> gasValueWrapper = new LambdaQueryWrapper<>();
-        gasValueWrapper.orderByDesc(GasValueEntity::getTime);
-        gasValueWrapper.eq(GasValueEntity::getTime, intelligentComputingEntity.getResultTime());
-        List<GasValueEntity> gasValues = gasValueMapper.selectList(gasValueWrapper);
+        List<GasValueEntity> gasValues = gasValueService.queryByTime(intelligentComputingEntity.getResultTime());
         Map<String, GasValueEntity> gasValueMap = gasValues.stream().collect(Collectors.toMap(GasValueEntity::getDataCode, o -> o, (v1, v2) -> v1));
 
         List<ControlSettingGasDTO> result = new ArrayList<>();
@@ -103,7 +92,7 @@ public class KilnPublishServiceImpl implements KilnPublishService {
             BigDecimal xlsVal = propCodeValObj == null ? null : propCodeValObj.getBigDecimal(propCode);
             Double runningDcsVal = xlsVal == null ? null : xlsVal.doubleValue();
             // 获取智能计算值
-            GasValueEntity gasValueEntity = gasValueMap.get(propCode);
+            GasValueEntity gasValueEntity = gasValueMap.get(entity.getDataCode());
             Double gasAlgorithmCalcVal = Objects.isNull(entity.getGasAlgorithmCalcVal()) ? null : entity.getGasAlgorithmCalcVal().doubleValue();
             if (!Objects.isNull(gasValueEntity)) {
                 BigDecimal deltaC = intelliComputingObj.getJSONObject(gasValueEntity.getDataKey()).getJSONObject("method2").getBigDecimal("delta_C");

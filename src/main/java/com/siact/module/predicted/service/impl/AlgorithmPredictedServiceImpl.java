@@ -26,8 +26,8 @@ import com.siact.module.control.entity.ExpertExperienceEntity;
 import com.siact.module.control.entity.GasValueEntity;
 import com.siact.module.control.entity.IntelligentComputingEntity;
 import com.siact.module.control.mapper.ExpertExperienceMapper;
-import com.siact.module.control.mapper.GasValueMapper;
 import com.siact.module.control.mapper.IntelligentComputingMapper;
+import com.siact.module.control.service.GasValueService;
 import com.siact.module.model.dto.*;
 import com.siact.module.model.entity.AlgorithmCallInfoEntity;
 import com.siact.module.model.entity.ModelConfigParamEntity;
@@ -107,7 +107,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
     private @Resource ExpertExperienceMapper expertExperienceMapper;
 
-    private @Resource GasValueMapper gasValueMapper;
+    private @Resource GasValueService gasValueService;
 
     private @Resource KilnProperty property;
 
@@ -311,13 +311,16 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         List<GasValueEntity> gasValues = new ArrayList<>();
         for (int i = 0; i < lastGasSetValue.size(); i++) {
-            String key = "MC" + (i + 1);
-            GasKeyCodeDTO dto = gasKeyCodes.get(key);
-            GasValueEntity gasValueentity = GasValueEntity.builder().time(resultTime).dataKey(dto.getKey()).dataCode(dto.getCode()).gasValue(lastGasSetValue.getBigDecimal(i)).build();
-            entity.setId(IdWorker.getId(gasValueentity));
-            gasValues.add(gasValueentity);
+            GasKeyCodeDTO dto = gasKeyCodes.get("MC" + (i + 1));
+            gasValues.add(GasValueEntity.builder()
+                    .time(resultTime)
+                    .dataKey(dto.getKey())
+                    .dataCode(dto.getCode())
+                    .gasValue(lastGasSetValue.getBigDecimal(i))
+                    .build()
+            );
         }
-        gasValueMapper.insertBatch(gasValues);
+        gasValueService.saveBatch(gasValues);
     }
 
     private void setDeltaC(String mc, JSONObject params/* , List<IntelligentComputingEntity> intelligentComputingEntities */) {

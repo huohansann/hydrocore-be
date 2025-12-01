@@ -1,10 +1,6 @@
 package com.siact.module.snapshot.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -42,7 +38,7 @@ public class SnapshotGasEntity {
     private BigDecimal gasDcsVal;
 
     /**
-     * 天然气智控(后期算法部门提供接口查询,暂时没有逻辑)
+     * 天然气智控
      */
     private BigDecimal gasAlgorithmCalcVal;
 
@@ -50,6 +46,9 @@ public class SnapshotGasEntity {
      * 天然气人工值
      */
     private BigDecimal gasManualVal;
+
+    /* 智控值, json 结构, 基于 model 和专家经验 */
+    private String algorithmCalcVal;
 
     /**
      * 创建时间
