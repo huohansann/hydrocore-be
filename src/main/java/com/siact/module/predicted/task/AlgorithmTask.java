@@ -3,7 +3,6 @@ package com.siact.module.predicted.task;
 import com.siact.common.redis.RedisService;
 import com.siact.module.predicted.service.AlgorithmPredictedService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,16 +20,19 @@ public class AlgorithmTask {
     @Value("${algorithm.prediction.enable:false}")
     private Boolean algorithmPredictionEnable;
 
-    @Autowired
-    private AlgorithmPredictedService algorithmPredictedService;
-    @Autowired
-    private RedisService redisService;
+    private final AlgorithmPredictedService algorithmPredictedService;
+    private final RedisService redisService;
 
+    public AlgorithmTask(AlgorithmPredictedService algorithmPredictedService, RedisService redisService) {
+        this.algorithmPredictedService = algorithmPredictedService;
+        this.redisService = redisService;
+    }
 
     /**
      * 每分钟调用一次算法  获取预测数据
      */
-    @Scheduled(cron = "0 0/1 * * * ?")
+    // @Scheduled(cron = "0 0/1 * * * ?")
+    @Scheduled(fixedRateString = "#{${spring.kiln.algorithm.predicted-interval} * 60 * 1000}")
     public void algorithmInference() {
         if (!algorithmPredictionEnable) {
             log.info("算法预测配置未开启");
@@ -52,7 +54,7 @@ public class AlgorithmTask {
      * 每 21 分钟调用一次算法  获取智能计算值
      */
     // @Scheduled(cron = "0 0/3 * * * ?")
-    @Scheduled(fixedRateString = "#{${spring.kiln.config.interval} * 60 * 1000}")
+    @Scheduled(fixedRateString = "#{${spring.kiln.algorithm.intelligent-interval} * 60 * 1000}")
     public void getIntelligentComputing() {
         Object cacheObject = redisService.getCacheObject("getIntelligentComputing");
 
@@ -60,6 +62,6 @@ public class AlgorithmTask {
             redisService.setCacheObject("getIntelligentComputing", "1", 10L, TimeUnit.SECONDS);
         }
 
-        new Thread(() -> algorithmPredictedService.getIntelligentComputing()).start();
+        new Thread(algorithmPredictedService::getIntelligentComputing).start();
     }
 }

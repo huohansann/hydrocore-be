@@ -23,13 +23,20 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "spring.kiln")
 public class KilnProperty {
     private Config config;
+    private Algorithm algorithm;
     private Map<String, IntervalControl> intervalControl = new LinkedHashMap<>();
 
     @Getter
     @Setter
     public static class Config {
-        private long interval;
         private long fireChangeCycle = 21;
+    }
+
+    @Getter
+    @Setter
+    public static class Algorithm {
+        private long intelligentInterval;
+        private long predictedInterval;
     }
 
     @Getter

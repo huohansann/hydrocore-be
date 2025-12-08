@@ -27,21 +27,19 @@ public class ThreadPoolConfig {
     public static int coreIoPoolSize = (corePoolSizeConfig == 0 ? THREADS : corePoolSizeConfig) * 4;
 
     // 最大可创建的线程数
-    private int maxIoPoolSize = 4 * 2 * THREADS;
+    private final int maxIoPoolSize = 4 * 2 * THREADS;
 
     // 核心线程池大小
     public static int coreCpuPoolSize = corePoolSizeConfig == 0 ? THREADS : corePoolSizeConfig;
 
     // 最大可创建的线程数
-    private int maxCpuPoolSize = 2 * THREADS;
-
+    private final int maxCpuPoolSize = 2 * THREADS;
 
     // 队列最大长度
-    private int queueCapacity = 1024;
+    private final int queueCapacity = 1024;
 
     // 线程池维护线程所允许的空闲时间
-    private int keepAliveSeconds = 60;
-
+    private final int keepAliveSeconds = 60;
 
     //线程池名前缀
     private static final String threadNameIOPrefix = "TBD-Async-IO-";
@@ -53,8 +51,6 @@ public class ThreadPoolConfig {
 
     /**
      * IO 密集类型线程池 （corePoolSize 核心线程 和 maxPoolSize最大线程数比cpu核数翻4倍）
-     *
-     * @return
      */
     @Bean(name = "threadIoPoolTaskExecutor")
     public Executor threadIoPoolTaskExecutor() {
@@ -75,7 +71,6 @@ public class ThreadPoolConfig {
     /**
      * cpu 密集类型线程池
      *
-     * @return
      */
     @Bean(name = "threadCpuPoolTaskExecutor")
     public Executor threadCpuPoolTaskExecutor() {
