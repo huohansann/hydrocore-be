@@ -13,6 +13,7 @@ public interface AlgorithmPredictedService {
      */
     void deleteAlgorithmCallInfoBeforeTime(String time);
 
+    @Deprecated
     void getIntelligentComputing();
 
     void initIntelligentComputingCreateTime(Boolean isForce);

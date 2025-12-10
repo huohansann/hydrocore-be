@@ -151,7 +151,7 @@ public class PredictedDataServiceImpl extends ServiceImpl<PredictedDataMapper, P
         // 处理多步数据
         List<PredictedDataEntity> multiTypeDataList = allTypeDataMap.getOrDefault(PredictedTypeEnum.multiType(), new ArrayList<>());
         Map<String, Map<String, PredictedDataEntity>> multiDataCodeTimeEntity = multiTypeDataList.stream().collect(Collectors.groupingBy(PredictedDataEntity::getDataCode, Collectors.collectingAndThen(Collectors.toList(),
-                list -> list.stream().collect(Collectors.toMap(PredictedDataEntity::getTime, o -> o)))));
+                list -> list.stream().collect(Collectors.toMap(PredictedDataEntity::getTime, o -> o, (v1, v2) -> v1)))));
 
         Map<String, List<PredictedDataDTO>> multiDataCodeTimeDTOMap = new HashMap<>();
         for (Map.Entry<String, Map<String, PredictedDataEntity>> entry : multiDataCodeTimeEntity.entrySet()) {

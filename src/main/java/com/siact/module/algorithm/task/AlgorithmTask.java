@@ -1,6 +1,7 @@
-package com.siact.module.predicted.task;
+package com.siact.module.algorithm.task;
 
 import com.siact.common.redis.RedisService;
+import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.predicted.service.AlgorithmPredictedService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,10 +21,12 @@ public class AlgorithmTask {
     @Value("${algorithm.prediction.enable:false}")
     private Boolean algorithmPredictionEnable;
 
+    private final IntelligentDataService intelligentDataService;
     private final AlgorithmPredictedService algorithmPredictedService;
     private final RedisService redisService;
 
-    public AlgorithmTask(AlgorithmPredictedService algorithmPredictedService, RedisService redisService) {
+    public AlgorithmTask(IntelligentDataService intelligentDataService, AlgorithmPredictedService algorithmPredictedService, RedisService redisService) {
+        this.intelligentDataService = intelligentDataService;
         this.algorithmPredictedService = algorithmPredictedService;
         this.redisService = redisService;
     }
@@ -57,11 +60,7 @@ public class AlgorithmTask {
     @Scheduled(fixedRateString = "#{${spring.kiln.algorithm.intelligent-interval} * 60 * 1000}")
     public void getIntelligentComputing() {
         Object cacheObject = redisService.getCacheObject("getIntelligentComputing");
-
-        if (cacheObject != null) {
-            redisService.setCacheObject("getIntelligentComputing", "1", 10L, TimeUnit.SECONDS);
-        }
-
-        new Thread(algorithmPredictedService::getIntelligentComputing).start();
+        if (cacheObject != null) redisService.setCacheObject("getIntelligentComputing", "1", 10L, TimeUnit.SECONDS);
+        new Thread(intelligentDataService::callIntelligentInterface).start();
     }
 }

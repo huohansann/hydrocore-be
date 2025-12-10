@@ -35,7 +35,11 @@ public class KilnProperty {
     @Getter
     @Setter
     public static class Algorithm {
+        // 算法调用地址
+        private String baseUrl;
+        // 智能计算值定时任务调用时间
         private long intelligentInterval;
+        // 温度预测定时任务调用时间
         private long predictedInterval;
     }
 

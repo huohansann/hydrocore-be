@@ -57,7 +57,7 @@ public final class JacksonUtils {
         timeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         mapper.registerModule(timeModule);
 
-        // 设置小数为 BigDecimal 类型
+        // set decimal to BigDecimal type
         mapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
         // Configure features

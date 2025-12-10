@@ -1,24 +1,20 @@
 package com.siact.module.snapshot.service.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.siact.common.constant.ConstantBase;
 import com.siact.common.constant.ConstantSymbol;
-import com.siact.common.utils.CollectionUtils;
 import com.siact.common.utils.JacksonUtils;
+import com.siact.common.utils.MapUtils;
 import com.siact.common.utils.TimeUtil;
+import com.siact.module.algorithm.entity.IntelligentDataEntity;
+import com.siact.module.algorithm.enums.IntelliTypeEnum;
+import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.service.TplService;
 import com.siact.module.control.entity.ControlSettingGasEntity;
-import com.siact.module.control.entity.ExpertExperienceEntity;
-import com.siact.module.control.entity.GasValueEntity;
-import com.siact.module.control.entity.IntelligentComputingEntity;
 import com.siact.module.control.service.ControlSettingGasService;
-import com.siact.module.control.service.ExpertExperienceService;
-import com.siact.module.control.service.GasValueService;
-import com.siact.module.control.service.IntelligentComputingService;
 import com.siact.module.predicted.entity.PredictedDataEntity;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.predicted.service.PredictedDataService;
@@ -36,6 +32,7 @@ import com.siact.module.snapshot.vo.SnapshotChartVO;
 import com.siact.sec.sevice.DataService;
 import com.siact.sec.utils.IntervalTimeUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -62,9 +59,7 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
     private @Resource ControlSettingGasService controlSettingGasService;
     private @Resource SnapshotTempService snapshotTempService;
     private @Resource SnapshotGasService snapshotGasService;
-    private @Resource IntelligentComputingService intelligentComputingService;
-    private @Resource ExpertExperienceService expertExperienceService;
-    private @Resource GasValueService gasValueService;
+    private @Resource IntelligentDataService intelligentDataService;
 
     @Override
     public SnapshotChartVO queryChart(SnapshotChartQueryDTO queryDTO) {
@@ -237,12 +232,12 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
             } else if ("tempSetVal".equals(code)) {
                 // 温度设定值(取控制设置-控制区间设置-温度设定值)
                 curVal = tempSnapshot.getTempSetVal();
-            } else if ("predictedMaxVal".equals(code)) {
-                // 预测最大值(后期算法部门提供接口查询,暂时没有逻辑)
-                curVal = null;
-            } else if ("predictedMinVal".equals(code)) {
-                // 预测最小值(后期算法部门提供接口查询,暂时没有逻辑)
-                curVal = null;
+            } else if ("predictedMaxVal".equals(code) && ObjectUtils.isNotEmpty(tempSnapshot.getPredictedMaxVal())) {
+                // 预测最大值
+                curVal = tempSnapshot.getPredictedMaxVal().setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
+            } else if ("predictedMinVal".equals(code) && ObjectUtils.isNotEmpty(tempSnapshot.getPredictedMinVal())) {
+                // 预测最小值
+                curVal = tempSnapshot.getPredictedMinVal().setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
             }
 
         }
@@ -253,7 +248,7 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
         String curVal = null;
         if (gasSnapshot != null) {
             if ("gasDcsVal".equals(code)) {
-                // 天然气DCS值
+                // 天然气 DCS 值
                 BigDecimal val = gasSnapshot.getGasDcsVal();
                 curVal = ObjectUtils.isEmpty(val) ? null : val.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
                 // } else if ("gasAlgorithmCalcVal".equals(code)) {
@@ -293,14 +288,13 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
         Map<String, SnapshotGasEntity> gasEntityMap = initSnapshotGasEntity(snapCodeSettingTypeMap.get("GAS"), nowTime);
 
         // 处理快照数据
-        Map<String, SnapshotTplSettingDTO> snapCodeSettingCodeMap = snapshotQuery.stream()
-                .collect(Collectors.toMap(SnapshotTplSettingDTO::getCode, o -> o, (oldVal, newVal) -> oldVal));
+        Map<String, SnapshotTplSettingDTO> snapCodeSettingCodeMap = snapshotQuery.stream().collect(Collectors.toMap(SnapshotTplSettingDTO::getCode, o -> o, (oldVal, newVal) -> oldVal));
         handleSnapshotData(nowTime, snapCodeSettingCodeMap, tempEntityMap, gasEntityMap);
 
-        // 保存tempEntityMap
+        // 保存 tempEntityMap
         snapshotTempService.saveBatch(tempEntityMap.values());
 
-        // 保存gasEntityMap
+        // 保存 gasEntityMap
         snapshotGasService.saveBatch(gasEntityMap.values());
 
     }
@@ -314,11 +308,6 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
 
     /**
      * 处理快照数据
-     *
-     * @param nowTime
-     * @param snapCodeSettingMap
-     * @param tempEntityMap
-     * @param gasEntityMap
      */
     private void handleSnapshotData(String nowTime, Map<String, SnapshotTplSettingDTO> snapCodeSettingMap, Map<String, SnapshotTempEntity> tempEntityMap, Map<String, SnapshotGasEntity> gasEntityMap) {
         // 数据分为
@@ -331,17 +320,84 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
         // 3:温度设定值  查询库  control_interval_config  code tempSetVal
         handleTempSetVal(snapCodeSettingMap, tempEntityMap);
 
-        // 4:预测最大值  预测最小值 (由算法的接口提供数据,当前暂未提供逻辑)
-        // 5:天然气智控 (由算法的接口提供数据,当前暂未提供逻辑)
+        // 4:预测最大值和预测最小值
+        handlePredicateExtremum(snapCodeSettingMap, tempEntityMap);
+        // 5:天然气智控
+        handleGasIntelliVal(snapCodeSettingMap, gasEntityMap);
         // 6:天然气人工值  查询库  control_setting_gas
         handleGasManualVal(snapCodeSettingMap, gasEntityMap);
     }
 
+    private void handleGasIntelliVal(Map<String, SnapshotTplSettingDTO> snapCodeSettingMap, Map<String, SnapshotGasEntity> gasEntityMap) {
+        SnapshotTplSettingDTO gasAlgorithmCalcVal = snapCodeSettingMap.get("gasAlgorithmCalcVal");
+        if (ObjectUtils.isEmpty(gasAlgorithmCalcVal) || CollectionUtils.isEmpty(gasAlgorithmCalcVal.getQueryDataCode())) {
+            log.error("gasAlgorithmCalcVal 没有 tpl 配置 dataCode, 无法执行快照任务");
+            return;
+        }
+        // 点位编码
+        List<String> dataCodes = gasAlgorithmCalcVal.getQueryDataCode().stream().map(SnapshotTplSettingDetailDTO::getDataCode).distinct().collect(Collectors.toList());
+
+        // 获取数据
+        Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> intelliValues = intelligentDataService.queryByTypeWithLastTime(
+                IntelliTypeEnum.GAS_CALC_MODEL1,
+                IntelliTypeEnum.GAS_CALC_MODEL2,
+                IntelliTypeEnum.GAS_CALC_EXPERT1,
+                IntelliTypeEnum.GAS_CALC_EXPERT2,
+                IntelliTypeEnum.GAS_RUN_VALUE
+        );
+
+        for (String dataCode : dataCodes) {
+            SnapshotGasEntity snapshotGasEntity = gasEntityMap.get(dataCode);
+            Map<IntelliTypeEnum, IntelligentDataEntity> intelliMap = intelliValues.get(dataCode);
+            if (!Objects.isNull(snapshotGasEntity)) {
+                IntelligentDataEntity runValue = intelliMap.get(IntelliTypeEnum.GAS_RUN_VALUE);
+                IntelligentDataEntity model1 = intelliMap.get(IntelliTypeEnum.GAS_CALC_MODEL1);
+                IntelligentDataEntity model2 = intelliMap.get(IntelliTypeEnum.GAS_CALC_MODEL2);
+                IntelligentDataEntity expert1 = intelliMap.get(IntelliTypeEnum.GAS_CALC_EXPERT1);
+                IntelligentDataEntity expert2 = intelliMap.get(IntelliTypeEnum.GAS_CALC_EXPERT2);
+
+                // 基于 Model method1
+                BigDecimal modelValue1 = runValue.getVal().add(model1.getVal());
+                BigDecimal modelValue2 = runValue.getVal().add(model2.getVal());
+                // 基于专家经验
+                BigDecimal experienceValue1 = runValue.getVal().add(expert1.getVal());
+                BigDecimal experienceValue2 = runValue.getVal().add(expert2.getVal());
+
+                Map<String, BigDecimal> algorithmCalcVal = MapUtils.of("gasAlgorithmCalcValM1", modelValue1, "gasAlgorithmCalcValM2", modelValue2, "gasAlgorithmCalcValE1", experienceValue1, "gasAlgorithmCalcValE2", experienceValue2);
+                snapshotGasEntity.setGasAlgorithmCalcVal(modelValue2);
+                snapshotGasEntity.setAlgorithmCalcVal(JacksonUtils.toJson(algorithmCalcVal));
+            }
+        }
+
+    }
+
+    /*  处理预测温度最大最小值 */
+    private void handlePredicateExtremum(Map<String, SnapshotTplSettingDTO> snapCodeSettingMap, Map<String, SnapshotTempEntity> tempEntityMap) {
+        SnapshotTplSettingDTO gasAlgorithmCalcVal = snapCodeSettingMap.get("predictedMaxVal");
+        if (ObjectUtils.isEmpty(gasAlgorithmCalcVal) || CollectionUtils.isEmpty(gasAlgorithmCalcVal.getQueryDataCode())) {
+            log.error("predictedMinVal 没有 tpl 配置 dataCode, 无法执行快照任务");
+            return;
+        }
+        // 点位编码
+        List<String> dataCodes = gasAlgorithmCalcVal.getQueryDataCode().stream().map(SnapshotTplSettingDetailDTO::getDataCode).distinct().collect(Collectors.toList());
+
+        // 获取数据
+        Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> intelliValues = intelligentDataService.queryByTypeWithLastTime(IntelliTypeEnum.MIN_TEMP, IntelliTypeEnum.MAX_TEMP);
+
+        for (String dataCode : dataCodes) {
+            SnapshotTempEntity snapshotTempEntity = tempEntityMap.get(dataCode);
+            Map<IntelliTypeEnum, IntelligentDataEntity> intelliMap = intelliValues.get(dataCode);
+            if (!Objects.isNull(snapshotTempEntity)) {
+                IntelligentDataEntity minValue = intelliMap.get(IntelliTypeEnum.MIN_TEMP);
+                IntelligentDataEntity maxValue = intelliMap.get(IntelliTypeEnum.MAX_TEMP);
+                snapshotTempEntity.setPredictedMinVal(minValue.getVal());
+                snapshotTempEntity.setPredictedMaxVal(maxValue.getVal());
+            }
+        }
+    }
+
     /**
      * 处理天然气人工值
-     *
-     * @param snapCodeSettingMap
-     * @param gasEntityMap
      */
     private void handleGasManualVal(Map<String, SnapshotTplSettingDTO> snapCodeSettingMap, Map<String, SnapshotGasEntity> gasEntityMap) {
         SnapshotTplSettingDTO gasManualValSetting = snapCodeSettingMap.get("gasManualVal");
@@ -368,9 +424,6 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
 
     /**
      * 处理温度设定值
-     *
-     * @param snapCodeSettingMap
-     * @param tempEntityMap
      */
     private void handleTempSetVal(Map<String, SnapshotTplSettingDTO> snapCodeSettingMap, Map<String, SnapshotTempEntity> tempEntityMap) {
         SnapshotTplSettingDTO tempSetValSetting = snapCodeSettingMap.get("tempSetVal");
@@ -433,10 +486,7 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
 
 
     /**
-     * 初始化temp温度类型的实体数据
-     *
-     * @param tempSetValList
-     * @return
+     * 初始化 temp 温度类型的实体数据
      */
     private Map<String, SnapshotTempEntity> initSnapshotTempEntity(List<SnapshotTplSettingDTO> tempSetValList, String nowTime) {
         // 根据snapshotQuery初始化temp温度类型的实体数据 k:dataCode v:SnapshotTempEntity
@@ -464,15 +514,6 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
     private Map<String, SnapshotGasEntity> initSnapshotGasEntity(List<SnapshotTplSettingDTO> gasSetValList, String nowTime) {
         // 根据snapshotQuery初始化gas天然气类型的实体数据 k:dataCode v:SnapshotGasEntity
         Map<String, SnapshotGasEntity> gasEntityMap = new HashMap<>();
-        // 获取最后一次的智能计算结果和专家经验结果
-        IntelligentComputingEntity intelligentComputingEntity = intelligentComputingService.queryWithResultTime();
-        ExpertExperienceEntity expertExperienceEntity = expertExperienceService.queryWithResultTime();
-        JSONObject intelliComputedJson = JSON.parseObject(intelligentComputingEntity.getData());
-        JSONObject experienceJson = JSON.parseObject(expertExperienceEntity.getData());
-        // 获取天然气运行值
-        List<GasValueEntity> gasValueEntities = gasValueService.queryByTime(expertExperienceEntity.getResultTime());
-        Map<String, GasValueEntity> gasValueMap = gasValueEntities.stream().collect(Collectors.toMap(GasValueEntity::getDataCode, v -> v, (v1, v2) -> v1));
-
         for (SnapshotTplSettingDTO gasSetVal : gasSetValList) {
             if (gasSetVal != null && gasSetVal.getQueryDataCode() != null) {
                 gasSetVal.getQueryDataCode().forEach(queryDetailDTO -> {
@@ -480,36 +521,11 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
                     snapshotGasEntity.setDataCode(queryDetailDTO.getDataCode());
                     snapshotGasEntity.setName(queryDetailDTO.getName());
                     snapshotGasEntity.setCreateTime(nowTime);
-
-                    GasValueEntity gas = gasValueMap.get(queryDetailDTO.getDataCode());
-                    if (!Objects.isNull(gas)) {
-                        // 计算智能控制值
-                        BigDecimal modelAlgorithmCalcValue1 = getAlgorithmCalcValue(intelliComputedJson, gas.getDataKey(), "method1");
-                        BigDecimal modelAlgorithmCalcValue2 = getAlgorithmCalcValue(intelliComputedJson, gas.getDataKey(), "method2");
-                        BigDecimal experienceAlgorithmCalcValue1 = getAlgorithmCalcValue(experienceJson, gas.getDataKey(), "method1");
-                        BigDecimal experienceAlgorithmCalcValue2 = getAlgorithmCalcValue(experienceJson, gas.getDataKey(), "method2");
-                        // 基于 Model method1
-                        BigDecimal modelValue1 = gas.getGasValue().add(modelAlgorithmCalcValue1);
-                        BigDecimal modelValue2 = gas.getGasValue().add(modelAlgorithmCalcValue2);
-                        // 基于专家经验
-                        BigDecimal experienceValue1 = gas.getGasValue().add(experienceAlgorithmCalcValue1);
-                        BigDecimal experienceValue2 = gas.getGasValue().add(experienceAlgorithmCalcValue2);
-
-                        Map<String, BigDecimal> algorithmCalcVal = CollectionUtils.Map.of("gasAlgorithmCalcValM1", modelValue1, "gasAlgorithmCalcValM2", modelValue2, "gasAlgorithmCalcValE1", experienceValue1, "gasAlgorithmCalcValE2", experienceValue2);
-                        snapshotGasEntity.setGasAlgorithmCalcVal(modelValue2);
-                        snapshotGasEntity.setAlgorithmCalcVal(JacksonUtils.toJson(algorithmCalcVal));
-                    }
                     gasEntityMap.put(queryDetailDTO.getDataCode(), snapshotGasEntity);
                 });
             }
         }
         return gasEntityMap;
-    }
-
-    private BigDecimal getAlgorithmCalcValue(JSONObject json, String dataKey, String method) {
-        JSONObject obj = json.getJSONObject(dataKey);
-        JSONObject methodObj = obj.getJSONObject(method);
-        return methodObj.getBigDecimal("delta_C");
     }
 
     /**

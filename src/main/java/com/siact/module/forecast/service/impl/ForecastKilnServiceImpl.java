@@ -34,6 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -80,9 +81,6 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
 
     /**
      * 获取窑炉预测信息
-     *
-     * @param projectPropVO
-     * @return
      */
     @Override
     public List<LineChartVO> queryForecastInfo(ForecastKilnParamsDTO projectPropVO) {
@@ -162,24 +160,12 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
 
     /**
      * 组装结果
-     *
-     * @param historyData
-     * @param singlePredictionData
-     * @param multiPredictionData
-     * @param timeList
-     * @return
      */
-    private List<LineChartVO> buildLineChartVO(
-            ForecastKilnParamsDTO projectPropVO,
-            ColumnChartDTO historyData,
-            Map<String, IntervalDataDto> latestHistoryDataMap,
-            ColumnChartDTO singlePredictionData,
-            ColumnChartDTO multiPredictionData,
-            List<String> timeList) {
+    private List<LineChartVO> buildLineChartVO(ForecastKilnParamsDTO projectPropVO, ColumnChartDTO historyData, Map<String, IntervalDataDto> latestHistoryDataMap, ColumnChartDTO singlePredictionData, ColumnChartDTO multiPredictionData, List<String> timeList) {
         // 组装结果
-        // 获取dataCode
+        // 获取 dataCode
         List<String> dataCodeList = projectPropVO.getDataCodes();
-        // 获取dataCode对应的属性名称
+        // 获取 dataCode 对应的属性名称
         List<String> dataNameList = projectPropVO.getNames();
 
         // 获取参数属性
@@ -197,17 +183,26 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         // 多步预测数据 k:dataCode v:时间轴数据
         Map<String, List<Object[]>> multiPredictionDataMap = multiBasicDataDTOList.stream().collect(Collectors.toMap(BasicDataDTO::getDataCode, BasicDataDTO::getData, (v1, v2) -> v1));
 
-        // 25.09.19 追加逻辑  预测值的第一个点 取的是 运行值 的最后一个点位的数据值   (目的:折线图展示时需要将实际值和预测值的点位连接起来)
+        // 25.09.19 追加逻辑预测值的第一个点取的是运行值的最后一个点位的数据值(目的:折线图展示时需要将实际值和预测值的点位连接起来)
         // 根据latestHistoryDataMap,向singlePredictionDataMap当中追加第一条数据
         for (Map.Entry<String, IntervalDataDto> entry : latestHistoryDataMap.entrySet()) {
             String dataCode = entry.getKey();
             IntervalDataDto latestData = entry.getValue();
             // 处理单步预测数据
             List<Object[]> singleData = singlePredictionDataMap.get(dataCode);
-            if (ObjectUtils.isNotEmpty(singleData)) {
+            if (ObjectUtils.isNotEmpty(singleData) && !ConstantSymbol.SHORT_LINE.equals(singleData.get(0)[1])) {
+                /*
                 // 追加第一条数据
                 singleData.add(0, new Object[]{latestData.getTime(), latestData.getItemVal()});
+                */
+                // 2025.12.10 单步预测波动较大, 对整体数据进行偏移, 偏移量为运行值最后一个和预测值第一个的差值
+                BigDecimal singleFirstValue = new BigDecimal((String) singleData.get(0)[1]);
+                BigDecimal subtract = latestData.getItemVal().subtract(singleFirstValue);
+                singleData.forEach(v -> {
+                    if (!ConstantSymbol.SHORT_LINE.equals(v[1])) v[1] = (new BigDecimal((String) v[1])).add(subtract);
+                });
             }
+
             // 处理多步预测数据
             List<Object[]> multiData = multiPredictionDataMap.get(dataCode);
             if (ObjectUtils.isNotEmpty(multiData)) {
@@ -242,7 +237,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
             ControlIntervalConfigHisChartDataDTO configHisChartDTO = dataCodeConfigChartMap.get(dataCode);
 
             // 处理需要返回的数据
-            SeriesDataVO seriesDataVO = handleRtnData(dataShowMap, dataCode, actualChartData, dataName, singlePredictionDataMap, multiPredictionDataMap, configHisChartDTO);
+            SeriesDataVO seriesDataVO = handleRtnData(dataShowMap, dataCode, actualChartData, singlePredictionDataMap, multiPredictionDataMap, configHisChartDTO);
 
             lineChartDataVO.setSeriesData(seriesDataVO);
             lineChartVO.setData(lineChartDataVO);
@@ -366,9 +361,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
 
         // 获取上下控制值 上下告警值  温度设定线
         // k: dataCode v: 各设定值chart格式数据
-        Map<String, ControlIntervalConfigHisChartDataDTO> dataCodeConfigChartMap =
-                controlIntervalConfigService.queryHistoryConfigChart(dataCodeList, projectPropVO.getStartTime(), projectPropVO.getEndTime(), projectPropVO.getTs(), projectPropVO.getTsUnit(), projectPropVO.getFormatVal());
-
+        Map<String, ControlIntervalConfigHisChartDataDTO> dataCodeConfigChartMap = controlIntervalConfigService.queryHistoryConfigChart(dataCodeList, projectPropVO.getStartTime(), projectPropVO.getEndTime(), projectPropVO.getTs(), projectPropVO.getTsUnit(), projectPropVO.getFormatVal());
 
         List<PredictionDataShowTplDTO> dataShowList = tplService.getListByCode("kilnPredictionDataShow", PredictionDataShowTplDTO.class);
         Map<String, PredictionDataShowTplDTO> dataShowMap = dataShowList.stream().collect(Collectors.toMap(PredictionDataShowTplDTO::getDataCode, o -> o, (v1, v2) -> v1));
@@ -387,7 +380,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
             ControlIntervalConfigHisChartDataDTO configHisChartDTO = dataCodeConfigChartMap.get(dataCode);
 
             // 处理需要返回的数据
-            SeriesDataVO seriesDataVO = handleRtnData(dataShowMap, dataCode, actualChartData, dataName, singlePredictionDataMap, multiPredictionDataMap, configHisChartDTO);
+            SeriesDataVO seriesDataVO = handleRtnData(dataShowMap, dataCode, actualChartData, singlePredictionDataMap, multiPredictionDataMap, configHisChartDTO);
             lineChartDataVO.setSeriesData(seriesDataVO);
             lineChartVO.setData(lineChartDataVO);
 
@@ -406,45 +399,22 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
 
     /**
      * 根据配置,处理要返回的数据
-     *
-     * @param dataShowMap
-     * @param dataCode
-     * @param actualChartData
-     * @param dataName
-     * @param singlePredictionDataMap
-     * @param multiPredictionDataMap
-     * @param configHisChartDTO
      */
-    private SeriesDataVO handleRtnData(Map<String, PredictionDataShowTplDTO> dataShowMap, String dataCode,
-                                       List<Object[]> actualChartData, String dataName,
-                                       Map<String, List<Object[]>> singlePredictionDataMap,
-                                       Map<String, List<Object[]>> multiPredictionDataMap,
-                                       ControlIntervalConfigHisChartDataDTO configHisChartDTO) {
+    private SeriesDataVO handleRtnData(Map<String, PredictionDataShowTplDTO> dataShowMap, String dataCode, List<Object[]> actualChartData, Map<String, List<Object[]>> singlePredictionDataMap, Map<String, List<Object[]>> multiPredictionDataMap, ControlIntervalConfigHisChartDataDTO configHisChartDTO) {
         SeriesDataVO seriesDataVO = new SeriesDataVO();
 
         PredictionDataShowTplDTO dataShowDto = dataShowMap.get(dataCode);
         if (ObjectUtils.isNotEmpty(dataShowDto)) {
-//            seriesDataVO.setActual(parseAttributeInfo(dataShowDto.getShowActual() ? actualChartData : null,
-//                    StringUtils.isNotBlank(dataName) ? "实际" + dataName : "实际"));
-//            seriesDataVO.setSingleForecast(parseAttributeInfo(dataShowDto.getShowSingleForecast() ?
-//                    singlePredictionDataMap.get(dataCode) : null, StringUtils.isNotBlank(dataName) ?
-//                    "单步预测" + dataName : "单步预测"));
-//            seriesDataVO.setMultiForecast(parseAttributeInfo(dataShowDto.getShowMultiForecast() ?
-//                    multiPredictionDataMap.get(dataCode) : null, StringUtils.isNotBlank(dataName) ?
-//                    "多步预测" + dataName : "多步预测"));
             seriesDataVO.setActual(parseAttributeInfo(dataShowDto.getShowActual() ? actualChartData : null, "运行值"));
-            seriesDataVO.setSingleForecast(parseAttributeInfo(dataShowDto.getShowSingleForecast() ?
-                    singlePredictionDataMap.get(dataCode) : null, "单步预测值"));
-            seriesDataVO.setMultiForecast(parseAttributeInfo(dataShowDto.getShowMultiForecast() ?
-                    multiPredictionDataMap.get(dataCode) : null, "多步预测值"));
+            seriesDataVO.setSingleForecast(parseAttributeInfo(dataShowDto.getShowSingleForecast() ? singlePredictionDataMap.get(dataCode) : null, "单步预测值"));
+            seriesDataVO.setMultiForecast(parseAttributeInfo(dataShowDto.getShowMultiForecast() ? multiPredictionDataMap.get(dataCode) : null, "多步预测值"));
 
             if (ObjectUtils.isNotEmpty(configHisChartDTO)) {
                 seriesDataVO.setUpControl(dataShowDto.getShowUpControl() ? new AttributeInfoVO("上波动限", configHisChartDTO.getUpControlChart()) : null);
                 seriesDataVO.setLowControl(dataShowDto.getShowLowControl() ? new AttributeInfoVO("下波动限", configHisChartDTO.getLowControlChart()) : null);
                 seriesDataVO.setUpAlarm(dataShowDto.getShowUpAlarm() ? new AttributeInfoVO("上告警限", configHisChartDTO.getUpAlarmChart()) : null);
                 seriesDataVO.setLowAlarm(dataShowDto.getShowLowAlarm() ? new AttributeInfoVO("下告警限", configHisChartDTO.getLowAlarmChart()) : null);
-                seriesDataVO.setTemperatureSet(dataShowDto.getShowTemperatureSet() ?
-                        new AttributeInfoVO("温度设定值", configHisChartDTO.getTemperatureSetChart()) : null);
+                seriesDataVO.setTemperatureSet(dataShowDto.getShowTemperatureSet() ? new AttributeInfoVO("温度设定值", configHisChartDTO.getTemperatureSetChart()) : null);
             }
         }
         return seriesDataVO;
