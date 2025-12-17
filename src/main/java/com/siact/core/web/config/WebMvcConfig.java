@@ -1,4 +1,4 @@
-package com.siact.config;
+package com.siact.core.web.config;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;

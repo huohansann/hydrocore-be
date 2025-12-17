@@ -6,6 +6,7 @@ import com.siact.common.R;
 import com.siact.common.constant.ConstantNum;
 import com.siact.common.constant.ConstantSymbol;
 import com.siact.module.algorithm.entity.IntelligentDataEntity;
+import com.siact.module.algorithm.enums.IntelliTypeEnum;
 import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.control.dto.ControlSettingGasDTO;
 import com.siact.module.control.dto.ControlSettingWindDTO;
@@ -48,7 +49,8 @@ public class KilnPublishServiceImpl implements KilnPublishService {
     @Override
     public List<ControlSettingGasDTO> getKilnGasControlSetting() {
         // 获取智控值
-        Map<String, IntelligentDataEntity> intelliValues = intelligentDataService.lastGasCalc();
+        // Map<String, IntelligentDataEntity> intelliValues = intelligentDataService.lastGasCalc();
+        Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> intelliValues = intelligentDataService.queryByTypeWithLastTime(IntelliTypeEnum.GAS_RUN_VALUE, IntelliTypeEnum.GAS_CALC_MODEL2);
 
         List<ControlSettingGasDTO> result = new ArrayList<>();
         List<ControlSettingGasEntity> settingList = controlSettingGasService.getValidList();
@@ -75,18 +77,17 @@ public class KilnPublishServiceImpl implements KilnPublishService {
             BigDecimal xlsVal = propCodeValObj == null ? null : propCodeValObj.getBigDecimal(propCode);
             Double runningDcsVal = xlsVal == null ? null : xlsVal.doubleValue();
             // 获取智能计算值
-            IntelligentDataEntity intelliValue = intelliValues.get(entity.getDataCode());
+            Map<IntelliTypeEnum, IntelligentDataEntity> intelliValueMap = intelliValues.get(entity.getDataCode());
+            IntelligentDataEntity intelliRunValue = intelliValueMap.get(IntelliTypeEnum.GAS_RUN_VALUE);
+            IntelligentDataEntity intelliModelValue = intelliValueMap.get(IntelliTypeEnum.GAS_CALC_MODEL2);
             Double gasAlgorithmCalcVal = Objects.isNull(entity.getGasAlgorithmCalcVal()) ? null : entity.getGasAlgorithmCalcVal().doubleValue();
-            if (!Objects.isNull(intelliValue)) gasAlgorithmCalcVal = intelliValue.getVal().doubleValue();
-            // Double gasAlgorithmCalcVal = entity.getGasAlgorithmCalcVal() == null ? null : entity.getGasAlgorithmCalcVal().doubleValue();
-            Double gasManualVal = entity.getGasManualVal() == null ? null : entity.getGasManualVal().doubleValue();
-
-            if (entity.getAutoState()) {
-                // 如果开启了自动下发,则将人工调整值设置为null
-                gasManualVal = entity.getGasAlgorithmCalcVal() == null ? null : entity.getGasAlgorithmCalcVal().doubleValue();
+            BigDecimal adjustValue = null;
+            if (!Objects.isNull(intelliRunValue) && !Objects.isNull(intelliModelValue)) {
+                gasAlgorithmCalcVal = intelliRunValue.getVal().add(intelliModelValue.getVal()).doubleValue();
+                adjustValue = intelliModelValue.getVal();
             }
-
-            result.add(new ControlSettingGasDTO(entity.getNumber(), entity.getDataCode(), runningDcsVal, gasAlgorithmCalcVal, gasManualVal, entity.getAutoState()));
+            Double gasManualVal = entity.getGasManualVal() == null ? null : entity.getGasManualVal().doubleValue();
+            result.add(new ControlSettingGasDTO(entity.getNumber(), entity.getDataCode(), runningDcsVal, gasAlgorithmCalcVal, gasManualVal, entity.getAutoState(), adjustValue));
         });
 
         return result;
@@ -165,16 +166,19 @@ public class KilnPublishServiceImpl implements KilnPublishService {
     @Override
     public Boolean publishGas(List<ControlSettingGasDTO> list) {
         // ps:手动下发,不校验下发规则
-
         List<ControlSettingGasDTO> publishGasSettingList = list.stream().filter(o -> ObjectUtils.isNotEmpty(o.getGasManualVal())).collect(Collectors.toList());
 
-        for (ControlSettingGasDTO settingGasDTO : publishGasSettingList) {
-            if (settingGasDTO.getAutoState()) {
-                // 如果开启了自动下发,则将人工调整值置为null
-                settingGasDTO.setGasManualVal(null);
+        // 获取历史数据, 对自动模式的数据, 将调整值设置为原本的数据, 对手动模式的调整值保持
+        List<ControlSettingGasEntity> settingList = controlSettingGasService.getValidList();
+
+        for (ControlSettingGasDTO dto : publishGasSettingList) {
+            if (dto.getAutoState()) {
+                // 自动模式的设定值设置为原数据的设定值
+                settingList.stream().filter(gas -> gas.getDataCode().equals(dto.getDataCode())).findFirst().ifPresent(entity -> {
+                    dto.setGasManualVal(entity.getGasManualVal().doubleValue());
+                });
             }
         }
-
 
         List<String> publishGasDataCodeList = publishGasSettingList.stream().map(ControlSettingGasDTO::getDataCode).collect(Collectors.toList());
 

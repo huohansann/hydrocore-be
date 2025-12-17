@@ -1,4 +1,4 @@
-package com.siact.config;
+package com.siact.core.common.filter;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;

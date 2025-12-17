@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -29,4 +31,6 @@ public class ControlSettingGasDTO {
 
     @ApiModelProperty("是否自动模式,1:是 0:否")
     private Boolean autoState;
+
+    private BigDecimal adjustValue;
 }

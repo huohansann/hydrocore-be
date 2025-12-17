@@ -1,5 +1,6 @@
-package com.siact.config;
+package com.siact.core.security.config;
 
+import com.siact.core.security.filter.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

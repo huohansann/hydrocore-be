@@ -33,7 +33,7 @@
                 </timeBasedFileNamingAndTriggeringPolicy>
                 <maxHistory>15</maxHistory>
             </rollingPolicy>
-            <filter class="com.siact.config.LogbackEvaluatorFilter">
+            <filter class="com.siact.core.common.filter.LogbackEvaluatorFilter">
                 <patterns>
                     <pattern>.*\.mapper(\.|$).*</pattern>
                     <pattern>^com\.baomidou\.mybatisplus\..*</pattern>
