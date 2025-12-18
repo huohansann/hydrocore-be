@@ -35,7 +35,7 @@ public class AlgorithmTask {
      * 每分钟调用一次算法  获取预测数据
      */
     // @Scheduled(cron = "0 0/1 * * * ?")
-    @Scheduled(fixedRateString = "#{${spring.kiln.algorithm.predicted-interval} * 60 * 1000}")
+    @Scheduled(fixedDelayString = "#{${spring.kiln.algorithm.predicted-interval} * 60 * 1000}")
     public void algorithmInference() {
         if (!algorithmPredictionEnable) {
             log.info("算法预测配置未开启");

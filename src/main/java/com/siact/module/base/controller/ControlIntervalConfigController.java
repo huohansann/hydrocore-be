@@ -42,7 +42,7 @@ public class ControlIntervalConfigController {
         return R.success();
     }
 
-    @ApiOperation("保存并同步")
+    @ApiOperation("同步")
     public @GetMapping("/sync") R sync() {
         configService.sync();
         return R.success();

@@ -1,6 +1,5 @@
 package com.siact.module.base.service.impl;
 
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -123,8 +122,9 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         // 当前时间
         LocalDateTime now = LocalDateTime.now().withSecond(0);
         paramDTO.setDataCodes(dataCodes);
-        // 开始时间设置到四个换火周期前的时刻
-        paramDTO.setStartTime(now.minusMinutes(property.getConfig().getFireChangeCycle() * 4).format(TimeUtil.df));
+        // 开始时间设置到最大换火周期区间前的时刻
+        Integer maxRange = property.getIntervalControl().values().stream().map(KilnProperty.IntervalControl::getRange).flatMap(List::stream).max( Integer::compare).orElse(4);
+        paramDTO.setStartTime(now.minusMinutes(property.getConfig().getFireChangeCycle() * maxRange).format(TimeUtil.df));
         paramDTO.setEndTime(now.format(TimeUtil.df));
         paramDTO.setTs(ConstantNum.NUMBER_ONE);
         paramDTO.setTsUnit(ConstantDataApi.TS_MIN);
@@ -358,7 +358,7 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
             List<BigDecimal> values = intervals.stream().filter(Objects::nonNull).filter(dto -> {
                         LocalDateTime time = LocalDateTime.parse(dto.getTime(), DateTimeFormatter.ofPattern(ConstantTime.DATE_TIME_MM_00));
                         LocalDateTime end = now.minusMinutes(fireChangeCycle * range.get(1)).withNano(0);
-                        LocalDateTime start = end.minusSeconds(fireChangeCycle * range.get(0));
+                        LocalDateTime start = now.minusMinutes(fireChangeCycle * range.get(0)).withNano(0);
                         // dto.setItemVal(BigDecimal.valueOf(1450));
                         return (time.isAfter(start) || time.isEqual(start)) && (time.isBefore(end) || time.isEqual(end));
                     })
@@ -366,7 +366,7 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
             // 平均温度
-            BigDecimal Tave = values.stream().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(values.size()), 0, RoundingMode.HALF_UP);
+            BigDecimal Tave = values.stream().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(values.size()), 2, RoundingMode.HALF_UP);
             // 获取上下限差值一半
             // BigDecimal SPD = ((new BigDecimal(configEntity.getUpControl())).subtract(new BigDecimal(configEntity.getLowControl()))).divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
             BigDecimal SPD = intervalControl.getSpd().divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
@@ -374,6 +374,7 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
             point.put("SPD", SPD);
             if (keyPoints.contains(configEntity.getMeasurePoint())) point.put("SP", new BigDecimal(configEntity.getTemperatureSet()));
             results.put(configEntity.getMeasurePoint(), point);
+            log.info("控制区间设置自动同步, 点位名称: {}, 温度数据: {}, 平均温度: {}, 上下限差值一半: {}", configEntity.getMeasurePoint(), values, Tave, SPD);
         });
 
         // 获取关键点位数据
@@ -428,6 +429,7 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
             entity.setUpAlarm(SPH.add(BigDecimal.valueOf(up)).toString());
             // 设置下告警限
             entity.setLowAlarm(SPL.subtract(BigDecimal.valueOf(low)).toString());
+            log.info("控制区间设置自动同步, 点位数据: {}", entity);
         }
 
         return ConvertUtils.sourceToTarget(entities, ControlIntervalConfigDTO.class);

@@ -190,7 +190,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
             IntervalDataDto latestData = entry.getValue();
             // 处理单步预测数据
             List<Object[]> singleData = singlePredictionDataMap.get(dataCode);
-            if (ObjectUtils.isNotEmpty(latestData) && ObjectUtils.isNotEmpty(singleData) && !ConstantSymbol.SHORT_LINE.equals(singleData.get(0)[1])) {
+            if (ObjectUtils.isNotEmpty(latestData) && ObjectUtils.isNotEmpty(latestData.getItemVal()) && ObjectUtils.isNotEmpty(singleData) && !ConstantSymbol.SHORT_LINE.equals(singleData.get(0)[1])) {
                 /*
                 // 追加第一条数据
                 singleData.add(0, new Object[]{latestData.getTime(), latestData.getItemVal()});
