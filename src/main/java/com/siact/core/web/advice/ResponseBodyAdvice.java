@@ -39,7 +39,7 @@ public class ResponseBodyAdvice implements org.springframework.web.servlet.mvc.m
      */
     @Override
     public @SuppressWarnings("unchecked") Object beforeBodyWrite(@Nullable Object body, @NotNull MethodParameter returnType, @NotNull MediaType selectedContentType, Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
-        // 兼容原本的响应类型
+        // 兼容原来地响应类型
         if (body instanceof com.siact.common.R) {
             com.siact.common.R<Object> result = ((com.siact.common.R<Object>) body);
             return ResponseEntity.builder().code(result.getCode()).message(result.getMsg()).data(result.getData()).build();
@@ -51,7 +51,7 @@ public class ResponseBodyAdvice implements org.springframework.web.servlet.mvc.m
 
         if (body instanceof ResponseEntity<?>) return body;
 
-        String messageKey = ResponseEnum.SUCCESS.getKey();
+        String messageKey = ResponseEnum.SUCCESS.key();
         if (ObjectUtils.isNotEmpty(returnType)) {
             SuccessMessage sma = returnType.getMethodAnnotation(SuccessMessage.class);
             if (ObjectUtils.isNotEmpty(sma)) messageKey = sma.value();
@@ -62,6 +62,6 @@ public class ResponseBodyAdvice implements org.springframework.web.servlet.mvc.m
             log.warn("当前 SuccessMessage Key: {} 无对应响应枚举项", messageKey);
             resp = ResponseEnum.SUCCESS;
         }
-        return ResponseEntity.builder().code(resp.getCode()).message(resp.getContent()).data(body).build();
+        return ResponseEntity.builder().code(resp.code()).message(resp.content()).data(body).build();
     }
 }

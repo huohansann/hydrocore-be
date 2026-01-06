@@ -1,9 +1,6 @@
 package com.siact.common.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serializable;
 
@@ -15,8 +12,8 @@ import java.io.Serializable;
  * @description : 系统接口统一返回实体
  */
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class ResponseEntity<T> implements Serializable {
     private final static long serialVersionUID = 1L;

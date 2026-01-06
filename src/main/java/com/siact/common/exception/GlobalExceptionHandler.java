@@ -1,9 +1,11 @@
 package com.siact.common.exception;
 
-import com.siact.common.result.R;
+import com.siact.common.entity.ResponseEntity;
+import com.siact.common.enums.ResponseEnum;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -22,30 +24,46 @@ public class GlobalExceptionHandler {
 
     private final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(value = Exception.class)
-    public R<String> handle(Exception e, HandlerMethod method) {
+    public @ExceptionHandler(value = IOException.class) ResponseEntity<String> handleIOException(IOException e, HandlerMethod method) {
         ApiOperation operation = method.getMethodAnnotation(ApiOperation.class);
         log.error("{} error", Objects.requireNonNull(operation).value(), e);
-        if (e instanceof IOException) {
-            return R.fail("IO异常");
-        }
-        if (e instanceof MethodArgumentNotValidException) {
-            BindingResult bindingResult = ((MethodArgumentNotValidException) e).getBindingResult();
-            ObjectError allErrors = bindingResult.getAllErrors().get(0);
-            return R.fail(allErrors.getDefaultMessage());
-        }
-        if (e instanceof ConstraintViolationException) {
-            return R.fail(e.getMessage());
-        }
-        if (e instanceof ParseException) {
-            return R.fail(CommonEnum.BODY_NOT_MATCH.getResultMsg());
-        }
-        if (e instanceof BizException) {
-            return R.fail(e.getMessage());
-        }
-        if (e instanceof CustomException) {
-            return R.fail(e.getMessage());
-        }
-        return R.fail(CommonEnum.INTERNAL_SERVER_ERROR.getResultMsg());
+        return ResponseEntity.<String>builder().code(ResponseEnum.ERROR.code()).message("IO 异常").build();
+    }
+
+    public @ExceptionHandler(value = MethodArgumentNotValidException.class) ResponseEntity<String> handleMethodArgumentNotValidException(MethodArgumentNotValidException e, HandlerMethod method) {
+        ApiOperation operation = method.getMethodAnnotation(ApiOperation.class);
+        log.error("{} error", Objects.requireNonNull(operation).value(), e);
+        BindingResult bindingResult = e.getBindingResult();
+        ObjectError allErrors = bindingResult.getAllErrors().get(0);
+        return ResponseEntity.<String>builder().code(ResponseEnum.ERROR.code()).message(allErrors.getDefaultMessage()).build();
+    }
+
+    public @ExceptionHandler(value = ConstraintViolationException.class) ResponseEntity<String> handleConstraintViolationException(ConstraintViolationException e, HandlerMethod method) {
+        ApiOperation operation = method.getMethodAnnotation(ApiOperation.class);
+        log.error("{} error", Objects.requireNonNull(operation).value(), e);
+        return ResponseEntity.<String>builder().code(ResponseEnum.ERROR.code()).message(e.getMessage()).build();
+    }
+
+    public @ExceptionHandler(value = ParseException.class) ResponseEntity<String> handleParseException(ParseException e, HandlerMethod method) {
+        ApiOperation operation = method.getMethodAnnotation(ApiOperation.class);
+        log.error("{} error", Objects.requireNonNull(operation).value(), e);
+        return ResponseEntity.<String>builder().code(ResponseEnum.REQUEST_BAD.code()).message(ResponseEnum.REQUEST_BAD.content()).build();
+    }
+
+    public @ExceptionHandler(value = BizException.class) ResponseEntity<String> handleBizException(BizException e, HandlerMethod method) {
+        ApiOperation operation = method.getMethodAnnotation(ApiOperation.class);
+        log.error("发生业务异常, {} error", Objects.requireNonNull(operation).value(), e);
+        return ResponseEntity.<String>builder().code(ResponseEnum.ERROR.code()).message(e.getMessage()).build();
+    }
+
+    public @ExceptionHandler(value = CustomException.class) ResponseEntity<String> handleCustomException(CustomException e, HandlerMethod method) {
+        ApiOperation operation = method.getMethodAnnotation(ApiOperation.class);
+        log.error("发生自定义异常, {} error", Objects.requireNonNull(operation).value(), e);
+        return ResponseEntity.<String>builder().code(ResponseEnum.ERROR.code()).message(e.getMessage()).build();
+    }
+
+    public @ExceptionHandler(value = Exception.class) ResponseEntity<String> handleException(Exception e) {
+        log.error("系统发生异常: {}", e.getMessage(), e);
+        return ResponseEntity.<String>builder().code(HttpStatus.INTERNAL_SERVER_ERROR.value()).message("服务器内部错误: " + e.getMessage()).build();
     }
 }

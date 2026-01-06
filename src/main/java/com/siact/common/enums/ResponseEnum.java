@@ -1,7 +1,5 @@
 package com.siact.common.enums;
 
-import lombok.Getter;
-
 /**
  * @author : kzuo
  * @version 1.0
@@ -9,11 +7,10 @@ import lombok.Getter;
  * @className : ResponseCode
  * @description : 请求响应结果枚举项
  */
-@Getter
 public enum ResponseEnum {
     SUCCESS(200, "request.success", "操作成功"),
     ERROR(500, "request.failed", "操作失败"),
-    PARAMS_VALIDATE_FAILED(400, "params.validate.failed", "参数检验失败"),
+    REQUEST_BAD(400, "request.bad", "请求的数据格式不符!"),
     UNAUTHORIZED(401, "unauthorized", "暂未登录或 token 已经过期"),
     FORBIDDEN(403, "forbidden", "没有相关权限");
 
@@ -32,9 +29,21 @@ public enum ResponseEnum {
         this.content = content;
     }
 
+    public Integer code() {
+        return code;
+    }
+
+    public String key() {
+        return key;
+    }
+
+    public String content() {
+        return content;
+    }
+
     public static ResponseEnum fromKey(String key) {
         for (ResponseEnum value : ResponseEnum.values()) {
-            if (value.getKey().equals(key)) return value;
+            if (value.key().equals(key)) return value;
         }
         return null;
     }
