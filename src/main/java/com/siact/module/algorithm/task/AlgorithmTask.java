@@ -3,6 +3,7 @@ package com.siact.module.algorithm.task;
 import com.siact.common.redis.RedisService;
 import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.predicted.service.AlgorithmPredictedService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
@@ -13,23 +14,16 @@ import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
+@RequiredArgsConstructor
 @Component
 @RefreshScope
 public class AlgorithmTask {
-
     // 是否开启算法预测,默认false
-    @Value("${algorithm.prediction.enable:false}")
-    private Boolean algorithmPredictionEnable;
+    private @Value("${algorithm.prediction.enable:false}") Boolean algorithmPredictionEnable;
 
     private final IntelligentDataService intelligentDataService;
     private final AlgorithmPredictedService algorithmPredictedService;
     private final RedisService redisService;
-
-    public AlgorithmTask(IntelligentDataService intelligentDataService, AlgorithmPredictedService algorithmPredictedService, RedisService redisService) {
-        this.intelligentDataService = intelligentDataService;
-        this.algorithmPredictedService = algorithmPredictedService;
-        this.redisService = redisService;
-    }
 
     /**
      * 每分钟调用一次算法  获取预测数据

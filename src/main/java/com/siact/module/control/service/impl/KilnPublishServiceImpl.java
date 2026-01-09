@@ -1,25 +1,18 @@
 package com.siact.module.control.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.siact.api.common.api.vo.common.InfoListQueryVo;
 import com.siact.common.R;
 import com.siact.common.constant.ConstantNum;
 import com.siact.common.constant.ConstantSymbol;
-import com.siact.module.algorithm.entity.IntelligentDataEntity;
-import com.siact.module.algorithm.enums.IntelliTypeEnum;
-import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.control.dto.ControlSettingGasDTO;
 import com.siact.module.control.dto.ControlSettingWindDTO;
-import com.siact.module.control.entity.ControlSettingGasEntity;
 import com.siact.module.control.entity.ControlSettingWindEntity;
-import com.siact.module.control.service.ControlSettingGasService;
 import com.siact.module.control.service.ControlSettingWindService;
 import com.siact.module.control.service.KilnPublishService;
+import com.siact.module.control.support.ControlSettingSupport;
 import com.siact.module.control.validator.RuleValidateResult;
 import com.siact.module.control.validator.RuleValidator;
-import com.siact.sec.dto.EqDypropInsDTO;
 import com.siact.sec.sevice.DataService;
-import com.siact.sec.sevice.SecInsService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
@@ -36,63 +29,13 @@ import java.util.stream.Collectors;
  *
  * @author wr
  */
-@Service
 @Slf4j
+@Service
 public class KilnPublishServiceImpl implements KilnPublishService {
-    private @Resource ControlSettingGasService controlSettingGasService;
     private @Resource ControlSettingWindService controlSettingWindService;
     private @Resource DataService dataService;
-    private @Resource SecInsService secInsService;
+    private @Resource ControlSettingSupport support;
     private @Resource List<RuleValidator> validators;
-    private @Resource IntelligentDataService intelligentDataService;
-
-    @Override
-    public List<ControlSettingGasDTO> getKilnGasControlSetting() {
-        // 获取智控值
-        // Map<String, IntelligentDataEntity> intelliValues = intelligentDataService.lastGasCalc();
-        Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> intelliValues = intelligentDataService.queryByTypeWithLastTime(IntelliTypeEnum.GAS_RUN_VALUE, IntelliTypeEnum.GAS_CALC_MODEL2);
-
-        List<ControlSettingGasDTO> result = new ArrayList<>();
-        List<ControlSettingGasEntity> settingList = controlSettingGasService.getValidList();
-        if (ObjectUtils.isEmpty(settingList)) {
-            log.error("获取天然气控制设定值失败, 配置为空");
-            return result;
-        }
-        settingList.sort(Comparator.comparing(ControlSettingGasEntity::getNumber));
-
-        // 收集 dataCode
-        List<String> dataCodeList = settingList.stream().map(ControlSettingGasEntity::getDataCode).distinct().collect(Collectors.toList());
-
-        // 根据dataCode+短码查询属性Code
-        String xlsShortCode = "XLS";// 天然气设定流量短码
-        List<String> propShortCode = Collections.singletonList(xlsShortCode);
-
-        Map<String, String> secPropCodeMap = querySecPropCode(dataCodeList, propShortCode);
-        // 查询DCS实时值  根据dataCode 查询
-        JSONObject propCodeValObj = dataService.queryRealValue(String.join(",", secPropCodeMap.values()));
-        // 封装返回结果
-        settingList.forEach(entity -> {
-            String mapKey = String.join(ConstantSymbol.UNDER_LINE, entity.getDataCode(), xlsShortCode);
-            String propCode = secPropCodeMap.get(mapKey);// 获取属性Code
-            BigDecimal xlsVal = propCodeValObj == null ? null : propCodeValObj.getBigDecimal(propCode);
-            Double runningDcsVal = xlsVal == null ? null : xlsVal.doubleValue();
-            // 获取智能计算值
-            Map<IntelliTypeEnum, IntelligentDataEntity> intelliValueMap = intelliValues.get(entity.getDataCode());
-            IntelligentDataEntity intelliRunValue = intelliValueMap.get(IntelliTypeEnum.GAS_RUN_VALUE);
-            IntelligentDataEntity intelliModelValue = intelliValueMap.get(IntelliTypeEnum.GAS_CALC_MODEL2);
-            Double gasAlgorithmCalcVal = Objects.isNull(entity.getGasAlgorithmCalcVal()) ? null : entity.getGasAlgorithmCalcVal().doubleValue();
-            BigDecimal adjustValue = null;
-            if (!Objects.isNull(intelliRunValue) && !Objects.isNull(intelliModelValue)) {
-                gasAlgorithmCalcVal = intelliRunValue.getVal().add(intelliModelValue.getVal()).doubleValue();
-                adjustValue = intelliModelValue.getVal();
-            }
-            Double gasManualVal = entity.getGasManualVal() == null ? null : entity.getGasManualVal().doubleValue();
-            result.add(new ControlSettingGasDTO(entity.getNumber(), entity.getDataCode(), runningDcsVal, gasAlgorithmCalcVal, gasManualVal, entity.getAutoState(), adjustValue));
-        });
-
-        return result;
-    }
-
 
     @Override
     public List<ControlSettingWindDTO> getKilnWindControlSetting() {
@@ -123,7 +66,7 @@ public class KilnPublishServiceImpl implements KilnPublishService {
         List<String> allPropShortCode = Arrays.asList(zrfShortCode, trqShortCode);
 
         // 天然气和助燃风设定值的属性Code  k:
-        Map<String, String> gasAndWindSecPropCodeMap = querySecPropCode(allDataCodeList, allPropShortCode);
+        Map<String, String> gasAndWindSecPropCodeMap = support.querySecPropCode(allDataCodeList, allPropShortCode);
 
         // 查询孪生实时值  根据dataCode 查询
         JSONObject propCodeValObj = dataService.queryRealValue(String.join(",", gasAndWindSecPropCodeMap.values()));
@@ -155,41 +98,12 @@ public class KilnPublishServiceImpl implements KilnPublishService {
                     .gasDataCode(entity.getGasDataCode())
                     .rateDcsVal(rateVal == null ? null : rateVal.doubleValue())
                     .rateManualVal(null)
-                    .settingDcsVal(windVal == null ? null : windVal.doubleValue())// 助燃风设定值dcs值
+                    .settingDcsVal(windVal == null ? null : windVal.doubleValue())// 助燃风设定值 dcs 值
                     .build();
             result.add(settingWindDTO);
         });
 
         return result;
-    }
-
-    @Override
-    public Boolean publishGas(List<ControlSettingGasDTO> list) {
-        // ps:手动下发,不校验下发规则
-        List<ControlSettingGasDTO> publishGasSettingList = list.stream().filter(o -> ObjectUtils.isNotEmpty(o.getGasManualVal())).collect(Collectors.toList());
-
-        // 获取历史数据, 对自动模式的数据, 将调整值设置为原本的数据, 对手动模式的调整值保持
-        List<ControlSettingGasEntity> settingList = controlSettingGasService.getValidList();
-
-        for (ControlSettingGasDTO dto : publishGasSettingList) {
-            if (dto.getAutoState()) {
-                // 自动模式的设定值设置为原数据的设定值
-                settingList.stream().filter(gas -> gas.getDataCode().equals(dto.getDataCode())).findFirst().ifPresent(entity -> {
-                    dto.setGasManualVal(entity.getGasManualVal().doubleValue());
-                });
-            }
-        }
-
-        List<String> publishGasDataCodeList = publishGasSettingList.stream().map(ControlSettingGasDTO::getDataCode).collect(Collectors.toList());
-
-        // 1保存控制设定值
-        // 1.1:先删除旧数据
-        controlSettingGasService.deleteByDataCode(publishGasDataCodeList);
-        // 1.2:再新增
-        controlSettingGasService.saveGasSetting(publishGasSettingList);
-
-        // 手动下发 TODO 目前暂无下发逻辑对接,暂时返回成功
-        return true;
     }
 
     @Override
@@ -210,34 +124,8 @@ public class KilnPublishServiceImpl implements KilnPublishService {
         return true;
     }
 
-    private Map<String, String> querySecPropCode(List<String> dataCodeList, List<String> propShortCode) {
-        InfoListQueryVo infoListQueryVo = new InfoListQueryVo();
-        infoListQueryVo.setDataCodes(new HashSet<>(dataCodeList));
-        infoListQueryVo.setPropModelCodes(propShortCode);
-        Map<String, List<EqDypropInsDTO>> result = secInsService.queryInsDynamicProp(infoListQueryVo);
-        log.info("多个实例，一个属性短码，获取对应的属性长码对应,dataCodeList:{},propShortCode:{},result:{}", dataCodeList, propShortCode, result);
-
-        HashMap<String, String> dataCodeShortMap = new HashMap<>();
-        for (Map.Entry<String, List<EqDypropInsDTO>> entry : result.entrySet()) {
-            String dataCode = entry.getKey();
-
-            entry.getValue().forEach(eqDypropInsDTO -> {
-                // 属性短码Code
-                String propCode = eqDypropInsDTO.getPropCode();
-                String propDataCode = eqDypropInsDTO.getDataCode();
-
-                String mapKey = String.join(ConstantSymbol.UNDER_LINE, dataCode, propCode);
-                dataCodeShortMap.put(mapKey, propDataCode);
-            });
-        }
-
-        return dataCodeShortMap;
-    }
-
     /**
      * 自动下发,仅天然气控制设定值(需要校验条规)
-     *
-     * @return
      */
     @Override
     public R gasAutoPublish() {

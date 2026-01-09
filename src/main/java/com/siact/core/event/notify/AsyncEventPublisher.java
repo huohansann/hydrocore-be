@@ -19,6 +19,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.interceptor.NoRollbackRuleAttribute;
 import org.springframework.transaction.interceptor.RollbackRuleAttribute;
 import org.springframework.transaction.interceptor.RuleBasedTransactionAttribute;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -313,13 +314,24 @@ public class AsyncEventPublisher implements EventPublisher {
         txAttr.setReadOnly(et.readOnly());
         if (et.timeout() > 0) txAttr.setTimeout(et.timeout());
         // 设置回滚规则
+        List<RollbackRuleAttribute> rollbackRules = new ArrayList<>();
         if (ArrayUtils.isNotEmpty(et.rollbackFor())) {
-            List<RollbackRuleAttribute> rollbackRules = new ArrayList<>();
             for (Class<? extends Throwable> rollback : et.rollbackFor()) {
                 rollbackRules.add(new RollbackRuleAttribute(rollback));
             }
-            txAttr.setRollbackRules(rollbackRules);
         }
+        // 设置不回滚规则
+        if (ArrayUtils.isNotEmpty(et.noRollbackFor())) {
+            for (Class<? extends Throwable> noRollback : et.noRollbackFor()) {
+                rollbackRules.add(new NoRollbackRuleAttribute(noRollback));
+            }
+        }
+        // 没有规则设置默认规则
+        if (CollectionUtils.isNotEmpty(rollbackRules)) rollbackRules.add(new RollbackRuleAttribute(EventHandleException.class));
+        txAttr.setRollbackRules(rollbackRules);
+
+        log.debug("Build a transaction template: propagation={}, timeout={}, rollbackRules={}, noRollbackRules={}", et.propagation(), et.timeout(), Arrays.toString(et.rollbackFor()), Arrays.toString(et.noRollbackFor()));
+
         return new TransactionTemplate(manager, txAttr);
     }
 
@@ -415,7 +427,7 @@ public class AsyncEventPublisher implements EventPublisher {
 
             @Override
             public @SuppressWarnings("unchecked") Class<? extends Throwable>[] noRollbackFor() {
-                return new Class[0];
+                return new Class[]{EventHandleException.class};
             }
         };
     }
@@ -468,7 +480,10 @@ public class AsyncEventPublisher implements EventPublisher {
 
             @Override
             public @SuppressWarnings("unchecked") Class<? extends Throwable>[] noRollbackFor() {
-                return new Class[0];
+                return new Class[]{
+                        EventHandleException.class,  // 事件处理异常通常不需要回滚整个事务
+                        IllegalArgumentException.class // 参数异常通常也不需要回滚
+                };
             }
         };
     }

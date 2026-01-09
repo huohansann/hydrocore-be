@@ -3,12 +3,14 @@ package com.siact.module.control.dto;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @ApiModel("天然气控制设定值")
@@ -32,5 +34,12 @@ public class ControlSettingGasDTO {
     @ApiModelProperty("是否自动模式,1:是 0:否")
     private Boolean autoState;
 
+    // 变化值
     private BigDecimal adjustValue;
+
+    // true: dcs 与上一次 dcs 不同, dcs 与算法输出不同
+    private Boolean dcsChanged;
+
+    // true: dcs 与算法输出不同, 算法输出与上一次算法输出不同
+    private Boolean algoChanged;
 }

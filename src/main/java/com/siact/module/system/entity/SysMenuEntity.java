@@ -16,7 +16,7 @@ import java.util.Date;
 
 @Data
 @EqualsAndHashCode
-@TableName("sys_menu_new")
+// @TableName("sys_menu_new")
 public class SysMenuEntity {
     /**
      * 菜单 ID

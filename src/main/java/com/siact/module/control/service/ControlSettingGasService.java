@@ -9,20 +9,12 @@ import java.util.List;
 public interface ControlSettingGasService extends IService<ControlSettingGasEntity> {
 
     /**
-     * 获取有效的 天然气控制设定值
-     * @return
+     * 查询天然气设定值
      */
-    List<ControlSettingGasEntity> getValidList();
+    List<ControlSettingGasDTO> querySetting();
 
     /**
-     * 根据dataCode删除数据(逻辑删除)
-     * @param publishGasDataCodeList
+     * 下发天然气设置
      */
-    void deleteByDataCode(List<String> publishGasDataCodeList);
-
-    /**
-     * 保存天然气控制设定值
-     * @param publishGasSettingList
-     */
-    void saveGasSetting(List<ControlSettingGasDTO> publishGasSettingList);
+    Boolean publish(List<ControlSettingGasDTO> list);
 }

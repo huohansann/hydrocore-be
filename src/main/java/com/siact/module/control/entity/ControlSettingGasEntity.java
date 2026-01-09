@@ -9,11 +9,11 @@ import java.util.Date;
 @Data
 @TableName("control_setting_gas")
 public class ControlSettingGasEntity {
-    // 主键id
+    // 主键 id
     private Long id;
     // 炉子编号
     private String number;
-    // 天然气炉子对应的数字孪生insCode
+    // 天然气炉子对应的数字孪生 insCode
     private String dataCode;
     // 天然气量下发对应的点位编码
     private String gasPublishCodes;

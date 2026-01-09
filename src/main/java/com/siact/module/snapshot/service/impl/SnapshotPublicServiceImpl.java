@@ -9,12 +9,12 @@ import com.siact.common.utils.MapUtils;
 import com.siact.common.utils.TimeUtil;
 import com.siact.module.algorithm.entity.IntelligentDataEntity;
 import com.siact.module.algorithm.enums.IntelliTypeEnum;
-import com.siact.module.algorithm.services.IntelligentDataService;
+import com.siact.module.algorithm.repository.IntelligentDataRepository;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.service.TplService;
 import com.siact.module.control.entity.ControlSettingGasEntity;
-import com.siact.module.control.service.ControlSettingGasService;
+import com.siact.module.control.repository.ControlSettingGasRepository;
 import com.siact.module.predicted.entity.PredictedDataEntity;
 import com.siact.module.predicted.enums.PredictedTypeEnum;
 import com.siact.module.predicted.service.PredictedDataService;
@@ -56,10 +56,10 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
     private @Resource DataService dataService;
     private @Resource PredictedDataService predictedDataService;
     private @Resource ControlIntervalConfigService controlIntervalConfigService;
-    private @Resource ControlSettingGasService controlSettingGasService;
+    private @Resource ControlSettingGasRepository controlSettingGasRepository;
     private @Resource SnapshotTempService snapshotTempService;
     private @Resource SnapshotGasService snapshotGasService;
-    private @Resource IntelligentDataService intelligentDataService;
+    private @Resource IntelligentDataRepository intelligentDataRepository;
 
     @Override
     public SnapshotChartVO queryChart(SnapshotChartQueryDTO queryDTO) {
@@ -338,7 +338,7 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
         List<String> dataCodes = gasAlgorithmCalcVal.getQueryDataCode().stream().map(SnapshotTplSettingDetailDTO::getDataCode).distinct().collect(Collectors.toList());
 
         // 获取数据
-        Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> intelliValues = intelligentDataService.queryByTypeWithLastTime(
+        Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> intelliValues = intelligentDataRepository.queryByTypeWithLastTime(
                 IntelliTypeEnum.GAS_CALC_MODEL1,
                 IntelliTypeEnum.GAS_CALC_MODEL2,
                 IntelliTypeEnum.GAS_CALC_EXPERT1,
@@ -382,7 +382,7 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
         List<String> dataCodes = gasAlgorithmCalcVal.getQueryDataCode().stream().map(SnapshotTplSettingDetailDTO::getDataCode).distinct().collect(Collectors.toList());
 
         // 获取数据
-        Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> intelliValues = intelligentDataService.queryByTypeWithLastTime(IntelliTypeEnum.MIN_TEMP, IntelliTypeEnum.MAX_TEMP);
+        Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> intelliValues = intelligentDataRepository.queryByTypeWithLastTime(IntelliTypeEnum.MIN_TEMP, IntelliTypeEnum.MAX_TEMP);
 
         for (String dataCode : dataCodes) {
             SnapshotTempEntity snapshotTempEntity = tempEntityMap.get(dataCode);
@@ -408,7 +408,7 @@ public class SnapshotPublicServiceImpl implements SnapshotPublicService {
                     .map(SnapshotTplSettingDetailDTO::getDataCode)
                     .distinct()
                     .collect(Collectors.toList());
-            List<ControlSettingGasEntity> gasControlSetting = controlSettingGasService.getValidList();
+            List<ControlSettingGasEntity> gasControlSetting = controlSettingGasRepository.queryValid();
 
             for (ControlSettingGasEntity controlSettingGasEntity : gasControlSetting) {
                 SnapshotGasEntity snapshotGasEntity = gasEntityMap.get(controlSettingGasEntity.getDataCode());

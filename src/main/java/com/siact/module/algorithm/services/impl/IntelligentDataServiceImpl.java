@@ -15,19 +15,22 @@ import com.siact.module.algorithm.enums.IntelliTypeEnum;
 import com.siact.module.algorithm.mapper.IntelligentDataMapper;
 import com.siact.module.algorithm.services.AlgorithmService;
 import com.siact.module.algorithm.services.IntelligentDataService;
+import com.siact.module.algorithm.socket.AlgorithmMessageWebSocket;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.service.TplService;
 import com.siact.module.base.vo.ControlIntervalConfigVO;
 import com.siact.module.base.vo.TplVO;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -38,19 +41,14 @@ import java.util.stream.Collectors;
  * @description : 智能计算算法业务类实现
  */
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMapper, IntelligentDataEntity> implements IntelligentDataService {
     private final AlgorithmService algorithmService;
     private final KilnProperty property;
     private final TplService tplService;
     private final ControlIntervalConfigService configService;
-
-    public IntelligentDataServiceImpl(AlgorithmService algorithmService, KilnProperty property, TplService tplService, ControlIntervalConfigService configService) {
-        this.algorithmService = algorithmService;
-        this.property = property;
-        this.tplService = tplService;
-        this.configService = configService;
-    }
+    private final AlgorithmMessageWebSocket message;
 
     /**
      * 调用智能计算算法接口
@@ -143,6 +141,8 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         }
         // 保存数据
         saveBatch(collect);
+        // 广播通知
+        message.intelliUpdate();
     }
 
     private BigDecimal getValueInJson(String mc, String key, JSONObject resultJson) {
@@ -154,46 +154,4 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         }
         return json.getBigDecimal(key);
     }
-
-    /**
-     * 获取最后的天然气智控计算值
-     */
-    @Override
-    public Map<String, IntelligentDataEntity> lastGasCalc() {
-        Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> map = this.queryByTypeWithLastTime(IntelliTypeEnum.GAS_RUN_VALUE, IntelliTypeEnum.GAS_CALC_MODEL2);
-
-        Map<String, IntelligentDataEntity> result = new HashMap<>();
-
-        map.forEach((k, v) -> {
-            IntelligentDataEntity runValue = v.get(IntelliTypeEnum.GAS_RUN_VALUE);
-            IntelligentDataEntity intelliModelValue = v.get(IntelliTypeEnum.GAS_CALC_MODEL2);
-            // 计算智控值
-            runValue.setVal(runValue.getVal().add(intelliModelValue.getVal()));
-            result.put(k, runValue);
-        });
-
-        return result;
-    }
-
-    /**
-     * 获取指定类型最后的时间点的智能算法值
-     *
-     * @param types 要查询的智能算法值类型
-     * @return 返回 key 为 dataCode, 值为以类型分组的数据的查询结果
-     */
-    @Override
-    public Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> queryByTypeWithLastTime(IntelliTypeEnum... types) {
-        String time = this.lambdaQuery().select(IntelligentDataEntity::getTime).orderByDesc(IntelligentDataEntity::getTime).last("limit 1").one().getTime();
-        List<IntelligentDataEntity> entities = this.lambdaQuery().in(ArrayUtils.isNotEmpty(types), IntelligentDataEntity::getIntelliType, Arrays.asList(types)).eq(IntelligentDataEntity::getTime, time).list();
-
-        return entities.stream().collect(
-                Collectors.groupingBy(IntelligentDataEntity::getDataCode, Collectors.collectingAndThen(
-                                Collectors.toList(), list -> list.stream().collect(
-                                        Collectors.toMap(IntelligentDataEntity::getIntelliType, o -> o, (v1, v2) -> v2)
-                                )
-                        )
-                )
-        );
-    }
-
 }
