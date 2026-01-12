@@ -2,11 +2,12 @@ package com.siact.module.predicted.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.siact.common.R;
+import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.predicted.service.AlgorithmPredictedService;
 import com.siact.module.predicted.service.PredictedDataService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,15 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @Api(tags = "预测数据")
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/predicted")
 public class PredictedDataController {
-
-    @Autowired
-    private PredictedDataService predictedDataService;
-
-    @Autowired
-    private AlgorithmPredictedService algorithmPredictedService;
+    private final PredictedDataService predictedDataService;
+    private final AlgorithmPredictedService algorithmPredictedService;
+    private final IntelligentDataService intelligentDataService;
 
     @ApiOperation(value = "查询模板列表")
     @GetMapping("/handleMessage")
@@ -55,7 +54,7 @@ public class PredictedDataController {
     @ApiOperation(value = "调用算法获取智能计算值")
     @GetMapping("/getIntelligentComputing")
     public R getIntelligentComputing() {
-        algorithmPredictedService.getIntelligentComputing();
+        intelligentDataService.callIntelligentInterface();
         return R.success();
     }
 

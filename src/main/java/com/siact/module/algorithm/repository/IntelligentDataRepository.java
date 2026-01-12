@@ -3,6 +3,7 @@ package com.siact.module.algorithm.repository;
 import com.siact.module.algorithm.entity.IntelligentDataEntity;
 import com.siact.module.algorithm.enums.IntelliTypeEnum;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,6 +14,16 @@ import java.util.Map;
  * @description : 智能算法输出数据持久层
  */
 public interface IntelligentDataRepository {
+
+    /**
+     * 获取指定类型在 <code>limit</code> 条件下的智能算法值
+     *
+     * @param limit 查询限制条件
+     * @param types 要查询的智能算法值类型
+     * @return 返回 key 为 dataCode, 值为以类型分组的数据的查询结果
+     */
+    Map<String, Map<IntelliTypeEnum, List<IntelligentDataEntity>>> queryByTypeAndLimit(String limit, IntelliTypeEnum... types);
+
     /**
      * 获取指定类型最后的时间点的智能算法值
      *

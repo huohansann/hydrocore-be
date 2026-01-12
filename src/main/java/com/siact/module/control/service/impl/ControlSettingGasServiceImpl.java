@@ -22,6 +22,7 @@ import com.siact.module.control.support.ControlSettingSupport;
 import com.siact.sec.sevice.DataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Service;
@@ -79,7 +80,7 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
             BigDecimal xlsVal = propCodeValObj == null ? null : propCodeValObj.getBigDecimal(secPropCodeMap.get(mapKey));
             Double runningDcsVal = xlsVal == null ? null : xlsVal.doubleValue();
             dto.setRunningDcsVal(runningDcsVal);
-            dto.setAlgoChanged(true);
+            dto.setAlgoDiff(false);
 
             // 获取智能计算值
             Map<IntelliTypeEnum, IntelligentDataEntity> intelliValueMap = intelliValues.get(entity.getDataCode());
@@ -99,24 +100,40 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
     private void setStatusAndRecord(List<ControlSettingGasDTO> list) {
         // 获取上一次天然气运行值
         Map<String, ControlGasRecordEntity> recordMap = recordRepository.queryWithLastTime();
+        // 获取上一次智控输出
+        Map<String, Map<IntelliTypeEnum, List<IntelligentDataEntity>>> intelliValues = intelligentDataRepository.queryByTypeAndLimit("limit 1, 1", IntelliTypeEnum.GAS_RUN_VALUE, IntelliTypeEnum.GAS_CALC_EXPERT2);
+        Map<String, List<IntelligentDataEntity>> collect = intelliValues.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                entry -> entry.getValue().values().stream().flatMap(List::stream).collect(Collectors.toList()))
+        );
+        // 计算上一次智控输出
+        Map<String, BigDecimal> lastAlgos = collect.entrySet().stream()
+                .filter(entry -> CollectionUtils.isNotEmpty(entry.getValue()) && entry.getValue().size() >= 2 && entry.getValue().stream().allMatch(Objects::nonNull))
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stream().map(IntelligentDataEntity::getVal).reduce(BigDecimal.ZERO, BigDecimal::add)));
+
 
         Timestamp currentTime = new Timestamp(System.currentTimeMillis());
 
         List<ControlGasRecordEntity> records = list.stream().map(dto -> {
                     BigDecimal currentDcs = NumberUtils.toScaledBigDecimal(dto.getRunningDcsVal(), 2, RoundingMode.HALF_UP);
-                    // 判断天然气值是否改变
+                    BigDecimal algo = NumberUtils.toScaledBigDecimal(dto.getGasAlgorithmCalcVal(), 2, RoundingMode.HALF_UP);
+                    // dcs 运行值是否与智控值不同
+                    boolean isDcsDiffAlgo = !currentDcs.equals(algo);
+                    // 智控输出是否和上一次不一样
+                    BigDecimal lastAlgo = NumberUtils.toScaledBigDecimal(lastAlgos.get(dto.getDataCode()), 2, RoundingMode.HALF_UP);
+                    boolean isAlgoDiff = !lastAlgo.equals(algo);
+                    // dcs 运行值是否和上一次不一样
                     ControlGasRecordEntity record = recordMap.get(dto.getDataCode());
-                    boolean isChanged = false;
+                    boolean isDcsDiff = false;
                     if (ObjectUtils.isNotEmpty(record) && ObjectUtils.isNotEmpty(record.getDcs())) {
                         String last = record.getDcs().setScale(2, RoundingMode.HALF_UP).toPlainString();
                         String current = currentDcs.setScale(2, RoundingMode.HALF_UP).toPlainString();
-                        log.info("天然气 dcs 当前运行值: {}, 上一次运行值: {}", current, last);
-                        isChanged = !last.equals(current);
+                        isDcsDiff = !last.equals(current);
                     }
-                    dto.setDcsChanged(isChanged);
-                    dto.setAlgoChanged(currentDcs.equals(NumberUtils.toScaledBigDecimal(dto.getGasAlgorithmCalcVal(), 2, RoundingMode.HALF_UP)));
+                    log.info("dcs 与智控值不同: {}, dcs 与上一次不同: {}, 智控值与上一次不同: {}", isDcsDiffAlgo, isAlgoDiff, isDcsDiff);
+                    dto.setDcsDiff(isDcsDiffAlgo && isDcsDiff);
+                    dto.setAlgoDiff(isDcsDiffAlgo && isAlgoDiff);
 
-                    return ControlGasRecordEntity.builder().code(dto.getDataCode()).dcs(currentDcs).status(dto.getDcsChanged()).time(currentTime).build();
+                    return ControlGasRecordEntity.builder().code(dto.getDataCode()).dcs(currentDcs).status(dto.getDcsDiff()).time(currentTime).build();
                 }
         ).collect(Collectors.toList());
 
@@ -136,9 +153,9 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
         for (ControlSettingGasDTO dto : publishList) {
             if (dto.getAutoState()) {
                 // 自动模式的设定值设置为原数据的设定值
-                settingList.stream().filter(gas -> gas.getDataCode().equals(dto.getDataCode())).findFirst().ifPresent(entity -> {
-                    dto.setGasManualVal(entity.getGasManualVal().doubleValue());
-                });
+                settingList.stream().filter(gas -> gas.getDataCode().equals(dto.getDataCode())).findFirst().ifPresent(
+                        entity -> dto.setGasManualVal(entity.getGasManualVal().doubleValue())
+                );
             }
         }
         List<String> publishGasDataCodeList = publishList.stream().map(ControlSettingGasDTO::getDataCode).collect(Collectors.toList());

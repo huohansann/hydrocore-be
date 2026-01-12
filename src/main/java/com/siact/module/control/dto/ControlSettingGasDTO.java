@@ -38,8 +38,8 @@ public class ControlSettingGasDTO {
     private BigDecimal adjustValue;
 
     // true: dcs 与上一次 dcs 不同, dcs 与算法输出不同
-    private Boolean dcsChanged;
+    private Boolean dcsDiff;
 
     // true: dcs 与算法输出不同, 算法输出与上一次算法输出不同
-    private Boolean algoChanged;
+    private Boolean algoDiff;
 }
