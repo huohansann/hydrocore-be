@@ -44,7 +44,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             String token = authorization.substring(7);
             UserTokenDTO user = parseToken(token);
 
-            if (Objects.isNull(user)) throw new StompAuthException(403, "Invalid token");
+            if (Objects.isNull(user)) throw new StompAuthException(401, "Invalid token");
             LoginUntil.setCurrentUser(JSON.toJSONString(user));
         }
         return message;
