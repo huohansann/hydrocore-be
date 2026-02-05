@@ -31,6 +31,7 @@ public class ResponseBodyAdvice implements org.springframework.web.servlet.mvc.m
     @Override
     public boolean supports(MethodParameter returnType, @NotNull Class<? extends HttpMessageConverter<?>> converterType) {
         if (returnType.getDeclaringClass().isAnnotationPresent(NoResponseAdvice.class)) return false;
+        if (returnType.getDeclaringClass().getName().startsWith("springfox.documentation")) return false;
         return !Objects.requireNonNull(returnType.getMethod()).isAnnotationPresent(NoResponseAdvice.class);
     }
 
