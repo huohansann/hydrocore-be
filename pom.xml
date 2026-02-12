@@ -9,8 +9,8 @@
         <relativePath/>
     </parent>
     <groupId>com.siact</groupId>
-    <artifactId>kiln-intelligent-control</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <artifactId>kic-xyg</artifactId>
+    <version>v2</version>
     <name>kiln-intelligent-control</name>
     <description>窑炉控制系统</description>
 

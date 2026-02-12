@@ -83,7 +83,7 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
             dto.setAlgoDiff(false);
 
             // 获取智能计算值
-            Map<IntelliTypeEnum, IntelligentDataEntity> intelliValueMap = intelliValues.get(entity.getDataCode());
+            Map<IntelliTypeEnum, IntelligentDataEntity> intelliValueMap = intelliValues.getOrDefault(entity.getDataCode(), Collections.emptyMap());
             IntelligentDataEntity intelliRunValue = intelliValueMap.get(IntelliTypeEnum.GAS_RUN_VALUE);
             IntelligentDataEntity intelliModelValue = intelliValueMap.get(IntelliTypeEnum.GAS_CALC_EXPERT2);
             if (!Objects.isNull(intelliRunValue) && !Objects.isNull(intelliModelValue)) {

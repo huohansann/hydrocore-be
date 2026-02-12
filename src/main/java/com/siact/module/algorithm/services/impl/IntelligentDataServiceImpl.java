@@ -1,12 +1,11 @@
 package com.siact.module.algorithm.services.impl;
 
 import cn.hutool.http.HttpUtil;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.config.KilnProperty;
 import com.siact.common.exception.BizException;
+import com.siact.common.utils.JacksonUtils;
 import com.siact.common.utils.TimeUtil;
 import com.siact.module.algorithm.dto.IntelliTplSettingDTO;
 import com.siact.module.algorithm.dto.IntelliTplSettingDetailDTO;
@@ -15,11 +14,7 @@ import com.siact.module.algorithm.enums.IntelliTypeEnum;
 import com.siact.module.algorithm.mapper.IntelligentDataMapper;
 import com.siact.module.algorithm.services.AlgorithmService;
 import com.siact.module.algorithm.services.IntelligentDataService;
-import com.siact.module.algorithm.socket.AlgorithmMessageWebSocket;
-import com.siact.module.base.dto.ControlIntervalConfigDTO;
-import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.service.TplService;
-import com.siact.module.base.vo.ControlIntervalConfigVO;
 import com.siact.module.base.vo.TplVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,12 +25,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author : kzuo
- * @version 1.0
+ * @version : 1.0
  * @date : 2025-12-08 14:28
  * @className : IntelligentDataServiceImpl
  * @description : 智能计算算法业务类实现
@@ -47,8 +40,7 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
     private final AlgorithmService algorithmService;
     private final KilnProperty property;
     private final TplService tplService;
-    private final ControlIntervalConfigService configService;
-    private final AlgorithmMessageWebSocket message;
+    // private final ControlIntervalConfigService configService;
 
     /**
      * 调用智能计算算法接口
@@ -61,9 +53,9 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
 
         // 封装参数
         JSONObject params = new JSONObject();
-        params.put("fire_change_cycle", property.getConfig().getFireChangeCycle());
-        params.put("model", "LightGBM2");
-        params.put("method", "model");
+        // params.put("fire_change_cycle", property.getConfig().getFireChangeCycle());
+        // params.put("model", "LightGBM2");
+        // params.put("method", "model");
 
         JSONObject intelligentComputingParams = JSONObject.parseObject(tplService.selectTplByCode("intelligentComputingParams").getTplContent());
         params.put("ts", intelligentComputingParams.getString("ts"));
@@ -75,17 +67,20 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
             data.put(itemJson.getString("algorithmCode"), itemJson.getString("dataCode"));
         });
         params.put("data", data);
+        params.put("TE213_SP", intelligentComputingParams.getBigDecimal("TE213_SP"));
+        params.put("TE202_SP", intelligentComputingParams.getBigDecimal("TE213_SP"));
+        params.put("TE206_SP", intelligentComputingParams.getBigDecimal("TE213_SP"));
 
-        for (int i = 1; i <= 10; i++) {
-            String mc = "MC" + i;
-            ControlIntervalConfigDTO dto = configService.get(ControlIntervalConfigVO.builder().measurePoint(mc).build());
-            // MC 温度上限
-            params.put(mc + "_MAX_THRESHOLD", Double.valueOf(dto.getUpControl()));
-            // MC 温度下限
-            params.put(mc + "_MIN_THRESHOLD", Double.valueOf(dto.getLowControl()));
-            // MC 控制目标
-            params.put(mc + "_CONTROL_TARGET", Double.valueOf(dto.getTemperatureSet()));
-        }
+        // for (int i = 1; i <= 10; i++) {
+        //     String mc = "MC" + i;
+        //     ControlIntervalConfigDTO dto = configService.get(ControlIntervalConfigVO.builder().measurePoint(mc).build());
+        //     // MC 温度上限
+        //     params.put(mc + "_MAX_THRESHOLD", Double.valueOf(dto.getUpControl()));
+        //     // MC 温度下限
+        //     params.put(mc + "_MIN_THRESHOLD", Double.valueOf(dto.getLowControl()));
+        //     // MC 控制目标
+        //     params.put(mc + "_CONTROL_TARGET", Double.valueOf(dto.getTemperatureSet()));
+        // }
 
         // 调用接口
         JSONObject response;
@@ -102,47 +97,29 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         String time = TimeUtil.getNow();
 
         JSONObject result = response.getJSONObject("result");
-        // 基于 model
-        JSONObject modelJson = result.getJSONObject("Model");
-        // 基于专家经验
-        JSONObject expertJson = result.getJSONObject("Experience");
-        // 运行值
-        JSONArray lastGasSetValue = modelJson.getJSONArray("last_gasSetValue");
+        // 获取模型训练结果
+        BigDecimal modelTransformer = result.getBigDecimal("gas_setValue_transformer");
+        BigDecimal modelDeltaC = result.getBigDecimal("gas_deltaC_transformer");
+        // 获取专家经验结果
+        BigDecimal expertDeltaC = getValueInJson("experience_result", "delta_C.transformer", result);
+        // 获取上次流量总和
+        BigDecimal lastGasSum = result.getBigDecimal("last_gas_sum_sv");
 
         // 获取编码数据
         TplVO intelliOutputDataCode = tplService.selectTplByCode("intelliOutputDataCode");
-        Map<String, IntelliTplSettingDTO> dto = JSON.parseArray(intelliOutputDataCode.getTplContent(), IntelliTplSettingDTO.class).stream().collect(Collectors.toMap(IntelliTplSettingDTO::getType, o -> o, (v1, v2) -> v1));
-        Map<String, IntelliTplSettingDetailDTO> tempTplDTO = dto.get("TEMP").getDataCodeList().stream().collect(Collectors.toMap(IntelliTplSettingDetailDTO::getName, o -> o, (v1, v2) -> v1));
-        Map<String, IntelliTplSettingDetailDTO> gasTplDTO = dto.get("GAS").getDataCodeList().stream().collect(Collectors.toMap(IntelliTplSettingDetailDTO::getName, o -> o, (v1, v2) -> v1));
+        // 获取点位名称编码
+        IntelliTplSettingDTO dto = JacksonUtils.fromJson(intelliOutputDataCode.getTplContent(), IntelliTplSettingDTO.class);
+        IntelliTplSettingDetailDTO detailDTO = dto.getDataCodeList().get(0);
+
+        IntelligentDataEntity.IntelligentDataEntityBuilder builder = IntelligentDataEntity.builder().name(detailDTO.getName()).dataCode(detailDTO.getDataCode()).time(time).data(JacksonUtils.toJson(result));
 
         ArrayList<IntelligentDataEntity> collect = new ArrayList<>();
-        for (int i = 1; i <= 10; i++) {
-            String mc = "MC" + i;
-            IntelliTplSettingDetailDTO tempDTO = tempTplDTO.get(mc);
-            IntelligentDataEntity.IntelligentDataEntityBuilder builder = IntelligentDataEntity.builder().name(tempDTO.getName()).dataCode(tempDTO.getDataCode()).time(time).data(modelJson.toJSONString());
-            // 预测最大、最小温度
-            collect.add(builder.intelliType(IntelliTypeEnum.MIN_TEMP).val(getValueInJson(mc, "min_temp", modelJson)).build());
-            collect.add(builder.intelliType(IntelliTypeEnum.MAX_TEMP).val(getValueInJson(mc, "max_temp", modelJson)).build());
-
-            // 天然气智控值只需要 8 个点位
-            if (i > 8) continue;
-            // gas 智控值
-            String key = i + "#";
-            IntelliTplSettingDetailDTO gasDTO = gasTplDTO.get(key);
-            builder = IntelligentDataEntity.builder().name(gasDTO.getName()).dataCode(gasDTO.getDataCode()).time(time);
-            // model
-            collect.add(builder.intelliType(IntelliTypeEnum.GAS_CALC_MODEL1).val(getValueInJson(mc, "method1.delta_C", modelJson)).data(modelJson.toJSONString()).build());
-            collect.add(builder.intelliType(IntelliTypeEnum.GAS_CALC_MODEL2).val(getValueInJson(mc, "method2.delta_C", modelJson)).data(modelJson.toJSONString()).build());
-            // expert
-            collect.add(builder.intelliType(IntelliTypeEnum.GAS_CALC_EXPERT1).val(getValueInJson(mc, "method1.delta_C", expertJson)).data(expertJson.toJSONString()).build());
-            collect.add(builder.intelliType(IntelliTypeEnum.GAS_CALC_EXPERT2).val(getValueInJson(mc, "method2.delta_C", expertJson)).data(expertJson.toJSONString()).build());
-            // 运行值
-            collect.add(builder.intelliType(IntelliTypeEnum.GAS_RUN_VALUE).val(lastGasSetValue.getBigDecimal(i - 1)).data(modelJson.toJSONString()).build());
-        }
+        collect.add(builder.intelliType(IntelliTypeEnum.GAS_TRANSFORMER_MODEL).val(modelTransformer).build());
+        collect.add(builder.intelliType(IntelliTypeEnum.GAS_DELTAC_MODEL).val(modelDeltaC).build());
+        collect.add(builder.intelliType(IntelliTypeEnum.GAS_DELTAC_EXPERT).val(expertDeltaC).build());
+        collect.add(builder.intelliType(IntelliTypeEnum.GAS_LAST_SUM).val(lastGasSum).build());
         // 保存数据
         saveBatch(collect);
-        // 广播通知
-        message.intelliUpdate();
     }
 
     private BigDecimal getValueInJson(String mc, String key, JSONObject resultJson) {

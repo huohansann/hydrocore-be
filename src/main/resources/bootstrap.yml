@@ -9,7 +9,7 @@ spring:
       server-addr: localhost:8848
       username: nacos
       password: 123456
-      namespace: ylkz
+      namespace: kic-xyg
       # 注册中心配置，使用独立命名空间
       discovery:
         namespace: ${spring.cloud.nacos.namespace}
