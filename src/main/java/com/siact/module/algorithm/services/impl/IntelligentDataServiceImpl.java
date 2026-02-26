@@ -68,8 +68,8 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         });
         params.put("data", data);
         params.put("TE213_SP", intelligentComputingParams.getBigDecimal("TE213_SP"));
-        params.put("TE202_SP", intelligentComputingParams.getBigDecimal("TE213_SP"));
-        params.put("TE206_SP", intelligentComputingParams.getBigDecimal("TE213_SP"));
+        params.put("TE202_SP", intelligentComputingParams.getBigDecimal("TE202_SP"));
+        params.put("TE206_SP", intelligentComputingParams.getBigDecimal("TE206_SP"));
 
         // for (int i = 1; i <= 10; i++) {
         //     String mc = "MC" + i;
