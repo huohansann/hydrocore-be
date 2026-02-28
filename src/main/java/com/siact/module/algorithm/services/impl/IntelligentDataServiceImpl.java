@@ -101,7 +101,7 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         BigDecimal modelTransformer = result.getBigDecimal("gas_setValue_transformer");
         BigDecimal modelDeltaC = result.getBigDecimal("gas_deltaC_transformer");
         // 获取专家经验结果
-        BigDecimal expertDeltaC = getValueInJson("experience_result", "delta_C.transformer", result);
+        BigDecimal expertDeltaC = getValueInJson("experience_result", "delta_C", result);
         // 获取上次流量总和
         BigDecimal lastGasSum = result.getBigDecimal("last_gas_sum_sv");
 
