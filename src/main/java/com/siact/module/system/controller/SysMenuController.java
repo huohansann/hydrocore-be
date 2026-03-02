@@ -8,6 +8,7 @@ import com.siact.module.system.service.SysMenuService;
 import com.siact.module.system.vo.SysMenuTreeVO;
 import com.siact.module.system.vo.SysMenuVO;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +20,7 @@ import java.util.List;
  * @className : SysMenuController
  * @description : 系统菜单控制器
  */
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/sysmenu")
 public class SysMenuController {

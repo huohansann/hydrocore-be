@@ -3,23 +3,24 @@ package com.siact.module.forecast.controller;
 
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.siact.common.R;
+import com.siact.module.base.model.AppConfigJsonNode;
+import com.siact.module.base.service.AppConfigService;
 import com.siact.module.forecast.dto.ForecastKilnParamsDTO;
+import com.siact.module.forecast.query.TempForecastQuery;
 import com.siact.module.forecast.service.ForecastKilnService;
 import com.siact.module.forecast.vo.ForecastKilnMenuVO;
 import com.siact.module.forecast.vo.LineChartVO;
+import com.siact.module.forecast.vo.TempForecastShowVO;
+import com.siact.module.forecast.vo.TempForecastVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -30,12 +31,12 @@ import java.util.List;
  */
 @Api(tags = "窑炉预测")
 @Slf4j
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/forecast")
 public class ForecastKilnController {
-
-    @Autowired
-    private ForecastKilnService forecastKilnService;
+    private final ForecastKilnService service;
+    private final AppConfigService acService;
 
     @ApiOperationSupport(order = 1)
     @ApiOperation("查询窑炉预测对应的菜单")
@@ -43,10 +44,10 @@ public class ForecastKilnController {
             @ApiImplicitParam(name = "tpl", value = "模板名称", required = true, dataType = "String", paramType = "path", example = "kilnControl")
     })
     @GetMapping("/queryForecastKilnMenu/{tpl}")
-    public R<List<ForecastKilnMenuVO>> queryForecastKilnMenu(@PathVariable("tpl")String tplCode) {
+    public R<List<ForecastKilnMenuVO>> queryForecastKilnMenu(@PathVariable("tpl") String tplCode) {
         R r;
         try {
-            r = R.data(forecastKilnService.queryForecastKilnMenu(tplCode));
+            r = R.data(service.queryForecastKilnMenu(tplCode));
         } catch (Exception e) {
             log.error("查询窑炉预测对应的菜单失败", e);
             r = R.fail(e.getMessage());
@@ -54,6 +55,17 @@ public class ForecastKilnController {
         return r;
     }
 
+    @ApiOperationSupport(order = 2)
+    @ApiOperation("查询窑炉温度数据(实时+预测, 窑炉预测)")
+    public @PostMapping("/queryTemperature") TempForecastVO queryTemperature(@RequestBody @Validated TempForecastQuery query) {
+        return service.queryTemperature(query);
+    }
+
+    @ApiOperation("查询温度预测点位列表")
+    public @GetMapping("/queryTempShowList") List<TempForecastShowVO> queryTemperatureShowList() {
+        AppConfigJsonNode node = acService.queryValueByAcKey("temperament_predict_menus");
+        return node.asList(TempForecastShowVO.class);
+    }
 
     @ApiOperationSupport(order = 2)
     @ApiOperation("查询窑炉属性数据(实时+预测，窑炉预测)")
@@ -61,7 +73,7 @@ public class ForecastKilnController {
     public R<List<LineChartVO>> queryForecastInfo(@RequestBody @Validated ForecastKilnParamsDTO dto) {
         R r;
         try {
-            r = R.data(forecastKilnService.queryForecastInfo(dto));
+            r = R.data(service.queryForecastInfo(dto));
         } catch (Exception e) {
             log.error("查询属性的实时数据失败", e);
             r = R.fail(e.getMessage());
@@ -76,7 +88,7 @@ public class ForecastKilnController {
     public R<List<LineChartVO>> queryKilnForecastInfo(@RequestBody @Validated ForecastKilnParamsDTO dto) {
         R r;
         try {
-            r = R.data(forecastKilnService.queryKilnForecastInfo(dto));
+            r = R.data(service.queryKilnForecastInfo(dto));
         } catch (Exception e) {
             log.error("查询属性的实时数据失败", e);
             r = R.fail(e.getMessage());

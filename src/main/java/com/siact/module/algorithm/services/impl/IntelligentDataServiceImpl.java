@@ -91,6 +91,7 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
                     () -> HttpUtil.post(property.getAlgorithm().getBaseUrl() + "/control", params.toJSONString(), 600000)
             );
         } catch (BizException e) {
+            log.error("智能控制算法调用异常: {}", e.getMessage());
             return;
         }
         // 响应时间

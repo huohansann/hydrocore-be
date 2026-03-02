@@ -25,11 +25,10 @@ public enum PredictedTypeEnum {
     private final String name;
     private final Integer step;
 
-    public static Map<String, PredictedTypeEnum> typeCodeEnumMap =
-            Arrays.stream(PredictedTypeEnum.values()).collect(Collectors.toMap(PredictedTypeEnum::getCode, o -> o));
+    public static Map<String, PredictedTypeEnum> typeCodeEnumMap = Arrays.stream(PredictedTypeEnum.values()).collect(Collectors.toMap(PredictedTypeEnum::getCode, o -> o));
 
 
-    PredictedTypeEnum(Integer type,String algorithmCode, String code,String name, Integer step) {
+    PredictedTypeEnum(Integer type, String algorithmCode, String code, String name, Integer step) {
         this.type = type;
         this.algorithmCode = algorithmCode;
         this.code = code;
@@ -38,33 +37,35 @@ public enum PredictedTypeEnum {
     }
 
     /**
-     * 根据code获取type
-     *
-     * @param typeCode
-     * @return
+     * 根据 code 获取 type
      */
     public static Integer getTypeByCode(String typeCode) {
-
-
         for (PredictedTypeEnum typeEnum : PredictedTypeEnum.values()) {
-            if (typeEnum.code.equals(typeCode)) {
-                return typeEnum.type;
-            }
+            if (typeEnum.code.equals(typeCode)) return typeEnum.type;
         }
         return null;
     }
 
     /**
-     * 根据code获取enum
-     *
-     * @param typeCode
-     * @return
+     * 根据 code 获取 enum
      */
     public static PredictedTypeEnum getEnumByCode(String typeCode) {
         for (PredictedTypeEnum typeEnum : PredictedTypeEnum.values()) {
-            if (typeEnum.code.equals(typeCode)) {
-                return typeEnum;
-            }
+            if (typeEnum.code.equals(typeCode)) return typeEnum;
+        }
+        return null;
+    }
+
+    /**
+     * 根据预测步长获取枚举项
+     *
+     * @param step 步长
+     * @param type 类型
+     * @return 返回对应步长的预测枚举项
+     */
+    public static PredictedTypeEnum getEnumByStep(int step, int type) {
+        for (PredictedTypeEnum typeEnum : PredictedTypeEnum.values()) {
+            if (typeEnum.step == step && typeEnum.type == type) return typeEnum;
         }
         return null;
     }
@@ -78,14 +79,10 @@ public enum PredictedTypeEnum {
     }
 
     public static List<Integer> multiTypeList() {
-        return Arrays.stream(PredictedTypeEnum.values())
-                .map(PredictedTypeEnum::getType)
-                .distinct().collect(Collectors.toList());
+        return Arrays.stream(PredictedTypeEnum.values()).map(PredictedTypeEnum::getType).distinct().collect(Collectors.toList());
     }
 
     public static List<PredictedTypeEnum> getSingleTypeList() {
-        return Arrays.stream(PredictedTypeEnum.values())
-                .filter(typeEnum -> typeEnum.type.equals(singleType()))
-                .collect(Collectors.toList());
+        return Arrays.stream(PredictedTypeEnum.values()).filter(typeEnum -> typeEnum.type.equals(singleType())).collect(Collectors.toList());
     }
 }

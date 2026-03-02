@@ -16,6 +16,7 @@ import com.siact.module.system.service.SysMenuService;
 import com.siact.module.system.vo.SysMenuTreeVO;
 import com.siact.module.system.vo.SysMenuVO;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -31,8 +32,8 @@ import java.util.stream.Collectors;
  * @className : SysMenuServiceImpl
  * @description : 系统菜单业务类实现
  */
+@RequiredArgsConstructor
 @Service
-@AllArgsConstructor
 public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenuEntity> implements SysMenuService {
     private final SysMenuConvert convert;
     private final SysMenuRepository repository;

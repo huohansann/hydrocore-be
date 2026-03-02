@@ -9,6 +9,7 @@ import com.siact.module.system.enums.MenuDeleteType;
 import com.siact.module.system.mapper.SysMenuMapper;
 import com.siact.module.system.repository.SysMenuRepository;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +25,7 @@ import java.util.Map;
  * @className : SysMenuRepositoryImpl
  * @description : 系统菜单数据持久层实现
  */
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Repository
 public class SysMenuRepositoryImpl implements SysMenuRepository {
     private final SysMenuMapper mapper;
