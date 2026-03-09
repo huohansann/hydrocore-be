@@ -39,6 +39,8 @@ public class KilnProperty {
         private String baseUrl;
         // 智能计算值定时任务调用时间
         private long intelligentInterval;
+        // 智能控制算法 deltaC 调用暂停时间
+        private long intelliStopInterval;
         // 温度预测定时任务调用时间
         private long predictedInterval;
     }

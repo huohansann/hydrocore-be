@@ -1,16 +1,16 @@
 package com.siact.module.algorithm.task;
 
 import com.siact.common.redis.RedisService;
+import com.siact.module.algorithm.constants.AlgorithmConstant;
 import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.predicted.service.AlgorithmPredictedService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
@@ -53,8 +53,8 @@ public class AlgorithmTask {
     // @Scheduled(cron = "0 0/3 * * * ?")
     @Scheduled(fixedRateString = "#{${spring.kiln.algorithm.intelligent-interval} * 60 * 1000}")
     public void getIntelligentComputing() {
-        Object cacheObject = redisService.getCacheObject("getIntelligentComputing");
-        if (cacheObject != null) redisService.setCacheObject("getIntelligentComputing", "1", 10L, TimeUnit.SECONDS);
+        Object cacheObject = redisService.getCacheObject(AlgorithmConstant.INTELLI_ALGORITHM_CACHE_KEY);
+        if (ObjectUtils.isNotEmpty(cacheObject)) return;
         new Thread(intelligentDataService::callIntelligentInterface).start();
     }
 }

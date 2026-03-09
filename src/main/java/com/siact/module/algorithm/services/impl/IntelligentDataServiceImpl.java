@@ -5,13 +5,16 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.config.KilnProperty;
 import com.siact.common.exception.BizException;
+import com.siact.common.redis.RedisService;
 import com.siact.common.utils.JacksonUtils;
 import com.siact.common.utils.TimeUtil;
+import com.siact.module.algorithm.constants.AlgorithmConstant;
 import com.siact.module.algorithm.dto.IntelliTplSettingDTO;
 import com.siact.module.algorithm.dto.IntelliTplSettingDetailDTO;
 import com.siact.module.algorithm.entity.IntelligentDataEntity;
 import com.siact.module.algorithm.enums.IntelliTypeEnum;
 import com.siact.module.algorithm.mapper.IntelligentDataMapper;
+import com.siact.module.algorithm.repository.IntelligentDataRepository;
 import com.siact.module.algorithm.services.AlgorithmService;
 import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.base.service.TplService;
@@ -25,6 +28,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author : kzuo
@@ -40,6 +47,8 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
     private final AlgorithmService algorithmService;
     private final KilnProperty property;
     private final TplService tplService;
+    private final RedisService redis;
+    private final IntelligentDataRepository repository;
     // private final ControlIntervalConfigService configService;
 
     /**
@@ -121,6 +130,12 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         collect.add(builder.intelliType(IntelliTypeEnum.GAS_LAST_SUM).val(lastGasSum).build());
         // 保存数据
         saveBatch(collect);
+
+        // 对比数据, deltaC 变动则设置缓存, 并停止算法调用
+        if (!BigDecimal.ZERO.equals(expertDeltaC)) {
+            // 设置 cache 四十分钟过期, 暂停算法调用
+            redis.setCacheObject(AlgorithmConstant.INTELLI_ALGORITHM_CACHE_KEY, true, property.getAlgorithm().getIntelliStopInterval(), TimeUnit.MINUTES);
+        }
     }
 
     private BigDecimal getValueInJson(String mc, String key, JSONObject resultJson) {
