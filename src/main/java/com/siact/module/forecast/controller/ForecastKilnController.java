@@ -62,8 +62,8 @@ public class ForecastKilnController {
     }
 
     @ApiOperation("查询温度预测点位列表")
-    public @GetMapping("/queryTempShowList") List<TempForecastShowVO> queryTemperatureShowList() {
-        AppConfigJsonNode node = acService.queryValueByAcKey("temperament_predict_menus");
+    public @GetMapping("/queryTempShowList/{code}") List<TempForecastShowVO> queryTemperatureShowList(@PathVariable String code) {
+        AppConfigJsonNode node = acService.queryValueByAcKey(code);
         return node.asList(TempForecastShowVO.class);
     }
 
