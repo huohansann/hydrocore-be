@@ -14,13 +14,13 @@ import com.siact.module.algorithm.dto.IntelliTplSettingDetailDTO;
 import com.siact.module.algorithm.entity.IntelligentDataEntity;
 import com.siact.module.algorithm.enums.IntelliTypeEnum;
 import com.siact.module.algorithm.mapper.IntelligentDataMapper;
-import com.siact.module.algorithm.repository.IntelligentDataRepository;
 import com.siact.module.algorithm.services.AlgorithmService;
 import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.base.service.TplService;
 import com.siact.module.base.vo.TplVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,10 +28,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * @author : kzuo
@@ -48,7 +45,6 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
     private final KilnProperty property;
     private final TplService tplService;
     private final RedisService redis;
-    private final IntelligentDataRepository repository;
     // private final ControlIntervalConfigService configService;
 
     /**
@@ -79,6 +75,8 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         params.put("TE213_SP", intelligentComputingParams.getBigDecimal("TE213_SP"));
         params.put("TE202_SP", intelligentComputingParams.getBigDecimal("TE202_SP"));
         params.put("TE206_SP", intelligentComputingParams.getBigDecimal("TE206_SP"));
+        Object cacheObject = redis.getCacheObject(AlgorithmConstant.INTELLI_ALGORITHM_CACHE_KEY);
+        params.put("flag", ObjectUtils.isNotEmpty(cacheObject));
 
         // for (int i = 1; i <= 10; i++) {
         //     String mc = "MC" + i;
@@ -131,10 +129,10 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         // 保存数据
         saveBatch(collect);
 
-        // 对比数据, deltaC 变动则设置缓存, 并停止算法调用
+        // 对比数据, deltaC 变动则设置缓存, 调整 flag 参数
         if (!BigDecimal.ZERO.equals(expertDeltaC)) {
-            // 设置 cache 四十分钟过期, 暂停算法调用
-            redis.setCacheObject(AlgorithmConstant.INTELLI_ALGORITHM_CACHE_KEY, true, property.getAlgorithm().getIntelliStopInterval(), TimeUnit.MINUTES);
+            // 设置 cache 四十分钟过期
+            redis.setCacheObject(AlgorithmConstant.INTELLI_ALGORITHM_CACHE_KEY, lastGasSum.add(expertDeltaC), property.getAlgorithm().getIntelliStopInterval(), TimeUnit.MINUTES);
         }
     }
 

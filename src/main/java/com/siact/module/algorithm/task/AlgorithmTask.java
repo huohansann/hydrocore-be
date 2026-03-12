@@ -53,8 +53,9 @@ public class AlgorithmTask {
     // @Scheduled(cron = "0 0/3 * * * ?")
     @Scheduled(fixedRateString = "#{${spring.kiln.algorithm.intelligent-interval} * 60 * 1000}")
     public void getIntelligentComputing() {
-        Object cacheObject = redisService.getCacheObject(AlgorithmConstant.INTELLI_ALGORITHM_CACHE_KEY);
-        if (ObjectUtils.isNotEmpty(cacheObject)) return;
-        new Thread(intelligentDataService::callIntelligentInterface).start();
+        intelligentDataService.callIntelligentInterface();
+        // Object cacheObject = redisService.getCacheObject(AlgorithmConstant.INTELLI_ALGORITHM_CACHE_KEY);
+        // if (ObjectUtils.isNotEmpty(cacheObject)) return;
+        // new Thread(intelligentDataService::callIntelligentInterface).start();
     }
 }
