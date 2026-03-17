@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,7 +38,7 @@ public class PredictedDataRepositoryImpl extends BaseRepositoryImpl<PredictedDat
      */
     @Override
     public Map<Integer, List<PredictedDataEntity>> queryByTypeCode(List<String> dataCodes, List<PredictedTypeEnum> types, String startTime, String endTime) {
-        Set<String> typeCodes = types.stream().map(PredictedTypeEnum::getCode).collect(Collectors.toSet());
+        Set<String> typeCodes = types.stream().filter(Objects::nonNull).map(PredictedTypeEnum::getCode).collect(Collectors.toSet());
         List<PredictedDataEntity> predictedDataEntities = mapper.selectList(Wrappers.<PredictedDataEntity>lambdaQuery()
                 .in(PredictedDataEntity::getDataCode, dataCodes)
                 .in(PredictedDataEntity::getPredictedTypeCode, typeCodes)

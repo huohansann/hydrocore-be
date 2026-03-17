@@ -12,11 +12,15 @@ public enum PredictedTypeEnum {
 
     SINGLE_T20(1, "single_step", "T20", "T20", 20),
     SINGLE_T40(1, "single_step", "T40", "T40", 40),
-    SINGLE_T60(1, "single_step", "T60", "T60", 60),
-    SINGLE_T80(1, "single_step", "T80", "T80", 80),
+    SINGLE_T60(1, "single_step", "T60", "T60", 1600),
+    SINGLE_T80(1, "single_step", "T80", "T80", 1800),
     SINGLE_T27(1, "single_step", "T27", "T27", 27),
     SINGLE_T54(1, "single_step", "T54", "T54", 54),
-    MULTI(2, "multiple_step", "MULTI", "多步预测", 80),
+    MULTI(2, "multiple_step", "MULTI", "多步预测", 800),
+    MULTI_T60(2, "multiple_step", "MULTI_T60", "多步预测T60", 60),
+    MULTI_T80(2, "multiple_step", "MULTI_T80", "多步预测T80", 80),
+    MULTI_T100(2, "multiple_step", "MULTI_T100", "多步预测T100", 100),
+    MULTI_T120(2, "multiple_step", "MULTI_T120", "多步预测T120", 120),
     ;
 
     private final Integer type;
