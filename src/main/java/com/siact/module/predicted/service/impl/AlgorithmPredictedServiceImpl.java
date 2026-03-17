@@ -350,7 +350,8 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
                     // if (i % 2 != 0) {
                     //     continue;
                     // }
-                    String dataTime = TimeUtil.getCalcTime(predictionTime, i / 2, ConstantBase.MIN);
+                    // String dataTime = TimeUtil.getCalcTime(predictionTime, i / 2, ConstantBase.MIN);
+                    String dataTime = TimeUtil.getCalcTime(predictionTime, i, ConstantBase.MIN);
                     BigDecimal curDataVal = dataValList.get(i);
                     predictedDataList.add(new PredictedDataEntity(null, modelInfoEntity.getDataCode(), predictedTypeEnum.getType(), predictedTypeEnum.getCode(), dataTime, curDataVal, "℃", new Date()));
                 }
