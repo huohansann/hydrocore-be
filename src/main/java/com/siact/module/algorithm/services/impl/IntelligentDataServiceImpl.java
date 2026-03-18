@@ -119,7 +119,7 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         IntelliTplSettingDTO dto = JacksonUtils.fromJson(intelliOutputDataCode.getTplContent(), IntelliTplSettingDTO.class);
         IntelliTplSettingDetailDTO detailDTO = dto.getDataCodeList().get(0);
 
-        IntelligentDataEntity.IntelligentDataEntityBuilder builder = IntelligentDataEntity.builder().name(detailDTO.getName()).dataCode(detailDTO.getDataCode()).time(time).data(JacksonUtils.toJson(result));
+        IntelligentDataEntity.IntelligentDataEntityBuilder builder = IntelligentDataEntity.builder().name(detailDTO.getName()).dataCode(detailDTO.getDataCode()).time(time).data(JacksonUtils.toJson(response));
 
         ArrayList<IntelligentDataEntity> collect = new ArrayList<>();
         collect.add(builder.intelliType(IntelliTypeEnum.GAS_TRANSFORMER_MODEL).val(modelTransformer).build());
