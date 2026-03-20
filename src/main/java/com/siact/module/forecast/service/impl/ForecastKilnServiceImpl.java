@@ -571,7 +571,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         Map<String, List<Object[]>> single = Collections.emptyMap();
         Map<String, List<Object[]>> multi = Collections.emptyMap();
         // 查询预测数据, 从当前时间开始
-        if (now.compareTo(query.getEndTime()) <= 0) {
+        if (TimeUtil.getCalcTime(now, 1, "MIN").compareTo(query.getEndTime()) <= 0) {
             String startTime = TimeUtil.getCalcTime(now, 1, "MIN");
             Map<Integer, List<PredictedDataEntity>> predictedDatas = predictedDataRepository.queryByTypeCode(
                     dataCodes,
