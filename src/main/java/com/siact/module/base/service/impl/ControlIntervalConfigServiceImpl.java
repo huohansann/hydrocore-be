@@ -58,20 +58,21 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         wrapper.eq(StringUtils.isNoneBlank(configVO.getPointType()), ControlIntervalConfigEntity::getPointType, configVO.getPointType());
         // 查询正常状态数据
         wrapper.eq(ControlIntervalConfigEntity::getDeleteFlag, false);
+        // 按照id排序
+        wrapper.orderByAsc(ControlIntervalConfigEntity::getId);
         // 没有条件就默认查询全部
         List<ControlIntervalConfigEntity> controlIntervalConfigEntities = baseMapper.selectList(wrapper);
 
 //        controlIntervalConfigEntities.sort(Comparator.comparingInt(item -> Integer.parseInt(item.getMeasurePoint().replace("MC", ""))));
         // 根据 measurePoint 进行排序，且确保只处理MC或TE开头的字符串
-        controlIntervalConfigEntities.sort(Comparator.comparingInt(item -> {
-            String measurePoint = item.getMeasurePoint();
-            if (measurePoint.startsWith("MC") || measurePoint.startsWith("TE")) {
-                String numberStr = measurePoint.substring(2);
-                return Integer.parseInt(numberStr);
-            }
-            return 0;
-        }));
-
+//        controlIntervalConfigEntities.sort(Comparator.comparingInt(item -> {
+//            String measurePoint = item.getMeasurePoint();
+//            if (measurePoint.startsWith("MC") || measurePoint.startsWith("TE")) {
+//                String numberStr = measurePoint.substring(2);
+//                return Integer.parseInt(numberStr);
+//            }
+//            return 0;
+//        }));
 
         return ConvertUtils.sourceToTarget(controlIntervalConfigEntities, ControlIntervalConfigDTO.class);
     }
