@@ -60,8 +60,19 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         wrapper.eq(ControlIntervalConfigEntity::getDeleteFlag, false);
         // 没有条件就默认查询全部
         List<ControlIntervalConfigEntity> controlIntervalConfigEntities = baseMapper.selectList(wrapper);
-        // 根据 measurePoint 进行排序
-        controlIntervalConfigEntities.sort(Comparator.comparingInt(item -> Integer.parseInt(item.getMeasurePoint().replace("MC", ""))));
+
+//        controlIntervalConfigEntities.sort(Comparator.comparingInt(item -> Integer.parseInt(item.getMeasurePoint().replace("MC", ""))));
+        // 根据 measurePoint 进行排序，且确保只处理MC或TE开头的字符串
+        controlIntervalConfigEntities.sort(Comparator.comparingInt(item -> {
+            String measurePoint = item.getMeasurePoint();
+            if (measurePoint.startsWith("MC") || measurePoint.startsWith("TE")) {
+                String numberStr = measurePoint.substring(2);
+                return Integer.parseInt(numberStr);
+            }
+            return 0;
+        }));
+
+
         return ConvertUtils.sourceToTarget(controlIntervalConfigEntities, ControlIntervalConfigDTO.class);
     }
 
@@ -123,7 +134,7 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         LocalDateTime now = LocalDateTime.now().withSecond(0);
         paramDTO.setDataCodes(dataCodes);
         // 开始时间设置到最大换火周期区间前的时刻
-        Integer maxRange = property.getIntervalControl().values().stream().map(KilnProperty.IntervalControl::getRange).flatMap(List::stream).max( Integer::compare).orElse(4);
+        Integer maxRange = property.getIntervalControl().values().stream().map(KilnProperty.IntervalControl::getRange).flatMap(List::stream).max(Integer::compare).orElse(4);
         paramDTO.setStartTime(now.minusMinutes(property.getConfig().getFireChangeCycle() * maxRange).format(TimeUtil.df));
         paramDTO.setEndTime(now.format(TimeUtil.df));
         paramDTO.setTs(ConstantNum.NUMBER_ONE);
@@ -165,13 +176,13 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
     public ControlIntervalConfigChartDTO chart(ControlIntervalConfigVO configVO) {
         List<ControlIntervalConfigDTO> dataList = selectListByCondition(configVO);
 
-        dataList = dataList.stream().sorted(Comparator.comparingInt(o -> Integer.parseInt(o.getMeasurePoint().split("MC")[1]))).collect(Collectors.toList());
+        dataList = dataList.stream().sorted(Comparator.comparingInt(o -> Integer.parseInt(o.getMeasurePoint().split("MC|TE_?")[1]))).collect(Collectors.toList());
 
         ControlIntervalConfigChartDTO chartDTO = new ControlIntervalConfigChartDTO();
 
         // 整理x轴排序(根据MC进行分隔排序)
         List<String> xAxis = dataList.stream().map(ControlIntervalConfigDTO::getMeasurePoint).collect(Collectors.toList());
-        xAxis.sort(Comparator.comparingInt(o -> Integer.parseInt(o.split("MC")[1])));
+        xAxis.sort(Comparator.comparingInt(o -> Integer.parseInt(o.split("MC|TE_?")[1])));
         chartDTO.setXAxis(xAxis);
 
         // 整理数据
@@ -200,9 +211,7 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
 
 
     @Override
-    public Map<String, ControlIntervalConfigHisChartDataDTO> queryHistoryConfigChart(List<String> dataCodeList,
-                                                                                     String startTime, String endTime,
-                                                                                     Integer ts, String tsUnit, String formatVal) {
+    public Map<String, ControlIntervalConfigHisChartDataDTO> queryHistoryConfigChart(List<String> dataCodeList, String startTime, String endTime, Integer ts, String tsUnit, String formatVal) {
 
         // 1:根据时间范围查询数据 包含 历史事件范围的配置信息 及  当前生效的配置信息(未删除)
         List<ControlIntervalConfigEntity> configEntities = queryHistoryConfigInRange(dataCodeList, startTime, endTime);
@@ -226,27 +235,13 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         LambdaQueryWrapper<ControlIntervalConfigEntity> wrapper = new LambdaQueryWrapper<>();
 
         // 当前生效中
-        wrapper.and(w -> w
-                .in(ControlIntervalConfigEntity::getDataCode, dataCodeList)
-                .eq(ControlIntervalConfigEntity::getDeleteFlag, false));
+        wrapper.and(w -> w.in(ControlIntervalConfigEntity::getDataCode, dataCodeList).eq(ControlIntervalConfigEntity::getDeleteFlag, false));
         // 已失效 区间范围内
-        wrapper.or(w -> w
-                .in(ControlIntervalConfigEntity::getDataCode, dataCodeList)
-                .eq(ControlIntervalConfigEntity::getDeleteFlag, true)
-                .ge(ControlIntervalConfigEntity::getStartTime, startTime)
-                .le(ControlIntervalConfigEntity::getEndTime, endTime));
+        wrapper.or(w -> w.in(ControlIntervalConfigEntity::getDataCode, dataCodeList).eq(ControlIntervalConfigEntity::getDeleteFlag, true).ge(ControlIntervalConfigEntity::getStartTime, startTime).le(ControlIntervalConfigEntity::getEndTime, endTime));
         // 已失效 跨区间  1:startTime跨区间 (左包右不包)
-        wrapper.or(w -> w
-                .in(ControlIntervalConfigEntity::getDataCode, dataCodeList)
-                .eq(ControlIntervalConfigEntity::getDeleteFlag, true)
-                .le(ControlIntervalConfigEntity::getStartTime, startTime)
-                .gt(ControlIntervalConfigEntity::getEndTime, startTime));
+        wrapper.or(w -> w.in(ControlIntervalConfigEntity::getDataCode, dataCodeList).eq(ControlIntervalConfigEntity::getDeleteFlag, true).le(ControlIntervalConfigEntity::getStartTime, startTime).gt(ControlIntervalConfigEntity::getEndTime, startTime));
         // 已失效 跨区间  2:endTime跨区间 (左不包右包)
-        wrapper.or(w -> w
-                .in(ControlIntervalConfigEntity::getDataCode, dataCodeList)
-                .eq(ControlIntervalConfigEntity::getDeleteFlag, true)
-                .le(ControlIntervalConfigEntity::getStartTime, endTime)
-                .gt(ControlIntervalConfigEntity::getEndTime, endTime));
+        wrapper.or(w -> w.in(ControlIntervalConfigEntity::getDataCode, dataCodeList).eq(ControlIntervalConfigEntity::getDeleteFlag, true).le(ControlIntervalConfigEntity::getStartTime, endTime).gt(ControlIntervalConfigEntity::getEndTime, endTime));
 
         return baseMapper.selectList(wrapper);
     }
@@ -270,13 +265,7 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
                 temperatureSetChart.add(new Object[]{time, null});
             }
 
-            result.put(dataCode, ControlIntervalConfigHisChartDataDTO.builder()
-                    .upControlChart(upControlChart)
-                    .lowControlChart(lowControlChart)
-                    .upAlarmChart(upAlarmChart)
-                    .lowAlarmChart(lowAlarmChart)
-                    .temperatureSetChart(temperatureSetChart)
-                    .build());
+            result.put(dataCode, ControlIntervalConfigHisChartDataDTO.builder().upControlChart(upControlChart).lowControlChart(lowControlChart).upAlarmChart(upAlarmChart).lowAlarmChart(lowAlarmChart).temperatureSetChart(temperatureSetChart).build());
         }
         return result;
     }
@@ -351,30 +340,34 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
             ControlIntervalConfigEntity configEntity = entities.stream().filter(entity -> entity.getDataCode().equals(dataCode)).collect(Collectors.toList()).get(0);
             // 获取当前点位配置项
             KilnProperty.IntervalControl intervalControl = icmap.get(configEntity.getMeasurePoint());
-            // 获取平均温度换火周期配置
-            List<Integer> range = intervalControl.getRange();
-            HashMap<String, BigDecimal> point = new HashMap<>();
-            // 计算两个换火周期平均温度
-            List<BigDecimal> values = intervals.stream().filter(Objects::nonNull).filter(dto -> {
-                        LocalDateTime time = LocalDateTime.parse(dto.getTime(), DateTimeFormatter.ofPattern(ConstantTime.DATE_TIME_MM_00));
-                        LocalDateTime end = now.minusMinutes(fireChangeCycle * range.get(1)).withNano(0);
-                        LocalDateTime start = now.minusMinutes(fireChangeCycle * range.get(0)).withNano(0);
-                        // dto.setItemVal(BigDecimal.valueOf(1450));
-                        return (time.isAfter(start) || time.isEqual(start)) && (time.isBefore(end) || time.isEqual(end));
-                    })
-                    .map(IntervalDataDto::getItemVal)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            // 平均温度
-            BigDecimal Tave = values.stream().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(values.size()), 2, RoundingMode.HALF_UP);
-            // 获取上下限差值一半
-            // BigDecimal SPD = ((new BigDecimal(configEntity.getUpControl())).subtract(new BigDecimal(configEntity.getLowControl()))).divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
-            BigDecimal SPD = intervalControl.getSpd().divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
-            point.put("Tave", Tave);
-            point.put("SPD", SPD);
-            if (keyPoints.contains(configEntity.getMeasurePoint())) point.put("SP", new BigDecimal(configEntity.getTemperatureSet()));
-            results.put(configEntity.getMeasurePoint(), point);
-            log.info("控制区间设置自动同步, 点位名称: {}, 温度数据: {}, 平均温度: {}, 上下限差值一半: {}", configEntity.getMeasurePoint(), values, Tave, SPD);
+            if (intervalControl != null) {
+                // 获取平均温度换火周期配置
+                List<Integer> range = intervalControl.getRange();
+                HashMap<String, BigDecimal> point = new HashMap<>();
+                // 计算两个换火周期平均温度
+                List<BigDecimal> values = intervals.stream().filter(Objects::nonNull).filter(dto -> {
+                    LocalDateTime time = LocalDateTime.parse(dto.getTime(), DateTimeFormatter.ofPattern(ConstantTime.DATE_TIME_MM_00));
+                    LocalDateTime end = now.minusMinutes(fireChangeCycle * range.get(1)).withNano(0);
+                    LocalDateTime start = now.minusMinutes(fireChangeCycle * range.get(0)).withNano(0);
+                    // dto.setItemVal(BigDecimal.valueOf(1450));
+                    return (time.isAfter(start) || time.isEqual(start)) && (time.isBefore(end) || time.isEqual(end));
+                }).map(IntervalDataDto::getItemVal).filter(Objects::nonNull).collect(Collectors.toList());
+                // 平均温度
+//            BigDecimal Tave = values.stream().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(values.size()), 2, RoundingMode.HALF_UP);
+                BigDecimal Tave = BigDecimal.ZERO;
+                if (!values.isEmpty()) {
+                    Tave = values.stream().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(values.size()), 2, RoundingMode.HALF_UP);
+                }
+                // 获取上下限差值一半
+                // BigDecimal SPD = ((new BigDecimal(configEntity.getUpControl())).subtract(new BigDecimal(configEntity.getLowControl()))).divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+                BigDecimal SPD = intervalControl.getSpd().divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+                point.put("Tave", Tave);
+                point.put("SPD", SPD);
+                if (keyPoints.contains(configEntity.getMeasurePoint()))
+                    point.put("SP", new BigDecimal(configEntity.getTemperatureSet()));
+                results.put(configEntity.getMeasurePoint(), point);
+                log.info("控制区间设置自动同步, 点位名称: {}, 温度数据: {}, 平均温度: {}, 上下限差值一半: {}", configEntity.getMeasurePoint(), values, Tave, SPD);
+            }
         });
 
         // 获取关键点位数据
@@ -387,6 +380,7 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
         for (ControlIntervalConfigEntity entity : entities) {
             BigDecimal SP = new BigDecimal(entity.getTemperatureSet());
             Map<String, BigDecimal> data = results.get(entity.getMeasurePoint());
+            if (data == null) continue;
             BigDecimal SPD = data.get("SPD");
             // 获取告警限差值
             List<Integer> diffValue = icmap.get(entity.getMeasurePoint()).getDiffValue();
@@ -400,10 +394,25 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
                 case "MC6":
                     Map<String, BigDecimal> mc1_5 = "MC2".equals(entity.getMeasurePoint()) ? mc1 : mc5;
                     Map<String, BigDecimal> mc4_10 = "MC2".equals(entity.getMeasurePoint()) ? mc4 : mc10;
-                    SP = data.get("Tave").add(coefficient.multiply(mc1_5.get("SP").subtract(mc1_5.get("Tave"))).multiply(SPD).divide(mc1_5.get("SPD"), 2, RoundingMode.HALF_UP))
-                            .add(coefficient.multiply(mc4_10.get("SP").subtract(mc4_10.get("Tave"))).multiply(SPD).divide(mc4_10.get("SPD"), 2, RoundingMode.HALF_UP));
+                    // 1. 获取基础 Tave 值
+                    BigDecimal baseTave = data.get("Tave");
+                    if(mc1_5 == null || mc4_10 == null) {
+                        log.error("MC1_5 is null or mc4_10 is null");
+                        continue;
+                    }
+                    BigDecimal diff1 = mc1_5.get("SP").subtract(mc1_5.get("Tave"));
+                    BigDecimal increment1 = coefficient.multiply(diff1).multiply(SPD).divide(mc1_5.get("SPD"), 2, RoundingMode.HALF_UP);
+                    // 3. 计算 mc4_10 部分的增量
+                    BigDecimal diff2 = mc4_10.get("SP").subtract(mc4_10.get("Tave"));
+                    BigDecimal increment2 = coefficient.multiply(diff2).multiply(SPD).divide(mc4_10.get("SPD"), 2, RoundingMode.HALF_UP);
+                    // 4. 最终汇总
+                    SP = baseTave.add(increment1).add(increment2);
+                    // 移除旧逻辑改为上述逻辑，便于维护
+//                    SP = data.get("Tave").add(coefficient.multiply(mc1_5.get("SP").subtract(mc1_5.get("Tave"))).multiply(SPD).divide(mc1_5.get("SPD"), 2, RoundingMode.HALF_UP))
+//                            .add(coefficient.multiply(mc4_10.get("SP").subtract(mc4_10.get("Tave"))).multiply(SPD).divide(mc4_10.get("SPD"), 2, RoundingMode.HALF_UP));
                     break;
                 case "MC3":
+                    if(mc4 == null) continue;
                     SP = data.get("Tave").add((mc4.get("SP").subtract(mc4.get("Tave"))).multiply(SPD).divide(mc4.get("SPD"), 2, RoundingMode.HALF_UP));
                     break;
                 case "MC7":
@@ -416,7 +425,8 @@ public class ControlIntervalConfigServiceImpl extends ServiceImpl<ControlInterva
                     break;
             }
             // 设置非关键点位的目标值
-            if (!keyPoints.contains(entity.getMeasurePoint())) entity.setTemperatureSet(SP.setScale(1, RoundingMode.HALF_UP).toString());
+            if (!keyPoints.contains(entity.getMeasurePoint()))
+                entity.setTemperatureSet(SP.setScale(1, RoundingMode.HALF_UP).toString());
             // 计算上控制限
             BigDecimal SPH = SPD.add(SP).setScale(1, RoundingMode.HALF_UP);
             // 设置上控制限
