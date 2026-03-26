@@ -358,6 +358,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             }
         }
 
+        log.info("模型预测数据已更新,predictedDataList:{},nowTimeStr:{}", predictedDataList, nowTimeStr);
         // 3:保存/更新数据表(同时间点进行覆盖  单步覆盖单步  多步覆盖多步  即 根据typeCode进行 和 time进行覆盖)
         saveOrUpdateBatchByAlgorithmResult(predictedDataList);
     }
