@@ -13,4 +13,5 @@ import lombok.Data;
 public class IntelliTplSettingDetailDTO {
     private String name;
     private String dataCode;
+    private Boolean active;
 }

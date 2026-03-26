@@ -118,7 +118,7 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         TplVO intelliOutputDataCode = tplService.selectTplByCode("intelliOutputDataCode");
         // 获取点位名称编码
         IntelliTplSettingDTO dto = JacksonUtils.fromJson(intelliOutputDataCode.getTplContent(), IntelliTplSettingDTO.class);
-        IntelliTplSettingDetailDTO detailDTO = dto.getDataCodeList().stream().filter(v -> v.getDataCode().equals("GAS_SUM_SV")).findFirst().orElse(null);
+        IntelliTplSettingDetailDTO detailDTO = dto.getDataCodeList().stream().filter(IntelliTplSettingDetailDTO::getActive).findFirst().orElse(null);
         if (ObjectUtils.isEmpty(detailDTO)) return;
 
         IntelligentDataEntity.IntelligentDataEntityBuilder builder = IntelligentDataEntity.builder().name(detailDTO.getName()).dataCode(detailDTO.getDataCode()).time(time).data(JacksonUtils.toJson(response));
