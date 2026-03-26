@@ -398,19 +398,21 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         List<ModelConfigParamDetailDTO> timeRange = publicParamDto.getRange();
         Map<String, Object> timeRangeCodeMap = timeRange.stream().collect(Collectors.toMap(ModelConfigParamDetailDTO::getParamCode, ModelConfigParamDetailDTO::getValue));
 
-        Integer hisDataStartTime = (Integer) timeRangeCodeMap.get("hisDataStartTime");
-        Integer hisDataEndTime = (Integer) timeRangeCodeMap.get("hisDataEndTime");
+        Object startTimeVal = timeRangeCodeMap.get("hisDataStartTime");
+        Object endTimeVal = timeRangeCodeMap.get("hisDataEndTime");
+
+        // 处理值可能是 String 类型的情况（如 "-null" 或实际数字字符串）
+        Integer hisDataStartTime = parseIntegerValue(startTimeVal);
+        Integer hisDataEndTime = parseIntegerValue(endTimeVal);
 
         if (hisDataStartTime == null || hisDataEndTime == null) {
-            throw new CustomException("未找到对应的时间范围:" + entity.getPredictedTypeCode());
+            throw new CustomException("未找到对应的时间范围:" + entity.getPredictedTypeCode() + ", startTime=" + startTimeVal + ", endTime=" + endTimeVal);
         }
 
         // 设置时间范围(页面设置的时间,末-头)
-        Integer past_number = hisDataStartTime - hisDataEndTime;
-        if (past_number == 0) {
-            throw new CustomException("past_number范围,不能为0:" + entity.getPredictedTypeCode());
-        }
-        paramDTO.setPast_number(past_number);
+//        Integer past_number = hisDataStartTime - hisDataEndTime;
+        // 20260326: 移除区间选择，改为输入一个数字，因此：前端传入开始值和结束值相同，任意取一即可
+        paramDTO.setPast_number(hisDataStartTime);
 
         Date trainDataStartTime = entity.getTrainDataStartTime();
         Date trainDataEndTime = entity.getTrainDataEndTime();
@@ -431,7 +433,10 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         List<ModelConfigParamDetailDTO> allParamList = publicParamDto.getParam();
 
         List<AlgorithmDataCodeDTO> featuresDataCodeDtoList = new ArrayList<>();
-        allParamList.stream().map(ModelConfigParamDetailDTO::getParamList).flatMap(List::stream).filter(ModelConfigParamDetailDTO::getSelected).forEach(param -> {
+        allParamList.stream()
+                .map(ModelConfigParamDetailDTO::getParamList)
+                .flatMap(List::stream)
+                .filter(ModelConfigParamDetailDTO::getSelected).forEach(param -> {
             AlgorithmDataCodeDTO algorithmCodeDto = algorithmDataCodeUtil.getByAlgorithmCode(param.getParamCode());
             if (ObjectUtils.isNotEmpty(algorithmCodeDto)) {
                 featuresDataCodeDtoList.add(algorithmCodeDto);
@@ -542,5 +547,41 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         curAlgorithmDataMapList.add(curProcessAlgorithmDataValMap);
 
         algorithmDataValMap.put(algorithmProcessCode+"", curAlgorithmDataMapList);
+    }
+
+    /**
+     * @author: HouBo
+     * @CreateTime: 2026/3/26 10:18
+     * @Description: 解析整数值（处理 String 和 Integer 类型）
+     * @param value 可能为 String 或 Integer 的值
+     * @return 解析后的 Integer，无法解析返回 null
+     */
+    private Integer parseIntegerValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Integer) {
+            return (Integer) value;
+        }
+        if (value instanceof String) {
+            String str = (String) value;
+            // 处理 "-null" 或空字符串等无效值
+            if (str.trim().isEmpty() || "-null".equals(str) || "null".equals(str)) {
+                return null;
+            }
+            try {
+                return Integer.parseInt(str.trim());
+            } catch (NumberFormatException e) {
+                log.warn("解析整数失败：value={}", value);
+                return null;
+            }
+        }
+        // 其他类型尝试转换为字符串再解析
+        try {
+            return Integer.parseInt(value.toString().trim());
+        } catch (NumberFormatException e) {
+            log.warn("解析整数失败：value={}", value);
+            return null;
+        }
     }
 }
