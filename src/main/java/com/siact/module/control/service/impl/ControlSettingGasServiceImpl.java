@@ -2,7 +2,6 @@ package com.siact.module.control.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.siact.common.constant.ConstantSymbol;
 import com.siact.common.exception.BizException;
 import com.siact.common.utils.ConvertUtils;
 import com.siact.common.utils.JacksonUtils;
@@ -25,7 +24,6 @@ import com.siact.module.control.mapper.ControlSettingGasMapper;
 import com.siact.module.control.repository.ControlGasRecordRepository;
 import com.siact.module.control.repository.ControlSettingGasRepository;
 import com.siact.module.control.service.ControlSettingGasService;
-import com.siact.module.control.support.ControlSettingSupport;
 import com.siact.module.control.vo.GasForecastDataVO;
 import com.siact.module.control.vo.GasForecastDataValueVO;
 import com.siact.module.control.vo.GasForecastSeriesVO;
@@ -57,7 +55,6 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
     private final ControlSettingGasRepository repository;
     private final ControlGasRecordRepository recordRepository;
     private final IntelligentDataRepository intelligentDataRepository;
-    private final ControlSettingSupport support;
     private final EventPublisher publisher;
     private final ControlSettingGasConvert convert;
     private final DataService dataService;
@@ -84,21 +81,17 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
         }
         Map<String, ControlSettingGasEntity> gasSettingList = settingList.stream().collect(Collectors.toMap(ControlSettingGasEntity::getDataCode, v -> v));
 
-        // 收集 dataCode
-        List<String> dataCodeList = settingList.stream().map(ControlSettingGasEntity::getDataCode).distinct().collect(Collectors.toList());
-
         // 查询模板配置
         TplVO tpl = tplService.selectTplByCode("intelliOutputDataCode");
         IntelliTplSettingDTO intelliTplSettingDTO = JacksonUtils.fromJson(tpl.getTplContent(), IntelliTplSettingDTO.class);
         intelliTplSettingDTO.getDataCodeList().sort(Comparator.comparing(IntelliTplSettingDetailDTO::getName));
 
-        // 根据 dataCode + 短码查询属性 Code
-        String xlsShortCode = "XLS"; // 天然气设定流量短码
-        List<String> propShortCode = Collections.singletonList(xlsShortCode);
+        // 查询 DCS 实时值
+        List<String> tplDataCodes = intelliTplSettingDTO.getDataCodeList().stream()
+                .map(IntelliTplSettingDetailDTO::getDataCode)
+                .collect(Collectors.toList());
+        JSONObject dcsRealValues = dataService.queryRealValue(String.join(",", tplDataCodes));
 
-        Map<String, String> secPropCodeMap = support.querySecPropCode(dataCodeList, propShortCode);
-        // 查询DCS实时值, 根据 dataCode 查询
-        JSONObject propCodeValObj = dataService.queryRealValue(String.join(",", secPropCodeMap.values()));
         // 封装返回结果
         intelliTplSettingDTO.getDataCodeList().forEach(detailDTO -> {
             ControlSettingGasEntity entity = gasSettingList.get(detailDTO.getDataCode());
@@ -106,21 +99,12 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
             dto.setNumber(detailDTO.getName());
             dto.setDataCode(detailDTO.getDataCode());
 
-            // 获取 dcs 运行值
-            String mapKey = String.join(ConstantSymbol.UNDER_LINE, detailDTO.getDataCode(), xlsShortCode);
-            BigDecimal xlsVal = propCodeValObj == null ? null : propCodeValObj.getBigDecimal(secPropCodeMap.get(mapKey));
-            Double runningDcsVal = xlsVal == null ? null : xlsVal.doubleValue();
-            dto.setRunningDcsVal(runningDcsVal);
+            // 获取 DCS 运行值
+            BigDecimal dcsVal = dcsRealValues == null ? null : dcsRealValues.getBigDecimal(detailDTO.getDataCode());
+            dto.setRunningDcsVal(dcsVal == null ? null : dcsVal.doubleValue());
             dto.setAlgoDiff(false);
 
             // 获取智能计算值
-            // Map<IntelliTypeEnum, IntelligentDataEntity> intelliValueMap = intelliValues.getOrDefault(detailDTO.getDataCode(), Collections.emptyMap());
-            // IntelligentDataEntity intelliRunValue = intelliValueMap.get(IntelliTypeEnum.GAS_RUN_VALUE);
-            // IntelligentDataEntity intelliModelValue = intelliValueMap.get(IntelliTypeEnum.GAS_CALC_EXPERT2);
-            // if (!Objects.isNull(intelliRunValue) && !Objects.isNull(intelliModelValue)) {
-            //     dto.setGasAlgorithmCalcVal(intelliRunValue.getVal().add(intelliModelValue.getVal()).doubleValue());
-            //     dto.setAdjustValue(intelliModelValue.getVal());
-            // }
             Map<IntelliTypeEnum, IntelligentDataEntity> map = intelliValues.getOrDefault(detailDTO.getDataCode(), Collections.emptyMap());
             IntelligentDataEntity deltaC = map.get(IntelliTypeEnum.GAS_DELTAC_EXPERT);
             IntelligentDataEntity runVal = map.get(IntelliTypeEnum.GAS_LAST_SUM);
@@ -219,7 +203,6 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
         String tsUnit = query.getTsUnit();
         Integer ts = query.getTs();
         String formatVal = query.getFormatVal();
-        String calcType = query.getCalcType();
 
         // 获取当前时间（秒归零）
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:00"));
