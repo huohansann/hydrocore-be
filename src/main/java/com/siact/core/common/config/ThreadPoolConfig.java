@@ -87,4 +87,36 @@ public class ThreadPoolConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * 算法预测任务专用线程池
+     */
+    @Bean(name = "algorithmPredictionExecutor")
+    public Executor algorithmPredictionExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(10);
+        executor.setKeepAliveSeconds(60);
+        executor.setThreadNamePrefix("Algorithm-Prediction-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
+
+    /**
+     * 智能计算任务专用线程池
+     */
+    @Bean(name = "intelligentComputingExecutor")
+    public Executor intelligentComputingExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(10);
+        executor.setKeepAliveSeconds(60);
+        executor.setThreadNamePrefix("Intelligent-Computing-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
 }
