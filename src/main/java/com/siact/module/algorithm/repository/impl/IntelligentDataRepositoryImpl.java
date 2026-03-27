@@ -70,4 +70,33 @@ public class IntelligentDataRepositoryImpl implements IntelligentDataRepository 
                         .collect(Collectors.toMap(Map.Entry::getKey, innerEntry -> innerEntry.getValue().get(0)))
         ));
     }
+
+    /**
+     * 获取指定类型在指定时间范围内的智能算法值
+     *
+     * @param dataCodes 点位编码列表
+     * @param types      要查询的智能算法值类型
+     * @param startTime  开始时间
+     * @param endTime    结束时间
+     * @return 返回 key 为 dataCode, 值为以类型分组的数据列表的查询结果
+     */
+    @Override
+    public Map<String, Map<IntelliTypeEnum, List<IntelligentDataEntity>>> queryByTypeAndTimeRange(List<String> dataCodes, List<IntelliTypeEnum> types, String startTime, String endTime) {
+        if (CollectionUtils.isEmpty(dataCodes) || CollectionUtils.isEmpty(types) || StringUtils.isBlank(startTime) || StringUtils.isBlank(endTime)) {
+            return Collections.emptyMap();
+        }
+        List<IntelligentDataEntity> entities = mapper.selectList(Wrappers.<IntelligentDataEntity>lambdaQuery()
+                .in(IntelligentDataEntity::getDataCode, dataCodes)
+                .in(IntelligentDataEntity::getIntelliType, types)
+                .ge(IntelligentDataEntity::getTime, startTime)
+                .le(IntelligentDataEntity::getTime, endTime)
+                .orderByAsc(IntelligentDataEntity::getTime)
+        );
+
+        return entities.stream().collect(
+                Collectors.groupingBy(IntelligentDataEntity::getDataCode, Collectors.collectingAndThen(
+                        Collectors.toList(), list -> list.stream().collect(Collectors.groupingBy(IntelligentDataEntity::getIntelliType))
+                ))
+        );
+    }
 }

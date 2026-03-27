@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.constant.ConstantSymbol;
 import com.siact.common.exception.BizException;
+import com.siact.common.utils.ConvertUtils;
 import com.siact.common.utils.JacksonUtils;
 import com.siact.core.event.domain.GenericEvent;
 import com.siact.core.event.notify.EventPublisher;
@@ -16,6 +17,7 @@ import com.siact.module.base.service.TplService;
 import com.siact.module.base.vo.TplVO;
 import com.siact.module.control.convert.ControlSettingGasConvert;
 import com.siact.module.control.dto.ControlSettingGasDTO;
+import com.siact.module.control.dto.GasForecastQueryDTO;
 import com.siact.module.control.entity.ControlGasRecordEntity;
 import com.siact.module.control.entity.ControlSettingGasEntity;
 import com.siact.module.control.event.GasRecordSaveEventHandler;
@@ -24,7 +26,14 @@ import com.siact.module.control.repository.ControlGasRecordRepository;
 import com.siact.module.control.repository.ControlSettingGasRepository;
 import com.siact.module.control.service.ControlSettingGasService;
 import com.siact.module.control.support.ControlSettingSupport;
+import com.siact.module.control.vo.GasForecastDataVO;
+import com.siact.module.control.vo.GasForecastDataValueVO;
+import com.siact.module.control.vo.GasForecastSeriesVO;
+import com.siact.module.control.vo.GasForecastVO;
+import com.siact.sec.dto.IntervalDataDto;
+import com.siact.sec.dto.IntervalValParamsDto;
 import com.siact.sec.sevice.DataService;
+import com.siact.sec.utils.IntervalTimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -36,6 +45,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -103,24 +114,22 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
             dto.setAlgoDiff(false);
 
             // 获取智能计算值
-            Map<IntelliTypeEnum, IntelligentDataEntity> intelliValueMap = intelliValues.getOrDefault(detailDTO.getDataCode(), Collections.emptyMap());
-            IntelligentDataEntity intelliRunValue = intelliValueMap.get(IntelliTypeEnum.GAS_RUN_VALUE);
-            IntelligentDataEntity intelliModelValue = intelliValueMap.get(IntelliTypeEnum.GAS_CALC_EXPERT2);
-            if (!Objects.isNull(intelliRunValue) && !Objects.isNull(intelliModelValue)) {
-                dto.setGasAlgorithmCalcVal(intelliRunValue.getVal().add(intelliModelValue.getVal()).doubleValue());
-                dto.setAdjustValue(intelliModelValue.getVal());
+            // Map<IntelliTypeEnum, IntelligentDataEntity> intelliValueMap = intelliValues.getOrDefault(detailDTO.getDataCode(), Collections.emptyMap());
+            // IntelligentDataEntity intelliRunValue = intelliValueMap.get(IntelliTypeEnum.GAS_RUN_VALUE);
+            // IntelligentDataEntity intelliModelValue = intelliValueMap.get(IntelliTypeEnum.GAS_CALC_EXPERT2);
+            // if (!Objects.isNull(intelliRunValue) && !Objects.isNull(intelliModelValue)) {
+            //     dto.setGasAlgorithmCalcVal(intelliRunValue.getVal().add(intelliModelValue.getVal()).doubleValue());
+            //     dto.setAdjustValue(intelliModelValue.getVal());
+            // }
+            Map<IntelliTypeEnum, IntelligentDataEntity> map = intelliValues.getOrDefault(detailDTO.getDataCode(), Collections.emptyMap());
+            IntelligentDataEntity deltaC = map.get(IntelliTypeEnum.GAS_DELTAC_EXPERT);
+            IntelligentDataEntity runVal = map.get(IntelliTypeEnum.GAS_LAST_SUM);
+            if (!Objects.isNull(runVal) && !Objects.isNull(deltaC)) {
+                // dto.setRunningDcsVal(runVal.getVal().doubleValue());
+                dto.setGasAlgorithmCalcVal(runVal.getVal().add(deltaC.getVal()).doubleValue());
+                dto.setAdjustValue(deltaC.getVal());
             }
-            if ("GAS_SUM_SV".equals(detailDTO.getDataCode())) {
-                Map<IntelliTypeEnum, IntelligentDataEntity> map = intelliValues.getOrDefault(detailDTO.getDataCode(), Collections.emptyMap());
-                IntelligentDataEntity deltaC = map.get(IntelliTypeEnum.GAS_DELTAC_EXPERT);
-                IntelligentDataEntity runVal = map.get(IntelliTypeEnum.GAS_LAST_SUM);
-                dto.setRunningDcsVal(runVal.getVal().doubleValue());
-                if (Objects.isNull(dto.getAutoState())) dto.setAutoState(false);
-                if (!Objects.isNull(deltaC)) {
-                    dto.setGasAlgorithmCalcVal(runVal.getVal().add(deltaC.getVal()).doubleValue());
-                    dto.setAdjustValue(deltaC.getVal());
-                }
-            }
+            if (Objects.isNull(dto.getAutoState())) dto.setAutoState(false);
             result.add(dto);
         });
         this.setStatusAndRecord(result); // 记录状态并触发保存事件
@@ -199,5 +208,132 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
 
         // 手动下发 TODO 目前暂无下发逻辑对接,暂时返回成功
         return true;
+    }
+
+    @Override
+    public GasForecastVO forecast(GasForecastQueryDTO query) {
+        List<String> dataCodes = query.getDataCodes();
+        List<String> names = query.getNames();
+        String startTime = query.getStartTime();
+        String endTime = query.getEndTime();
+        String tsUnit = query.getTsUnit();
+        Integer ts = query.getTs();
+        String formatVal = query.getFormatVal();
+        String calcType = query.getCalcType();
+
+        // 获取当前时间（秒归零）
+        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:00"));
+
+        // 判断时间区间
+        boolean hasDcsData = startTime.compareTo(now) < 0; // 开始时间 < 当前时间
+        boolean hasForecastData = endTime.compareTo(now) > 0; // 结束时间 > 当前时间
+
+        // DCS 数据查询区间：startTime ~ min(endTime, now)
+        String dcsEndTime = hasForecastData ? now : endTime;
+
+        // 1. 查询 DCS 历史数据
+        List<IntervalDataDto> dcsDataList = Collections.emptyList();
+        if (hasDcsData) {
+            IntervalValParamsDto dcsParams = ConvertUtils.sourceToTarget(query, IntervalValParamsDto.class);
+            dcsParams.setEndTime(dcsEndTime);
+            dcsDataList = dataService.queryIntervalVal(dcsParams);
+        }
+
+        // 按 dataCode 分组 DCS 数据
+        Map<String, List<IntervalDataDto>> dcsDataMap = dcsDataList.stream()
+                .collect(Collectors.groupingBy(IntervalDataDto::getDataCode));
+
+        // 2. 查询智能计算数据（GAS_DELTAC_EXPERT + GAS_LAST_SUM）
+        // Forecast 数据查询区间：now ~ endTime
+        Map<String, Map<IntelliTypeEnum, List<IntelligentDataEntity>>> intelliDataMap = Collections.emptyMap();
+        if (hasForecastData) {
+            intelliDataMap = intelligentDataRepository.queryByTypeAndTimeRange(
+                    dataCodes,
+                    Arrays.asList(IntelliTypeEnum.GAS_DELTAC_EXPERT, IntelliTypeEnum.GAS_LAST_SUM),
+                    now,
+                    endTime
+            );
+        }
+
+        // 3. 生成时间轴
+        List<String> xdata = IntervalTimeUtil.getIntervalTimeList(startTime, endTime, tsUnit, ts, formatVal);
+
+        // 4. 组装 series 数据
+        List<GasForecastSeriesVO> seriesList = new ArrayList<>();
+        for (int i = 0; i < dataCodes.size(); i++) {
+            String dataCode = dataCodes.get(i);
+            String name = CollectionUtils.isNotEmpty(names) && names.size() > i ? names.get(i) : dataCode;
+
+            // DCS 数据
+            List<Object[]> dcsValues = new ArrayList<>();
+            List<IntervalDataDto> dcsList = dcsDataMap.getOrDefault(dataCode, Collections.emptyList());
+            for (IntervalDataDto dto : dcsList) {
+                String formattedTime = IntervalTimeUtil.dateFormat(dto.getTime(), formatVal);
+                dcsValues.add(new Object[]{formattedTime, dto.getItemVal()});
+            }
+            GasForecastDataValueVO dcsValueVO = hasDcsData ? new GasForecastDataValueVO("运行值", dcsValues) : null;
+
+            // 预测数据 = GAS_DELTAC_EXPERT + GAS_LAST_SUM
+            List<Object[]> forecastValues = new ArrayList<>();
+            if (hasForecastData) {
+                Map<IntelliTypeEnum, List<IntelligentDataEntity>> typeDataMap = intelliDataMap.getOrDefault(dataCode, Collections.emptyMap());
+                List<IntelligentDataEntity> deltaCList = typeDataMap.getOrDefault(IntelliTypeEnum.GAS_DELTAC_EXPERT, Collections.emptyList());
+                List<IntelligentDataEntity> lastSumList = typeDataMap.getOrDefault(IntelliTypeEnum.GAS_LAST_SUM, Collections.emptyList());
+
+                // 按 time 分组，计算预测值
+                Map<String, BigDecimal> deltaCByTime = deltaCList.stream()
+                        .collect(Collectors.toMap(IntelligentDataEntity::getTime, IntelligentDataEntity::getVal, (v1, v2) -> v1));
+                Map<String, BigDecimal> lastSumByTime = lastSumList.stream()
+                        .collect(Collectors.toMap(IntelligentDataEntity::getTime, IntelligentDataEntity::getVal, (v1, v2) -> v1));
+
+                // 合并时间点，计算预测值
+                Set<String> allTimes = new TreeSet<>();
+                allTimes.addAll(deltaCByTime.keySet());
+                allTimes.addAll(lastSumByTime.keySet());
+                for (String time : allTimes) {
+                    BigDecimal deltaC = deltaCByTime.getOrDefault(time, BigDecimal.ZERO);
+                    BigDecimal lastSum = lastSumByTime.getOrDefault(time, BigDecimal.ZERO);
+                    String formattedTime = IntervalTimeUtil.dateFormat(time, formatVal);
+                    forecastValues.add(new Object[]{formattedTime, deltaC.add(lastSum)});
+                }
+            }
+            GasForecastDataValueVO forecastValueVO = hasForecastData ? new GasForecastDataValueVO("预测值", forecastValues) : null;
+
+            // 构建 GasForecastDataVO
+            GasForecastDataVO dataVO = GasForecastDataVO.builder()
+                    .dcs(dcsValueVO)
+                    .forecast(forecastValueVO)
+                    .build();
+
+            // 构建 GasForecastSeriesVO
+            GasForecastSeriesVO seriesVO = GasForecastSeriesVO.builder()
+                    .dataCode(dataCode)
+                    .name(name)
+                    .data(dataVO)
+                    .build();
+            seriesList.add(seriesVO);
+        }
+
+        return GasForecastVO.builder()
+                .xdata(xdata)
+                .series(seriesList)
+                .build();
+    }
+
+    @Override
+    public List<Map<String, String>> queryForecastConfig() {
+        TplVO tpl = tplService.selectTplByCode("intelliOutputDataCode");
+        IntelliTplSettingDTO intelliTplSettingDTO = JacksonUtils.fromJson(tpl.getTplContent(), IntelliTplSettingDTO.class);
+        intelliTplSettingDTO.getDataCodeList().sort(Comparator.comparing(IntelliTplSettingDetailDTO::getName));
+
+        return intelliTplSettingDTO.getDataCodeList().stream()
+                .filter(detail -> Boolean.TRUE.equals(detail.getActive()))
+                .map(detail -> {
+                    Map<String, String> item = new HashMap<>();
+                    item.put("label", detail.getName());
+                    item.put("value", detail.getDataCode());
+                    return item;
+                })
+                .collect(Collectors.toList());
     }
 }

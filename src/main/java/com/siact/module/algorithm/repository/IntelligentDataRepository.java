@@ -31,4 +31,15 @@ public interface IntelligentDataRepository {
      * @return 返回 key 为 dataCode, 值为以类型分组的数据的查询结果
      */
     Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> queryByTypeWithLastTime(IntelliTypeEnum... types);
+
+    /**
+     * 获取指定类型在指定时间范围内的智能算法值
+     *
+     * @param dataCodes 点位编码列表
+     * @param types      要查询的智能算法值类型
+     * @param startTime  开始时间
+     * @param endTime    结束时间
+     * @return 返回 key 为 dataCode, 值为以类型分组的数据列表的查询结果
+     */
+    Map<String, Map<IntelliTypeEnum, List<IntelligentDataEntity>>> queryByTypeAndTimeRange(List<String> dataCodes, List<IntelliTypeEnum> types, String startTime, String endTime);
 }
