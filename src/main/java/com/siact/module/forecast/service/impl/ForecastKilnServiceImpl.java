@@ -32,6 +32,7 @@ import com.siact.sec.sevice.DataService;
 import com.siact.sec.utils.CommonHandle;
 import com.siact.sec.utils.IntervalTimeUtil;
 import com.siact.sec.vo.CommonChartParamsVo;
+import com.siact.tdengine.service.TaosDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -58,7 +59,8 @@ import java.util.stream.Collectors;
 @Service
 public class ForecastKilnServiceImpl implements ForecastKilnService {
     private @Resource PredictedDataRepository predictedDataRepository;
-    private @Resource DataService dataService;
+    private @Resource TaosDataService taosDataService;
+    private @Resource DataService dataService;  // 用于 queryPropCodeByInsCodeAndShortCode 方法
     private @Resource TplService tplService;
     private @Resource PredictedDataService predictedDataService;
     private @Resource ControlIntervalConfigService controlIntervalConfigService;
@@ -540,7 +542,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
             vo.setDataCodes(propInsDtoList.stream().map(PropInsDTO::getPropCode).collect(Collectors.toList()));
         }
         // 查询数据
-        return dataService.queryIntervalVal(com.siact.sec.utils.ConvertUtils.sourceToTarget(vo, IntervalValParamsDto.class));
+        return taosDataService.queryIntervalVal(com.siact.sec.utils.ConvertUtils.sourceToTarget(vo, IntervalValParamsDto.class));
     }
 
 
@@ -564,7 +566,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         dto.setEndTime(now);
 
         // 查询历史数据
-        List<IntervalDataDto> intervalDataDtos = dataService.queryIntervalVal(dto);
+        List<IntervalDataDto> intervalDataDtos = taosDataService.queryIntervalVal(dto);
         // 构建历史数据集
         Map<String, List<Object[]>> historyData = support.buildForecastValueMap(intervalDataDtos, ConvertUtils.sourceToTarget(dto, CommonChartParamsDto.class));
 
