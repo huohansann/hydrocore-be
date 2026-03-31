@@ -282,8 +282,40 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         modelInfoService.saveModelInfo(modelInfoDTO);
     }
 
+
+    /**
+     * @author: HouBo
+     * @CreateTime: 2026/3/27 13:24
+     * @Description: 移除 generateModelParamDto 中 data 结构下所有 List 中的空字符串
+     * 结构层级：data(Map) -> List -> Map -> value(List<Object>)
+     */
+    public void cleanEmptyStrings(AlgorithmGenerateModelParamDTO dto) {
+        if (dto == null || dto.getData() == null) {
+            return;
+        }
+        dto.getData().values().forEach(outerList -> {
+            if (outerList != null) {
+                // 类型：List<Map<String, List<Object>>>
+                List<Map<String, List<Object>>> list = outerList;
+                for (Map<String, List<Object>> innerMap : list) {
+                    if (innerMap == null) continue;
+                    innerMap.values().forEach(valueObj -> {
+                        // 类型：List<Object>
+                        if (valueObj != null) {
+                            List<Object> objectList = (List<Object>) valueObj;
+                            objectList.removeIf(item -> item == null || (item instanceof String && ((String) item).trim().isEmpty()));
+                        }
+                    });
+                }
+            }
+        });
+    }
+
     @Nullable
     private Long callAlgorithmTrainModel(long modelInfoId, AlgorithmGenerateModelParamDTO generateModelParamDto) {
+        // 去空处理
+        // 260327 - 暂时移除去空处理，后续静观其变
+//        cleanEmptyStrings(generateModelParamDto);
         // 保存算法调用记录
         AlgorithmCallInfoEntity algorithmCallInfo = new AlgorithmCallInfoEntity();
         long algorithmCallId = IdWorker.getId(algorithmCallInfo);
