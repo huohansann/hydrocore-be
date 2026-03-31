@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -210,8 +211,6 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, MenuEntity> impleme
         if (CollUtil.isEmpty(roleIds)) {
             return new ArrayList<>();
         }
-
-        // 根据角色ID列表查询菜单列表
         List<MenuEntity> menus = baseMapper.selectMenusByRoleIds(roleIds);
 
         // 将列表转为树形结构
@@ -227,5 +226,15 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, MenuEntity> impleme
         // 根据角色ID列表查询菜单列表
         List<MenuEntity> menus = baseMapper.selectMenusByRoleIds(roleIds);
         return menus.stream().map(MenuEntity::getId).distinct().collect(Collectors.toList());
+    }
+
+    @Override
+    public List<MenuEntity> getMenusEntityByRoleIds(List<Long> roleIds) {
+        if (CollUtil.isEmpty(roleIds)) {
+            return Collections.emptyList();
+        }
+
+        // 根据角色ID列表查询菜单列表
+        return baseMapper.selectMenusByRoleIds(roleIds);
     }
 } 

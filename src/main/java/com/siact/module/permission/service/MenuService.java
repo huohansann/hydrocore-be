@@ -72,4 +72,12 @@ public interface MenuService extends IService<MenuEntity> {
     List<MenuVO> getMenusByRoleIds(List<Long> roleIds);
 
     List<Long> getMenuIdsByRoleIds(List<Long> roleIds);
+
+
+    /**
+     * @author: HouBo
+     * @CreateTime: 2026/3/31 10:13
+     * @Description: 根据角色ID列表获取对应的菜单实体列表
+     */
+    List<MenuEntity> getMenusEntityByRoleIds(List<Long> roleIds);
 }

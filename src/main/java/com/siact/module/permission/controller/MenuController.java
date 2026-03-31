@@ -106,4 +106,13 @@ public class MenuController {
         List<Long> menuIds = menuService.getMenuIdsByRoleIds(roleIds);
         return R.data(menuIds);
     }
+
+
+    @ApiOperation("根据角色ID列表获取菜单List")
+    @ApiImplicitParam(name = "roleIds", value = "角色ID列表", required = true, dataType = "List", paramType = "body")
+    @PostMapping("/role/getMenuListByRoleIds")
+    public R<List<MenuEntity>> getMenuListByRoleIds(@RequestBody List<Long> roleIds) {
+        List<MenuEntity> menuList = menuService.getMenusEntityByRoleIds(roleIds);
+        return R.data(menuList);
+    }
 } 
