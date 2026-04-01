@@ -32,13 +32,21 @@ import com.siact.sec.dto.IntervalDataDto;
 import com.siact.sec.dto.IntervalValParamsDto;
 import com.siact.sec.sevice.DataService;
 import com.siact.sec.utils.IntervalTimeUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.FileCopyUtils;
+
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -59,6 +67,11 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
     private final ControlSettingGasConvert convert;
     private final DataService dataService;
     private final TplService tplService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** 测试模式开关：true 时从 JSON 文件读取测试数据，false 时执行正常业务逻辑 */
+    @Value("${forecast.test-mode.enabled:false}")
+    private boolean testModeEnabled;
 
     /**
      * 查询天然气设定值
@@ -92,6 +105,11 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
                 .collect(Collectors.toList());
         JSONObject dcsRealValues = dataService.queryRealValue(String.join(",", tplDataCodes));
 
+        // 获取DCS总气量
+        BigDecimal finalTotalDcsVal = getTotalDcsValue(intelliTplSettingDTO, dcsRealValues, testModeEnabled);
+        // 获取智控总气量
+        BigDecimal finalTotalGasVal = getTotalGasValue(intelliValues);
+
         // 封装返回结果
         intelliTplSettingDTO.getDataCodeList().forEach(detailDTO -> {
             ControlSettingGasEntity entity = gasSettingList.get(detailDTO.getDataCode());
@@ -101,7 +119,22 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
 
             // 获取 DCS 运行值
             BigDecimal dcsVal = dcsRealValues == null ? null : dcsRealValues.getBigDecimal(detailDTO.getDataCode());
-            dto.setRunningDcsVal(dcsVal == null ? null : dcsVal.doubleValue());
+
+            // 增加测试数据
+            if(testModeEnabled && !dto.getNumber().equals("总气量")) {
+                dcsVal = new BigDecimal("15.1");
+            } else if(testModeEnabled) {
+                dcsVal = new BigDecimal(5720);
+            }
+
+            // 计算DCS运行值
+            Double dcsValDouble = dcsAlgorithm(dcsVal, finalTotalDcsVal, detailDTO.getIsMaster());
+            // 计算智控计算值
+            // 目前智控计算逻辑同DCS,DCS为: DCS总值为数值,DCS当前值为百分比, 总值 * 百分比; 智控为: 智控总值为数值, 智控总值为数值 * DCS当前值
+            Double gasValDouble = dcsAlgorithm(dcsVal, finalTotalGasVal, detailDTO.getIsMaster());
+
+            dto.setGasAlgorithmCalcVal(gasValDouble);
+            dto.setRunningDcsVal(dcsValDouble);
             dto.setAlgoDiff(false);
 
             // 获取智能计算值
@@ -109,8 +142,8 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
             IntelligentDataEntity deltaC = map.get(IntelliTypeEnum.GAS_DELTAC_EXPERT);
             IntelligentDataEntity runVal = map.get(IntelliTypeEnum.GAS_LAST_SUM);
             if (!Objects.isNull(runVal) && !Objects.isNull(deltaC)) {
-                // dto.setRunningDcsVal(runVal.getVal().doubleValue());
-                dto.setGasAlgorithmCalcVal(runVal.getVal().add(deltaC.getVal()).doubleValue());
+//                 dto.setRunningDcsVal(runVal.getVal().doubleValue());
+//                dto.setGasAlgorithmCalcVal(runVal.getVal().add(deltaC.getVal()).doubleValue());
                 dto.setAdjustValue(deltaC.getVal());
             }
             if (Objects.isNull(dto.getAutoState())) dto.setAutoState(false);
@@ -118,6 +151,92 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
         });
         this.setStatusAndRecord(result); // 记录状态并触发保存事件
         return result;
+    }
+
+    /**
+     * @author: HouBo
+     * @CreateTime: 2026/3/31 16:08
+     * @Description: DCS运行值算法
+     * 目前的规则: 总气量为数据, 如: 5720; 当前气量为百分比, 如: 15.1, 则: 15.1% * 5720 = 871.8
+     */
+    private Double dcsAlgorithm(BigDecimal dcsVal, BigDecimal totalDcsVal, boolean isMaster) {
+        // 找不到总气量，不参与计算
+        if (totalDcsVal == null || totalDcsVal.compareTo(BigDecimal.ZERO) == 0) {
+            return null;
+        }
+        // 找不到当前气量，不参与计算
+        if(dcsVal == null) {
+            return null;
+        }
+        // 当前为总气量, 无需计算
+        if(isMaster) {
+            return totalDcsVal.doubleValue();
+        }
+
+        // 将百分比 dcsVal 除以 100，得到实际的小数比例
+        BigDecimal percentage = dcsVal.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+        // 使用 totalDcsVal 乘以计算出的比例
+        return totalDcsVal.multiply(percentage).doubleValue();
+    }
+
+    /**
+     * @author: HouBo
+     * @CreateTime: 2026/4/1 9:57
+     * @Description: 获取DCS总气量
+     * @param intelliTplSettingDTO 配置模板
+     * @param dcsRealValues        DCS实时数据源
+     * @param testModeEnabled      是否开启测试模式
+     * @return 总气量 BigDecimal 值
+     */
+    private BigDecimal getTotalDcsValue(IntelliTplSettingDTO intelliTplSettingDTO,
+                                        JSONObject dcsRealValues,
+                                        boolean testModeEnabled) {
+        // 1. 测试模式直接返回固定值
+        if (testModeEnabled) {
+            return new BigDecimal("5720");
+        }
+
+        // 2. 从配置列表中筛选出 master 为 true 的明细
+        IntelliTplSettingDetailDTO masterDetail = intelliTplSettingDTO.getDataCodeList().stream()
+                .filter(detail -> detail != null && Boolean.TRUE.equals(detail.getIsMaster()))
+                .findFirst()
+                .orElse(null);
+
+        BigDecimal totalDcsVal;
+        if (masterDetail == null) {
+            totalDcsVal = BigDecimal.ZERO;
+            log.warn("窑炉控制：未能找到DCS总气量");
+        } else {
+            if (dcsRealValues == null) {
+                totalDcsVal = null;
+            } else {
+                totalDcsVal = dcsRealValues.getBigDecimal(masterDetail.getDataCode());
+            }
+        }
+
+        return totalDcsVal;
+    }
+
+    /**
+     * @author: HouBo
+     * @CreateTime: 2026/4/1 10:17
+     * @Description: 获取智控总气量
+     * @return 智控总气量 BigDecimal 值
+     */
+    private BigDecimal getTotalGasValue(Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> intelliValues) {
+        if (intelliValues == null || intelliValues.isEmpty()) {
+            log.warn("窑炉控制：未能找到智控总气量");
+            return BigDecimal.ZERO;
+        }
+        // 从嵌套 Map 中提取所有实体，并过滤出需要的两种类型进行求和
+        return intelliValues.values().stream()
+                .flatMap(map -> map.values().stream()) // 展开内层 Map 的所有实体
+                .filter(entity -> entity != null && entity.getVal() != null && (
+                        IntelliTypeEnum.GAS_DELTAC_EXPERT.equals(entity.getIntelliType()) ||
+                                IntelliTypeEnum.GAS_LAST_SUM.equals(entity.getIntelliType())
+                ))
+                .map(IntelligentDataEntity::getVal) // 提取 val (BigDecimal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add); // 求和
     }
 
     /* 设置信号灯状态和保存 dcs 天然气记录值 */
@@ -196,6 +315,22 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
 
     @Override
     public GasForecastVO forecast(GasForecastQueryDTO query) {
+        // 测试模式：从 JSON 文件读取测试数据
+        if (testModeEnabled) {
+            log.info("测试模式开启，从 JSON 文件读取测试数据");
+            try {
+                ClassPathResource resource = new ClassPathResource("testJson/forecast/forecast.json");
+                InputStreamReader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);
+                String jsonContent = FileCopyUtils.copyToString(reader);
+                return objectMapper.readValue(jsonContent, GasForecastVO.class);
+            } catch (Exception e) {
+                log.error("读取测试 JSON 文件失败", e);
+                // 读取失败时降级为正常模式
+                log.warn("降级为正常模式执行查询");
+            }
+        }
+
+        // 正常模式：执行原有业务逻辑
         List<String> dataCodes = query.getDataCodes();
         List<String> names = query.getNames();
         String startTime = query.getStartTime();

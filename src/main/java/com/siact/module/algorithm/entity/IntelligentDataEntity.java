@@ -23,6 +23,8 @@ public class IntelligentDataEntity implements Serializable {
     private String name;
     /* 数字孪生长码 */
     private String dataCode;
+    /* 是否为总气量 */
+    private boolean isMaster;
     /* 属性类型 */
     private IntelliTypeEnum intelliType;
     /* 算法结果 */

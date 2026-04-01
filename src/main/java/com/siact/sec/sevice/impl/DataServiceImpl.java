@@ -73,7 +73,6 @@ public class DataServiceImpl implements DataService {
      */
     public final static String REDISKEY_NODEHISTORY = "nodeHistory";
 
-
     /**
      * 查询柱状图、折线图等图表数据(量)
      *
