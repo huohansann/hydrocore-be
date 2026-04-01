@@ -332,4 +332,31 @@ public class RedisService
     {
         return redisTemplate.keys(pattern);
     }
+
+    /**
+     * 尝试获取分布式锁（SETNX）
+     *
+     * @param key 锁的key
+     * @param value 锁的值（用于安全释放，建议使用 UUID）
+     * @param timeout 锁超时时间（秒）
+     * @return true=获取成功；false=锁已被占用
+     */
+    public boolean tryLock(String key, String value, long timeout) {
+        return Boolean.TRUE.equals(
+            redisTemplate.opsForValue().setIfAbsent(key, value, timeout, TimeUnit.SECONDS)
+        );
+    }
+
+    /**
+     * 释放分布式锁（安全释放，只释放自己持有的锁）
+     *
+     * @param key 锁的key
+     * @param value 锁的值
+     */
+    public void unlock(String key, String value) {
+        Object current = redisTemplate.opsForValue().get(key);
+        if (current != null && value.equals(String.valueOf(current))) {
+            redisTemplate.delete(key);
+        }
+    }
 }
