@@ -8,14 +8,10 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@ApiModel("菜单查询")
-public class SysMenuQuery extends PageQuery {
-    @ApiModelProperty(value = "菜单名称")
-    private String menuName;
-
-    @ApiModelProperty(value = "父级菜单ID")
-    private Long parentId;
-
+@ApiModel("角色查询")
+public class SysRoleQuery extends PageQuery {
+    @ApiModelProperty(value = "角色名称")
+    private String roleName;
     @ApiModelProperty(value = "状态")
     private Integer status;
 }

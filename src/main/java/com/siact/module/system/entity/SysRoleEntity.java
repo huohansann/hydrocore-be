@@ -6,27 +6,19 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("sys_menu_new")
-public class SysMenuEntity {
+@TableName("sys_role_new")
+public class SysRoleEntity {
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
-    private Long parentId;
+    private String roleName;
 
-    private String menuName;
+    private String roleCode;
 
-    private String menuCode;
-
-    private String path;
-
-    private String icon;
+    private String description;
 
     private Integer sort;
-
-    private Integer type;
-
-    private Boolean visible;
 
     private Boolean status;
 

@@ -2,43 +2,52 @@ package com.siact.module.system.controller;
 
 import com.siact.common.vo.PageVO;
 import com.siact.module.system.command.SysMenuCreateCommand;
-import com.siact.module.system.command.SysMenuDeleteCommand;
+import com.siact.module.system.command.SysMenuUpdateCommand;
 import com.siact.module.system.query.SysMenuQuery;
 import com.siact.module.system.service.SysMenuService;
 import com.siact.module.system.vo.SysMenuTreeVO;
 import com.siact.module.system.vo.SysMenuVO;
-import lombok.AllArgsConstructor;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * @author : kzuo
- * @version 1.0
- * @date : 2025-12-17 9:27
- * @className : SysMenuController
- * @description : 系统菜单控制器
- */
+@Api(tags = "系统菜单管理")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/sysmenu")
 public class SysMenuController {
     private final SysMenuService service;
 
-    public @PostMapping("/list") PageVO<SysMenuVO> list(@RequestBody SysMenuQuery query) {
+    @ApiOperation("分页列表")
+    @PostMapping("/list")
+    public PageVO<SysMenuVO> list(@RequestBody SysMenuQuery query) {
         return service.list(query);
     }
 
-    public @GetMapping("/tree") List<SysMenuTreeVO> tree() {
+    @ApiOperation("菜单树")
+    @GetMapping("/tree")
+    public List<SysMenuTreeVO> tree() {
         return service.tree();
     }
 
-    public @PostMapping("/add") Boolean create(@RequestBody SysMenuCreateCommand command) {
+    @ApiOperation("新增菜单")
+    @PostMapping
+    public Boolean create(@RequestBody SysMenuCreateCommand command) {
         return service.create(command);
     }
 
-    public @DeleteMapping("/delete") Boolean delete(@RequestBody List<SysMenuDeleteCommand> commands) {
-        return service.delete(commands);
+    @ApiOperation("编辑菜单")
+    @PutMapping
+    public Boolean update(@RequestBody SysMenuUpdateCommand command) {
+        return service.update(command);
+    }
+
+    @ApiOperation("删除菜单")
+    @DeleteMapping("/{id}")
+    public Boolean delete(@PathVariable Long id) {
+        return service.delete(id);
     }
 }

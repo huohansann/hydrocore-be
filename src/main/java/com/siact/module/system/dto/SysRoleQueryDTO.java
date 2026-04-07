@@ -5,8 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class SysMenuQueryDTO {
-    private String menuName;
-    private Long parentId;
+public class SysRoleQueryDTO {
+    private String roleName;
     private Integer status;
 }

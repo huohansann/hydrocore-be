@@ -10,7 +10,7 @@
 
 ## 1. 数据模型设计
 
-### 1.1 菜单表 `sys_menu`
+### 1.1 菜单表 `sys_menu_new`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -34,7 +34,7 @@
 - `idx_parent_id` (parent_id)
 - `idx_menu_code` (menu_code)
 
-### 1.2 角色表 `sys_role`
+### 1.2 角色表 `sys_role_new`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -53,14 +53,14 @@
 索引：
 - `idx_role_code` (role_code)
 
-### 1.3 用户表 `sys_user`
+### 1.3 用户表 `sys_user_new`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | BIGINT | 雪花ID，主键 |
-| username | VARCHAR(50) | 用户名，登录账号，唯一 |
+| account | VARCHAR(50) | 账号，登录账号，唯一 |
+| username | VARCHAR(50) | 用户名 |
 | password | VARCHAR(200) | 密码，加密存储 |
-| nickname | VARCHAR(50) | 用户昵称 |
 | email | VARCHAR(100) | 邮箱 |
 | phone | VARCHAR(20) | 手机号 |
 | avatar | VARCHAR(200) | 头像URL |
@@ -73,10 +73,10 @@
 | deleted | BOOLEAN | 逻辑删除，默认 false |
 
 索引：
-- `uk_username` (username) UNIQUE
+- `uk_account` (account) UNIQUE
 - `idx_org_id` (org_id)
 
-### 1.4 组织表 `sys_organization`
+### 1.4 组织表 `sys_organization_new`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -98,7 +98,7 @@
 
 ### 1.5 关联表
 
-**角色-菜单关联表 `sys_role_menu`**
+**角色-菜单关联表 `sys_role_menu_new`**
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -112,7 +112,7 @@
 - `idx_menu_id` (menu_id)
 - `uk_role_menu` (role_id, menu_id) UNIQUE
 
-**用户-角色关联表 `sys_user_role`**
+**用户-角色关联表 `sys_user_role_new`**
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -151,12 +151,12 @@
 - 分页列表查询：支持按角色名称、状态筛选
 - 新增角色：role_code 自动生成或手动输入
 - 编辑角色：同新增校验规则
-- 删除角色：删除时清除 sys_role_menu 关联数据
-- 分配菜单权限：保存角色-菜单关联（先删后增）
+- 删除角色：删除时清除 sys_role_menu_new 关联数据
+- 分配菜单权限：保存角色-菜单关联到 sys_role_menu_new（先删后增）
 - 获取角色菜单：查询角色已分配的菜单ID列表
 
 **业务规则：**
-- 删除角色时同步删除 sys_role_menu 关联
+- 删除角色时同步删除 sys_role_menu_new 关联
 - 分配菜单权限时先删除旧关联再保存新关联
 - 角色编码(role_code)唯一
 
@@ -164,17 +164,17 @@
 
 **功能列表：**
 - 分页列表查询：支持按用户名、昵称、组织、状态筛选
-- 新增用户：密码加密存储，校验用户名唯一
-- 编辑用户：不能修改 username，其他字段可修改
-- 删除用户：删除时清除 sys_user_role 关联数据
+- 新增用户：密码加密存储，校验账号唯一
+- 编辑用户：不能修改 account，其他字段可修改
+- 删除用户：删除时清除 sys_user_role_new 关联数据
 - 重置密码：将密码重置为默认值
 - 分配角色：保存用户-角色关联
 - 获取用户角色：查询用户已分配的角色ID列表
 
 **业务规则：**
-- 用户名(username)唯一
+- 账号(account)唯一
 - 新增时密码默认加密存储
-- 删除用户时同步删除 sys_user_role 关联
+- 删除用户时同步删除 sys_user_role_new 关联
 - 密码使用 BCrypt 加密
 
 ### 2.4 组织管理
@@ -199,9 +199,9 @@
 
 流程：
 1. 用户登录成功
-2. 根据 user_id 查询 sys_user_role 获取角色ID列表
-3. 根据角色ID列表查询 sys_role_menu 获取菜单ID列表
-4. 根据菜单ID列表查询 sys_menu 获取菜单实体（去重）
+2. 根据 user_id 查询 sys_user_role_new 获取角色ID列表
+3. 根据角色ID列表查询 sys_role_menu_new 获取菜单ID列表
+4. 根据菜单ID列表查询 sys_menu_new 获取菜单实体（去重）
 5. 将菜单列表构建为树形结构返回前端
 
 ### 3.2 接口权限校验（可选扩展）
@@ -267,9 +267,12 @@ com.siact.module.system
 │   ├── SysMenuCreateCommand.java   (已有，需重构)
 │   ├── SysMenuUpdateCommand.java   (新增)
 │   ├── SysMenuDeleteCommand.java   (已有)
-│   ├── SysRoleCommand.java
-│   ├── SysUserCommand.java
-│   ├── SysOrganizationCommand.java
+│   ├── SysRoleCreateCommand.java
+│   ├── SysRoleUpdateCommand.java
+│   ├── SysUserCreateCommand.java
+│   ├── SysUserUpdateCommand.java
+│   ├── SysOrganizationCreateCommand.java
+│   ├── SysOrganizationUpdateCommand.java
 │   ├── AssignRoleMenuCommand.java
 │   ├── AssignUserRoleCommand.java
 │   ├── ResetPasswordCommand.java
@@ -367,3 +370,11 @@ com.siact.module.system
 - 权限控制仅菜单级别，按钮权限由前端指令控制
 - 密码加密使用 BCrypt 算法
 - 使用 MyBatis-Plus 的逻辑删除功能
+- **表名策略**：所有新表使用 `_new` 后缀（如 `sys_menu_new`），待测试验证后迁移替换旧表
+- **主键策略**：统一使用雪花 ID（MyBatis-Plus `IdType.ASSIGN_ID`）
+- **菜单类型**：只保留 `1=目录`、`2=菜单`，移除旧的"实例/项目"类型
+- **用户-组织关系**：单组织模式，通过 `org_id` 字段直接关联
+- **接口返回值**：统一直接返回对象，不使用 `R<T>` 包装
+- **数据访问层**：全部采用 Repository 模式
+- **Command 设计**：统一拆分 CreateCommand 和 UpdateCommand
+- **登录认证**：不在本次实现范围内

@@ -1,14 +1,16 @@
-package com.siact.module.system.vo;
+package com.siact.module.system.command;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
-import java.util.List;
+import javax.validation.constraints.NotNull;
 
 @Data
-@ApiModel("菜单树节点")
-public class SysMenuTreeVO {
+@ApiModel("编辑菜单")
+public class SysMenuUpdateCommand {
+
+    @NotNull(message = "菜单ID不能为空")
     @ApiModelProperty(value = "菜单ID")
     private Long id;
 
@@ -36,9 +38,6 @@ public class SysMenuTreeVO {
     @ApiModelProperty(value = "是否显示")
     private Boolean visible;
 
-    @ApiModelProperty(value = "状态")
+    @ApiModelProperty(value = "状态：true=启用，false=停用")
     private Boolean status;
-
-    @ApiModelProperty(value = "子菜单")
-    private List<SysMenuTreeVO> children;
 }

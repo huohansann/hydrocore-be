@@ -24,7 +24,7 @@ import java.util.Map;
 @Api(tags = "系统选项配置")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/sys-config")
+@RequestMapping("/sysconfig")
 public class SysConfigController {
 
     private final SysConfigService service;
