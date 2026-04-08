@@ -21,6 +21,8 @@ public enum PredictedTypeEnum {
     MULTI_T80(2, "multiple_step", "MULTI_T80", "多步预测T80", 80),
     MULTI_T100(2, "multiple_step", "MULTI_T100", "多步预测T100", 100),
     MULTI_T120(2, "multiple_step", "MULTI_T120", "多步预测T120", 120),
+    MULTI_T80_v2(2, "multiple_step", "MULTI_T80_v2", "多步预测T80", 800),
+    MULTI_T120_v2(2, "multiple_step", "MULTI_T120_v2", "多步预测T120", 1200),
     ;
 
     private final Integer type;
