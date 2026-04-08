@@ -1,101 +1,196 @@
 package com.siact.common.utils;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
-import com.siact.module.permission.dto.UserTokenDTO;
+import com.siact.module.system.dto.LoginUser;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
-import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Component
 public class JwtUtil {
+
     @Value("${jwt.secret}")
     private String secretKey;
 
     @Value("${jwt.expiration}")
     private long expiration;
 
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+    @Value("${jwt.refresh-window}")
+    private long refreshWindow;
 
+    @Value("${jwt.stale-ttl}")
+    private long staleTtl;
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
+
+    private static final String TOKEN_PREFIX = "token:";
+    private static final String REFRESH_PREFIX = "token:refresh:";
+    private static final String STALE_PREFIX = "token:stale:";
+    private static final String LOCK_PREFIX = "token:lock:";
 
     /**
-     * 生成JWT令牌
-     * 使用JJWT库构建符合JWT标准的令牌，包含主题声明、过期时间声明，并通过指定算法进行签名
-     *
-     * @param account  令牌主题标识，通常表示用户唯一标识
-     * @param userinfo
-     * @return 经过Base64Url编码的完整JWT字符串，包含头部、载荷和签名三部分
+     * 生成 token 并存入 Redis
      */
-    public String generateToken(String account, Object userinfo) {
+    public String generateToken(LoginUser loginUser) {
+        String sessionId = UUID.randomUUID().toString().replaceAll("-", "");
         String token = Jwts.builder()
-                /* 设置标准声明：主题(subject)和过期时间(expiration) */
-                .setSubject(account)
-                /* 添加自定义声明：角色列表 */
-                .claim("infos", userinfo)
+                .setSubject(loginUser.getAccount())
+                .claim("userId", loginUser.getId())
+                .claim("sessionId", sessionId)
+                .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                /* 使用HMAC-SHA256算法和预设密钥进行签名 */
                 .signWith(SignatureAlgorithm.HS256, secretKey)
-                /* 最终序列化为紧凑的URL安全字符串 */
                 .compact();
 
-        // 存储到Redis（用户名为key，24小时有效期,一个用户account只能有一个token登录,单点登录）
-//        redisTemplate.opsForValue().set(
-//                account,
-//                token,
-//                expiration,
-//                TimeUnit.MILLISECONDS
-//        );
-
-        // 存储到Redis（token为key，24小时有效期,一个用户名可以同时有多个token登录,多点登录）
+        // 存 token 本体: token:{tokenValue} → userId
         redisTemplate.opsForValue().set(
-                token,
-                token,
-                expiration,
-                TimeUnit.MILLISECONDS
+                TOKEN_PREFIX + token,
+                String.valueOf(loginUser.getId()),
+                expiration, TimeUnit.MILLISECONDS
         );
+
+        // 存刷新窗口: token:refresh:{userId}:{sessionId} → tokenValue
+        redisTemplate.opsForValue().set(
+                REFRESH_PREFIX + loginUser.getId() + ":" + sessionId,
+                token,
+                refreshWindow, TimeUnit.MILLISECONDS
+        );
+
         return token;
     }
 
-
     /**
-     * 从JWT令牌中提取用户名（即Subject字段）
-     *
-     * @param token 需要解析的JWT令牌字符串，格式应符合RFC 7519标准
-     * @return String 解析后获得的用户主体信息，通常是用户在身份验证时设置的用户名
-     * <p>
-     * 函数通过以下步骤处理令牌：
-     * 1. 使用预定义的SECRET_KEY初始化JWT解析器
-     * 2. 验证签名并解析令牌内容
-     * 3. 从JWT的claims体中提取subject字段
-     * 注意：当令牌无效/过期/签名不匹配时会抛出异常
+     * 从 token 中解析用户信息
      */
-    public UserTokenDTO extractUsername(String token) {
-        Map<String, Object> infos = (Map<String, Object>) Jwts.parser()
-                // 设置用于验证令牌签名的密钥
+    public LoginUser parseToken(String token) {
+        Claims claims = Jwts.parser()
                 .setSigningKey(secretKey)
-                // 执行签名验证并解析令牌，返回完整的JWS对象
                 .parseClaimsJws(token)
-                // 获取JWT的payload部分（claims集合）
-                .getBody()
-                // 提取标准subject声明字段（通常用于存放用户标识）
-                .get("infos");
-        return JSONObject.parseObject(JSON.toJSONString(infos), UserTokenDTO.class);
+                .getBody();
+
+        LoginUser loginUser = new LoginUser();
+        loginUser.setId(claims.get("userId", Long.class));
+        loginUser.setAccount(claims.getSubject());
+        return loginUser;
     }
 
     /**
-     * 删除Redis中的JWT令牌
-     *
-     * @param account 需要删除的令牌对应的用户标识
+     * 获取 token 中的 sessionId
      */
-    public void deleteToken(String account) {
-        redisTemplate.delete(account);
+    public String getSessionId(String token) {
+        Claims claims = Jwts.parser()
+                .setSigningKey(secretKey)
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.get("sessionId", String.class);
+    }
+
+    /**
+     * 检查 token 是否在 Redis 中有效（未过期/未被删除）
+     */
+    public boolean isTokenValid(String token) {
+        Boolean hasKey = redisTemplate.hasKey(TOKEN_PREFIX + token);
+        return Boolean.TRUE.equals(hasKey);
+    }
+
+    /**
+     * 尝试刷新过期 token，返回新 token（null 表示刷新窗口已过期）
+     */
+    public String refreshToken(String oldToken) {
+        // 1. 检查 stale 缓存（并发场景：其他请求已完成刷新）
+        String staleNewToken = redisTemplate.opsForValue().get(STALE_PREFIX + oldToken);
+        if (staleNewToken != null) {
+            return staleNewToken;
+        }
+
+        // 2. 解析旧 token 获取用户信息（过期 token 需从 ExpiredJwtException 提取 Claims）
+        LoginUser loginUser;
+        String oldSessionId;
+        try {
+            Jwts.parser().setSigningKey(secretKey).parseClaimsJws(oldToken);
+            return null; // 未过期，不应走到这里（由 isTokenValid 拦截）
+        } catch (ExpiredJwtException e) {
+            Claims claims = e.getClaims();
+            loginUser = new LoginUser();
+            loginUser.setId(claims.get("userId", Long.class));
+            loginUser.setAccount(claims.getSubject());
+            oldSessionId = claims.get("sessionId", String.class);
+        } catch (Exception e) {
+            return null;
+        }
+
+        // 3. 检查刷新窗口是否存在
+        String refreshKey = REFRESH_PREFIX + loginUser.getId() + ":" + oldSessionId;
+        Boolean refreshExists = redisTemplate.hasKey(refreshKey);
+        if (!Boolean.TRUE.equals(refreshExists)) {
+            return null;
+        }
+
+        // 4. SETNX 加锁，防止并发刷新
+        String lockKey = LOCK_PREFIX + oldToken;
+        Boolean locked = redisTemplate.opsForValue().setIfAbsent(lockKey, "1", 10, TimeUnit.SECONDS);
+        if (Boolean.TRUE.equals(locked)) {
+            try {
+                // 5. 生成新 token
+                String newToken = generateToken(loginUser);
+
+                // 6. 旧 token 写入 stale 缓存（TTL 短窗口），供并发请求直接获取
+                redisTemplate.opsForValue().set(
+                        STALE_PREFIX + oldToken,
+                        newToken,
+                        staleTtl, TimeUnit.MILLISECONDS
+                );
+
+                // 7. 删除旧刷新窗口（已消费）
+                redisTemplate.delete(refreshKey);
+
+                return newToken;
+            } finally {
+                redisTemplate.delete(lockKey);
+            }
+        }
+
+        // 8. 未获取锁，等待并检查 stale 缓存
+        for (int i = 0; i < 10; i++) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            }
+            String cachedNewToken = redisTemplate.opsForValue().get(STALE_PREFIX + oldToken);
+            if (cachedNewToken != null) {
+                return cachedNewToken;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 删除 token（登出时调用）
+     */
+    public void deleteToken(String token) {
+        redisTemplate.delete(TOKEN_PREFIX + token);
+    }
+
+    /**
+     * 删除用户所有刷新窗口（登出/修改密码时调用）
+     */
+    public void deleteRefreshTokens(Long userId) {
+        Set<String> keys = redisTemplate.keys(REFRESH_PREFIX + userId + ":*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
     }
 }

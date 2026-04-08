@@ -8,10 +8,10 @@ import com.siact.common.constant.ConstantBase;
 import com.siact.common.constant.ConstantTime;
 import com.siact.common.exception.CustomException;
 import com.siact.common.utils.ConvertUtils;
-import com.siact.common.utils.LoginUntil;
+import com.siact.common.context.LoginContext;
 import com.siact.common.utils.TimeUtil;
-import com.siact.module.permission.dto.UserTokenDTO;
-import com.siact.module.permission.vo.PageVO;
+import com.siact.module.system.dto.LoginUser;
+import com.siact.common.vo.PageVO;
 import com.siact.module.process.dto.ProcessLogDTO;
 import com.siact.module.process.dto.ProcessLogPageDTO;
 import com.siact.module.process.dto.ProcessLogQueryDTO;
@@ -112,7 +112,7 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         BeanUtils.copyProperties(dto, entity);
 
         // 获取当前操作人员
-        UserTokenDTO currentUser = LoginUntil.getCurrentUser();
+        LoginUser currentUser = LoginContext.getUser();
         if (ObjectUtils.isNotEmpty(currentUser)) {
             String username = currentUser.getUsername();
             entity.setOperator(username);

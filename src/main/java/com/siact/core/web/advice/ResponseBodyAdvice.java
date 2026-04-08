@@ -4,6 +4,7 @@ import com.siact.common.annotation.NoResponseAdvice;
 import com.siact.common.annotation.SuccessMessage;
 import com.siact.common.entity.ResponseEntity;
 import com.siact.common.enums.ResponseEnum;
+import com.siact.common.utils.JacksonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
@@ -63,6 +64,8 @@ public class ResponseBodyAdvice implements org.springframework.web.servlet.mvc.m
             log.warn("当前 SuccessMessage Key: {} 无对应响应枚举项", messageKey);
             resp = ResponseEnum.SUCCESS;
         }
-        return ResponseEntity.builder().code(resp.code()).message(resp.content()).data(body).build();
+        ResponseEntity<Object> result = ResponseEntity.builder().code(resp.code()).message(resp.content()).data(body).build();
+        if (body instanceof String) return JacksonUtils.toJson(result);
+        return result;
     }
 }

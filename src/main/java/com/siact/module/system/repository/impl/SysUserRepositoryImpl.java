@@ -30,4 +30,11 @@ public class SysUserRepositoryImpl implements SysUserRepository {
         return mapper.selectCount(Wrappers.<SysUserEntity>lambdaQuery()
                 .eq(SysUserEntity::getAccount, account)) > 0;
     }
+
+    @Override
+    public SysUserEntity findByAccount(String account) {
+        return mapper.selectOne(Wrappers.<SysUserEntity>lambdaQuery()
+                .eq(SysUserEntity::getAccount, account)
+                .last("LIMIT 1"));
+    }
 }

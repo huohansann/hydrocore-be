@@ -1,5 +1,6 @@
 package com.siact.common.vo;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.*;
 
 import java.util.Collections;
@@ -25,5 +26,15 @@ public class PageVO<T> {
 
     public static <T> PageVO<T> empty() {
         return new PageVO<>(1L, 10L, 1L, 0L, Collections.emptyList());
+    }
+
+    public static <T> PageVO<T> build(IPage<T> page) {
+        return PageVO.<T>builder()
+                .current(page.getCurrent())
+                .size(page.getSize())
+                .pages(page.getPages())
+                .total(page.getTotal())
+                .records(page.getRecords())
+                .build();
     }
 }

@@ -1,7 +1,7 @@
 package com.siact.module.process.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.siact.module.permission.vo.PageVO;
+import com.siact.common.vo.PageVO;
 import com.siact.module.process.dto.ProcessLogDTO;
 import com.siact.module.process.dto.ProcessLogPageDTO;
 import com.siact.module.process.dto.ProcessLogQueryDTO;

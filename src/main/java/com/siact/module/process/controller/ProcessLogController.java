@@ -1,7 +1,7 @@
 package com.siact.module.process.controller;
 
 import com.siact.common.result.R;
-import com.siact.module.permission.vo.PageVO;
+import com.siact.common.vo.PageVO;
 import com.siact.module.process.dto.ProcessLogDTO;
 import com.siact.module.process.dto.ProcessLogPageDTO;
 import com.siact.module.process.dto.ProcessLogQueryDTO;

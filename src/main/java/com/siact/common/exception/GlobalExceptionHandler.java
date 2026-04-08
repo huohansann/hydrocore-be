@@ -62,6 +62,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.<String>builder().code(ResponseEnum.ERROR.code()).message(e.getMessage()).build();
     }
 
+    @ExceptionHandler(value = org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<String> handleAuthenticationException(org.springframework.security.core.AuthenticationException e) {
+        return ResponseEntity.<String>builder().code(401).message("未登录或token已过期").build();
+    }
+
+    @ExceptionHandler(value = org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<String> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException e) {
+        return ResponseEntity.<String>builder().code(403).message("没有相关权限").build();
+    }
+
     public @ExceptionHandler(value = Exception.class) ResponseEntity<String> handleException(Exception e) {
         log.error("系统发生异常: {}", e.getMessage(), e);
         return ResponseEntity.<String>builder().code(HttpStatus.INTERNAL_SERVER_ERROR.value()).message("服务器内部错误: " + e.getMessage()).build();

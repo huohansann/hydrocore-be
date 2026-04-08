@@ -9,7 +9,7 @@ import com.siact.module.model.service.ModelConfigParamService;
 import com.siact.module.model.service.ModelInfoService;
 import com.siact.module.model.vo.ModelConfigParamSaveVO;
 import com.siact.module.model.vo.PublishModelVO;
-import com.siact.module.permission.vo.ModelQueryVO;
+import com.siact.module.model.vo.ModelQueryVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.ObjectUtils;

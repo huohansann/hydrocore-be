@@ -8,4 +8,6 @@ public interface SysUserRepository {
     Page<SysUserEntity> queryList(SysUserQueryDTO queryDTO, Page<SysUserEntity> page);
 
     boolean existsByAccount(String account);
+
+    SysUserEntity findByAccount(String account);
 }

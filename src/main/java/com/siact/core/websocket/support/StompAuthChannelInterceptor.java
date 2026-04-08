@@ -1,11 +1,10 @@
 package com.siact.core.websocket.support;
 
-import com.alibaba.fastjson2.JSON;
+import com.siact.common.context.LoginContext;
 import com.siact.common.constant.HttpStatus;
 import com.siact.common.exception.StompAuthException;
 import com.siact.common.utils.JwtUtil;
-import com.siact.common.utils.LoginUntil;
-import com.siact.module.permission.dto.UserTokenDTO;
+import com.siact.module.system.dto.LoginUser;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,17 +18,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
-/**
- * @author : kzuo
- * @version 1.0
- * @date : 2026-01-08 11:19
- * @className : StompAuthChannelInterceptor
- * @description : stomp connect 鉴权拦截器
- */
 @RequiredArgsConstructor
 @Component
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
-    private final JwtUtil util;
+    private final JwtUtil jwtUtil;
 
     @Nullable
     @Override
@@ -39,21 +31,26 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String authorization = accessor.getFirstNativeHeader("Authorization");
-            if (authorization == null || !authorization.startsWith("Bearer ")) throw new StompAuthException(HttpStatus.UNAUTHORIZED, "Authorization header missing");
+            if (authorization == null || !authorization.startsWith("Bearer ")) {
+                throw new StompAuthException(HttpStatus.UNAUTHORIZED, "Authorization header missing");
+            }
 
             String token = authorization.substring(7);
-            UserTokenDTO user = parseToken(token);
+            LoginUser user = parseToken(token);
 
-            if (Objects.isNull(user)) throw new StompAuthException(401, "Invalid token");
-            LoginUntil.setCurrentUser(JSON.toJSONString(user));
+            if (Objects.isNull(user)) {
+                throw new StompAuthException(401, "Invalid token");
+            }
+            LoginContext.setUser(user);
         }
         return message;
     }
 
-    private UserTokenDTO parseToken(String token) {
+    private LoginUser parseToken(String token) {
         if (Objects.isNull(token)) return null;
         try {
-            return util.extractUsername(token);
+            if (!jwtUtil.isTokenValid(token)) return null;
+            return jwtUtil.parseToken(token);
         } catch (Exception e) {
             return null;
         }
