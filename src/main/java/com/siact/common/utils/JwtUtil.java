@@ -78,6 +78,21 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody();
 
+        return toLoginUser(claims);
+    }
+
+    /**
+     * 从 token 中解析用户信息（允许过期 token）
+     */
+    public LoginUser parseTokenAllowExpired(String token) {
+        try {
+            return parseToken(token);
+        } catch (ExpiredJwtException e) {
+            return toLoginUser(e.getClaims());
+        }
+    }
+
+    private LoginUser toLoginUser(Claims claims) {
         LoginUser loginUser = new LoginUser();
         loginUser.setId(claims.get("userId", Long.class));
         loginUser.setAccount(claims.getSubject());

@@ -48,6 +48,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout(String token) {
         LoginUser currentUser = LoginContext.getUser();
+        if (currentUser == null && token != null) {
+            currentUser = jwtUtil.parseTokenAllowExpired(token);
+        }
         if (currentUser != null) {
             jwtUtil.deleteToken(token);
             jwtUtil.deleteRefreshTokens(currentUser.getId());
