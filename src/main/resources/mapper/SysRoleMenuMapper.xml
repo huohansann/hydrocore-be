@@ -3,7 +3,7 @@
 <mapper namespace="com.siact.module.system.mapper.SysRoleMenuMapper">
 
     <insert id="batchInsert">
-        INSERT INTO sys_role_menu_new (role_id, menu_id, create_time)
+        INSERT INTO sys_role_menu (role_id, menu_id, create_time)
         VALUES
         <foreach collection="menuIds" item="menuId" separator=",">
             (#{roleId}, #{menuId}, NOW())
@@ -11,15 +11,15 @@
     </insert>
 
     <delete id="deleteByRoleId">
-        DELETE FROM sys_role_menu_new WHERE role_id = #{roleId}
+        DELETE FROM sys_role_menu WHERE role_id = #{roleId}
     </delete>
 
     <select id="selectMenuIdsByRoleId" resultType="java.lang.Long">
-        SELECT menu_id FROM sys_role_menu_new WHERE role_id = #{roleId}
+        SELECT menu_id FROM sys_role_menu WHERE role_id = #{roleId}
     </select>
 
     <select id="selectMenuIdsByRoleIds" resultType="java.lang.Long">
-        SELECT DISTINCT menu_id FROM sys_role_menu_new WHERE role_id IN
+        SELECT DISTINCT menu_id FROM sys_role_menu WHERE role_id IN
         <foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
             #{roleId}
         </foreach>

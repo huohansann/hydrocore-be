@@ -1,11 +1,11 @@
 package com.siact.module.system.service.impl;
 
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.siact.common.exception.BizException;
 import com.siact.common.redis.RedisService;
+import com.siact.common.utils.JacksonUtils;
 import com.siact.module.system.command.SysConfigCreateCommand;
 import com.siact.module.system.command.SysConfigUpdateCommand;
 import com.siact.module.system.dto.SysConfigDTO;
@@ -17,6 +17,7 @@ import com.siact.module.system.processor.ConfigAssembler;
 import com.siact.module.system.processor.ConfigFlattener;
 import com.siact.module.system.service.SysConfigService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
  *
  * @author siact
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfigEntity> implements SysConfigService {
@@ -47,10 +49,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
 
         // 1. 查缓存
         Object cached = redisService.getCacheObject(cacheKey);
-        if (cached instanceof SysConfigDTO) {
-            SysConfigDTO dto = (SysConfigDTO) cached;
-            dto.setData(stripTypeInfo(dto.getData()));
-            return dto;
+        if (cached instanceof String) {
+            try {
+                return JacksonUtils.fromJson((String) cached, SysConfigDTO.class);
+            } catch (Exception e) {
+                log.warn("解析配置缓存失败，回退数据库查询: {}", e.getMessage());
+            }
         }
 
         // 2. 查数据库
@@ -61,7 +65,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
 
         // 3. 组装并缓存
         SysConfigDTO dto = assembleDTO(entities);
-        redisService.setCacheObject(cacheKey, dto, CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+        writeCache(cacheKey, dto);
 
         return dto;
     }
@@ -103,7 +107,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         if (success) {
             SysConfigDTO dto = assembleDTO(entities);
             String cacheKey = CACHE_KEY_PREFIX + command.getScCode();
-            redisService.setCacheObject(cacheKey, dto, CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+            writeCache(cacheKey, dto);
         }
 
         return success;
@@ -173,8 +177,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
 
         // 1. 查缓存
         Object cached = redisService.getCacheObject(cacheKey);
-        if (cached instanceof Map) {
-            return new ArrayList<>(((Map<String, SysConfigDTO>) cached).values());
+        if (cached instanceof String) {
+            try {
+                return JacksonUtils.fromJson((String) cached, new TypeReference<List<SysConfigDTO>>() {});
+            } catch (Exception e) {
+                log.warn("解析模块配置缓存失败，回退数据库查询: {}", e.getMessage());
+            }
         }
 
         // 2. 查数据库
@@ -186,16 +194,16 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         Map<String, List<SysConfigEntity>> grouped = allEntities.stream()
                 .collect(Collectors.groupingBy(SysConfigEntity::getScCode));
 
-        Map<String, SysConfigDTO> resultMap = new HashMap<>();
+        List<SysConfigDTO> resultList = new ArrayList<>();
         for (Map.Entry<String, List<SysConfigEntity>> entry : grouped.entrySet()) {
             SysConfigDTO dto = assembleDTO(entry.getValue());
-            resultMap.put(entry.getKey(), dto);
+            resultList.add(dto);
         }
 
         // 4. 缓存
-        redisService.setCacheObject(cacheKey, resultMap, CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+        writeCache(cacheKey, resultList);
 
-        return new ArrayList<>(resultMap.values());
+        return resultList;
     }
 
     @Override
@@ -336,30 +344,11 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         redisService.deleteObject(CACHE_KEY_MODULE + module.name());
     }
 
-    /**
-     * 递归清除 Fastjson 序列化添加的 @type 字段
-     */
-    private Object stripTypeInfo(Object obj) {
-        if (obj instanceof JSONObject) {
-            JSONObject jsonObj = (JSONObject) obj;
-            jsonObj.remove("@type");
-            for (String key : jsonObj.keySet()) {
-                Object value = jsonObj.get(key);
-                if (value instanceof JSONObject || value instanceof JSONArray) {
-                    jsonObj.put(key, stripTypeInfo(value));
-                }
-            }
-            return jsonObj;
-        } else if (obj instanceof JSONArray) {
-            JSONArray jsonArr = (JSONArray) obj;
-            for (int i = 0; i < jsonArr.size(); i++) {
-                Object element = jsonArr.get(i);
-                if (element instanceof JSONObject || element instanceof JSONArray) {
-                    jsonArr.set(i, stripTypeInfo(element));
-                }
-            }
-            return jsonArr;
+    private void writeCache(String key, Object value) {
+        try {
+            redisService.setCacheObject(key, JacksonUtils.toJson(value), CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+        } catch (Exception e) {
+            log.error("写入配置缓存失败: {}", e.getMessage());
         }
-        return obj;
     }
 }

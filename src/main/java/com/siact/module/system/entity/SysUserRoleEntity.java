@@ -9,7 +9,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 @Data
-@TableName("sys_user_role_new")
+@TableName("sys_user_role")
 public class SysUserRoleEntity implements Serializable {
     private static final long serialVersionUID = 1L;
 

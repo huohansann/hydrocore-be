@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("sys_menu_new")
+@TableName("sys_menu")
 public class SysMenuEntity {
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)

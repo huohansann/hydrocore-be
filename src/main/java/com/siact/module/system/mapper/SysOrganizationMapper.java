@@ -10,6 +10,6 @@ import java.util.List;
 @Mapper
 public interface SysOrganizationMapper extends BaseMapper<SysOrganizationEntity> {
 
-    @Select("SELECT id, parent_id, org_name, org_code, sort, status FROM sys_organization_new WHERE deleted = 0 ORDER BY sort")
+    @Select("SELECT id, parent_id, org_name, org_code, sort, status FROM sys_organization WHERE deleted = 0 ORDER BY sort")
     List<SysOrganizationEntity> queryAllForTree();
 }

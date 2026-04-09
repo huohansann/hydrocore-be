@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("sys_role_new")
+@TableName("sys_role")
 public class SysRoleEntity {
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)

@@ -3,7 +3,7 @@
 <mapper namespace="com.siact.module.system.mapper.SysUserRoleMapper">
 
     <insert id="batchInsert">
-        INSERT INTO sys_user_role_new (user_id, role_id, create_time)
+        INSERT INTO sys_user_role (user_id, role_id, create_time)
         VALUES
         <foreach collection="roleIds" item="roleId" separator=",">
             (#{userId}, #{roleId}, NOW())
@@ -11,11 +11,11 @@
     </insert>
 
     <delete id="deleteByUserId">
-        DELETE FROM sys_user_role_new WHERE user_id = #{userId}
+        DELETE FROM sys_user_role WHERE user_id = #{userId}
     </delete>
 
     <select id="selectRoleIdsByUserId" resultType="java.lang.Long">
-        SELECT role_id FROM sys_user_role_new WHERE user_id = #{userId}
+        SELECT role_id FROM sys_user_role WHERE user_id = #{userId}
     </select>
 
 </mapper>

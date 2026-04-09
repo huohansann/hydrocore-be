@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("sys_user_new")
+@TableName("sys_user")
 public class SysUserEntity {
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)

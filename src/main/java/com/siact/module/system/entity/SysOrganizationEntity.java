@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("sys_organization_new")
+@TableName("sys_organization")
 public class SysOrganizationEntity {
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)
