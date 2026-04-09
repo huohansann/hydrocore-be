@@ -101,6 +101,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
     @Override
     public void algorithmInference() {
         String nowTimeStr = TimeUtil.getNowStr(ConstantTime.DATE_TIME_MM_00);
+        log.info("开始调用模型预测,nowTimeStr:{}", nowTimeStr);
 
         // 1:读取模型数据当中的预测相关的dataCode MC1/MC5/MC10
         List<AlgorithmPredictionDataCodeTplDTO> predictionDataList = tplService.getListByCode("algorithmPredictionDataCode", AlgorithmPredictionDataCodeTplDTO.class);
@@ -109,29 +110,33 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         // 2025-12-08 调整为单个点位依次调用, 防止单次调用超时
         for (String dataCode : dataCodes) {
             CompletableFuture.runAsync(() -> {
-                List<String> dataCodeList = Collections.singletonList(dataCode);
-                // 1.2:过滤出已选择的模型数据
-                List<ModelPublishInfoEntity> lastPublishInfoList = modelPublishInfoService.queryLastPublishInfoByDataCodeList(dataCodeList);
-                String allSelectedModelIdList = lastPublishInfoList.stream().map(ModelPublishInfoEntity::getPublishModelInfoIds).collect(Collectors.joining(ConstantSymbol.COMMA));
-                // 1.3: 根据配置的模型id查找模型信息
-                List<ModelInfoEntity> modelInfoEntityList = modelInfoService.listByIds(Arrays.asList(allSelectedModelIdList.split(ConstantSymbol.COMMA)));
-                // 1.4: 为防止调用算法失败,额外过滤出已完成回调的模型信息
-                modelInfoEntityList = modelInfoEntityList.stream().filter(o -> o.getAlgorithmCallStatus().equals(AlgorithmCallStatusEnum.SUCCESS.getStatus())).collect(Collectors.toList());
+                try{
+                    List<String> dataCodeList = Collections.singletonList(dataCode);
+                    // 1.2:过滤出已选择的模型数据
+                    List<ModelPublishInfoEntity> lastPublishInfoList = modelPublishInfoService.queryLastPublishInfoByDataCodeList(dataCodeList);
+                    String allSelectedModelIdList = lastPublishInfoList.stream().map(ModelPublishInfoEntity::getPublishModelInfoIds).collect(Collectors.joining(ConstantSymbol.COMMA));
+                    // 1.3: 根据配置的模型id查找模型信息
+                    List<ModelInfoEntity> modelInfoEntityList = modelInfoService.listByIds(Arrays.asList(allSelectedModelIdList.split(ConstantSymbol.COMMA)));
+                    // 1.4: 为防止调用算法失败,额外过滤出已完成回调的模型信息
+                    modelInfoEntityList = modelInfoEntityList.stream().filter(o -> o.getAlgorithmCallStatus().equals(AlgorithmCallStatusEnum.SUCCESS.getStatus())).collect(Collectors.toList());
 
-                if (modelInfoEntityList.isEmpty()) {
-                    log.info("没有已完成回调的模型数据,nowTimeStr:{}", nowTimeStr);
-                    return;
+                    if (modelInfoEntityList.isEmpty()) {
+                        log.info("没有已完成回调的模型数据,nowTimeStr:{}", nowTimeStr);
+                        return;
+                    }
+
+                    // 1:构造模型调用的入参
+                    AlgorithmPublishModelParamDTO modelCallParamDTO = generateModelCallParam(dataCodeList, nowTimeStr, modelInfoEntityList);
+                    log.info("调用模型预测,入参:{}", JSON.toJSONString(modelCallParamDTO));
+
+                    // 2:调用算法的预测接口并记录调用信息
+                    LinkedHashMap<String, Object> response = callAlgorithmInterFaceData(modelCallParamDTO);
+
+                    // 3:解析算法返回的数据 并记录预测数据
+                    parseCallRespDataAndSavePredictionData(response, modelCallParamDTO, modelInfoEntityList, nowTimeStr);
+                }catch (Exception e) {
+                    log.error("异步执行模型预测时发生异常, dataCode: {}", dataCode, e);
                 }
-
-                // 1:构造模型调用的入参
-                AlgorithmPublishModelParamDTO modelCallParamDTO = generateModelCallParam(dataCodeList, nowTimeStr, modelInfoEntityList);
-                log.info("调用模型预测,入参:{}", JSON.toJSONString(modelCallParamDTO));
-
-                // 2:调用算法的预测接口并记录调用信息
-                LinkedHashMap<String, Object> response = callAlgorithmInterFaceData(modelCallParamDTO);
-
-                // 3:解析算法返回的数据 并记录预测数据
-                parseCallRespDataAndSavePredictionData(response, modelCallParamDTO, modelInfoEntityList, nowTimeStr);
             }, executor);
         }
     }
@@ -280,7 +285,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
 
         try {
             response = algorithmFeign.inference(modelCallParamDTO);
-            log.info("调用模型预测,:{},结果:{}", modelCallParamDTO, response);
+            log.info("除非,:{},结果:{}", modelCallParamDTO, response);
             entity.setRespTime(TimeUtil.getNow());
             entity.setRespJson(JSON.toJSONString(response));
         } catch (Exception e) {

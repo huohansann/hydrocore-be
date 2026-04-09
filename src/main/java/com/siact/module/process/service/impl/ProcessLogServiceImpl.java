@@ -391,10 +391,13 @@ public class ProcessLogServiceImpl extends ServiceImpl<ProcessLogMapper, Process
         LambdaQueryWrapper<ProcessLogEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(w -> w.le(ProcessLogEntity::getStartTime, queryDate).ge(ProcessLogEntity::getEndTime, queryDate));
         wrapper.or(o -> o.le(ProcessLogEntity::getStartTime, queryDate).and(o1 -> o1.isNull(ProcessLogEntity::getEndTime)));
+        // 按开始时间倒序，取最新的一条
+        wrapper.orderByDesc(ProcessLogEntity::getStartTime);
+        wrapper.last("LIMIT 1");
 
         ProcessLogEntity processLogEntity = baseMapper.selectOne(wrapper);
         if (ObjectUtils.isEmpty(processLogEntity)) {
-            log.info("查询时间段内无数据");
+            log.info("查询时间段内无数据，queryDate:{}", queryDate);
             return null;
         }
         return toVO(processLogEntity);
