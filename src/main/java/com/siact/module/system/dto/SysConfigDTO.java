@@ -27,6 +27,6 @@ public class SysConfigDTO {
     @ApiModelProperty("乐观锁版本号")
     private Integer version;
 
-    @ApiModelProperty("配置数据（JSON 对象或数组）")
+    @ApiModelProperty("配置数据（Map 或 List）")
     private Object data;
 }

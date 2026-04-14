@@ -1,6 +1,5 @@
 package com.siact.module.system.service;
 
-import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.siact.module.system.command.SysConfigCreateCommand;
 import com.siact.module.system.command.SysConfigUpdateCommand;

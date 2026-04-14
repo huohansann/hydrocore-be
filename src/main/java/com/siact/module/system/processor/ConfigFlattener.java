@@ -1,7 +1,5 @@
 package com.siact.module.system.processor;
 
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
 import com.siact.module.system.entity.SysConfigEntity;
 import com.siact.module.system.enums.SysConfigModuleEnum;
 import com.siact.module.system.enums.SysConfigTypeEnum;
@@ -47,7 +45,7 @@ public class ConfigFlattener {
             return;
         }
 
-        // 处理 Map（JSON 对象，来自 Jackson 反序列化或 Fastjson JSONObject）
+        // 处理 Map（JSON 对象，来自 Jackson 反序列化）
         if (value instanceof Map) {
             Map<?, ?> map = (Map<?, ?>) value;
             for (Map.Entry<?, ?> entry : map.entrySet()) {
@@ -62,22 +60,6 @@ public class ConfigFlattener {
             for (int i = 0; i < list.size(); i++) {
                 String childPath = path.isEmpty() ? "[" + i + "]" : path + ".[" + i + "]";
                 doFlatten(module, scCode, scName, description, childPath, list.get(i), result);
-            }
-        }
-        // 处理 Fastjson JSONArray（兼容）
-        else if (value instanceof JSONArray) {
-            JSONArray arr = (JSONArray) value;
-            for (int i = 0; i < arr.size(); i++) {
-                String childPath = path.isEmpty() ? "[" + i + "]" : path + ".[" + i + "]";
-                doFlatten(module, scCode, scName, description, childPath, arr.get(i), result);
-            }
-        }
-        // 处理 Fastjson JSONObject（兼容）
-        else if (value instanceof JSONObject) {
-            JSONObject obj = (JSONObject) value;
-            for (String key : obj.keySet()) {
-                String childPath = path.isEmpty() ? key : path + "." + key;
-                doFlatten(module, scCode, scName, description, childPath, obj.get(key), result);
             }
         }
         // 叶子节点：直接存储

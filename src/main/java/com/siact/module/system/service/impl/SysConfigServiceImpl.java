@@ -103,11 +103,9 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
 
         boolean success = saveBatch(entities);
 
-        // 3. 写缓存
+        // 3. 清除缓存（下次读取时重建）
         if (success) {
-            SysConfigDTO dto = assembleDTO(entities);
-            String cacheKey = CACHE_KEY_PREFIX + command.getScCode();
-            writeCache(cacheKey, dto);
+            evictCache(command.getScCode(), command.getModule());
         }
 
         return success;

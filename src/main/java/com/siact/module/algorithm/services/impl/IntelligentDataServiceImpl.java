@@ -16,10 +16,18 @@ import com.siact.module.algorithm.enums.IntelliTypeEnum;
 import com.siact.module.algorithm.mapper.IntelligentDataMapper;
 import com.siact.module.algorithm.services.AlgorithmService;
 import com.siact.module.algorithm.services.IntelligentDataService;
+import com.siact.module.base.dto.ControlIntervalConfigDTO;
+import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.service.TplService;
 import com.siact.module.base.vo.TplVO;
+import com.siact.module.system.constants.SysConfigCodeConstants;
+import com.siact.module.system.dto.SysConfigDTO;
+import com.siact.module.system.service.SysConfigService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +36,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,11 +56,13 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
     private final KilnProperty property;
     private final TplService tplService;
     private final RedisService redis;
-    // private final ControlIntervalConfigService configService;
+    private final SysConfigService sysConfigService;
+    private final ControlIntervalConfigService configService;
 
     /**
      * 调用智能计算算法接口
      */
+    @SuppressWarnings("unchecked")
     @Override
     public @Transactional void callIntelligentInterface() {
         // 将当前时间的秒归0处理
@@ -58,36 +71,32 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
 
         // 封装参数
         JSONObject params = new JSONObject();
-        // params.put("fire_change_cycle", property.getConfig().getFireChangeCycle());
-        // params.put("model", "LightGBM2");
-        // params.put("method", "model");
 
-        JSONObject intelligentComputingParams = JSONObject.parseObject(tplService.selectTplByCode("intelligentComputingParams").getTplContent());
-        params.put("ts", intelligentComputingParams.getString("ts"));
-        params.put("startTime", now.plusMinutes(-intelligentComputingParams.getInteger("tracingTime")).format(TimeUtil.df));
+        SysConfigDTO intelliComputingParams = sysConfigService.getByCode(SysConfigCodeConstants.INTELLI_COMPUTING_PARAMS);
+        Map<String, Object> icpData = (Map<String, Object>) intelliComputingParams.getData();
+
+        params.put("ts", MapUtils.getString(icpData,"ts"));
+        params.put("startTime", now.plusMinutes(-MapUtils.getInteger(icpData, "tracingTime")).format(TimeUtil.df));
         params.put("endTime", now.format(TimeUtil.df));
-        JSONObject data = new JSONObject();
-        intelligentComputingParams.getJSONArray("keyData").forEach(o -> {
-            JSONObject itemJson = JSONObject.from(o);
-            data.put(itemJson.getString("algorithmCode"), itemJson.getString("dataCode"));
+        Map<String, String> data = new HashMap<>();
+        System.out.println(icpData.get("keyData"));
+        List<Map<String, String>> keyData = (List<Map<String, String>>) icpData.get("keyData");
+        keyData.forEach(item -> {
+            data.put(MapUtils.getString(item,"algorithmCode"), MapUtils.getString(item,"dataCode"));
         });
         params.put("data", data);
-        params.put("TE213_SP", intelligentComputingParams.getBigDecimal("TE213_SP"));
-        params.put("TE202_SP", intelligentComputingParams.getBigDecimal("TE202_SP"));
-        params.put("TE206_SP", intelligentComputingParams.getBigDecimal("TE206_SP"));
+
+        // 添加温度设定值参数
+        SysConfigDTO controlTargetPoints = sysConfigService.getByCode(SysConfigCodeConstants.CONTROL_TARGET_POINTS);
+        Map<String, String> cptData =(Map<String, String>) controlTargetPoints.getData();
+        List<ControlIntervalConfigDTO> targetTemps = configService.selectListByDataCodeList(new ArrayList<>(cptData.values()));
+        for (ControlIntervalConfigDTO dto : targetTemps) {
+          params.put(dto.getMeasurePoint() + "_SP", new BigDecimal(dto.getTemperatureSet()));
+        }
+
         Object cacheObject = redis.getCacheObject(AlgorithmConstant.INTELLI_ALGORITHM_CACHE_KEY);
         params.put("flag", ObjectUtils.isNotEmpty(cacheObject));
 
-        // for (int i = 1; i <= 10; i++) {
-        //     String mc = "MC" + i;
-        //     ControlIntervalConfigDTO dto = configService.get(ControlIntervalConfigVO.builder().measurePoint(mc).build());
-        //     // MC 温度上限
-        //     params.put(mc + "_MAX_THRESHOLD", Double.valueOf(dto.getUpControl()));
-        //     // MC 温度下限
-        //     params.put(mc + "_MIN_THRESHOLD", Double.valueOf(dto.getLowControl()));
-        //     // MC 控制目标
-        //     params.put(mc + "_CONTROL_TARGET", Double.valueOf(dto.getTemperatureSet()));
-        // }
 
         // 调用接口
         JSONObject response;
@@ -95,7 +104,7 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
             response = algorithmService.callResolve(
                     "control",
                     JSONObject.toJSONString(params),
-                    () -> HttpUtil.post(property.getAlgorithm().getBaseUrl() + "/control", params.toJSONString(), 600000)
+                    () -> HttpUtil.post(property.getAlgorithm().getBaseUrl() + "/control", params.toJSONString(), property.getAlgorithm().getIntelligentTimeout())
             );
         } catch (BizException e) {
             log.error("智能控制算法调用异常: {}", e.getMessage());

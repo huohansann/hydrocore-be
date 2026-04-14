@@ -1,7 +1,5 @@
 package com.siact.module.system.processor;
 
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
 import com.siact.module.system.entity.SysConfigEntity;
 import com.siact.module.system.enums.SysConfigTypeEnum;
 import org.springframework.stereotype.Component;
@@ -9,12 +7,11 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 /**
  * 配置组装处理器
- * 将多行 SysConfigEntity 组装为 JSON 对象或数组
+ * 将多行 SysConfigEntity 组装为嵌套的 Map/List 结构
  *
  * @author siact
  */
@@ -24,14 +21,14 @@ public class ConfigAssembler {
     private static final SimpleDateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
-     * 将多行配置数据组装为 JSON 对象或数组
+     * 将多行配置数据组装为 Map 或 List 结构
      *
      * @param entities 配置实体列表
-     * @return 组装后的 JSON 对象或数组
+     * @return 组装后的 Map 或 List
      */
     public Object assemble(List<SysConfigEntity> entities) {
         if (entities == null || entities.isEmpty()) {
-            return new JSONObject();
+            return new LinkedHashMap<>();
         }
 
         // 按路径排序，保证数组顺序正确
@@ -41,49 +38,18 @@ public class ConfigAssembler {
         String firstPath = entities.get(0).getScPath();
         boolean isRootArray = firstPath.startsWith("[");
 
-        Object result;
         if (isRootArray) {
-            result = assembleArray(entities);
+            return assembleArray(entities);
         } else {
-            result = assembleObject(entities);
+            return assembleObject(entities);
         }
-
-        // 清除 Fastjson 序列化时添加的 @type 字段
-        return stripTypeInfo(result);
     }
 
     /**
-     * 递归清除 @type 字段，返回干净的 JSON 对象
+     * 组装为 Map 对象
      */
-    private Object stripTypeInfo(Object obj) {
-        if (obj instanceof JSONObject) {
-            JSONObject jsonObj = (JSONObject) obj;
-            jsonObj.remove("@type");
-            for (String key : jsonObj.keySet()) {
-                Object value = jsonObj.get(key);
-                if (value instanceof JSONObject || value instanceof JSONArray) {
-                    jsonObj.put(key, stripTypeInfo(value));
-                }
-            }
-            return jsonObj;
-        } else if (obj instanceof JSONArray) {
-            JSONArray jsonArr = (JSONArray) obj;
-            for (int i = 0; i < jsonArr.size(); i++) {
-                Object element = jsonArr.get(i);
-                if (element instanceof JSONObject || element instanceof JSONArray) {
-                    jsonArr.set(i, stripTypeInfo(element));
-                }
-            }
-            return jsonArr;
-        }
-        return obj;
-    }
-
-    /**
-     * 组装为 JSON 对象
-     */
-    private JSONObject assembleObject(List<SysConfigEntity> entities) {
-        JSONObject result = new JSONObject();
+    private Map<String, Object> assembleObject(List<SysConfigEntity> entities) {
+        Map<String, Object> result = new LinkedHashMap<>();
         for (SysConfigEntity entity : entities) {
             String path = entity.getScPath();
             Object value = parseValue(entity.getScType(), entity.getScValue());
@@ -93,10 +59,10 @@ public class ConfigAssembler {
     }
 
     /**
-     * 组装为 JSON 数组
+     * 组装为 List 数组
      */
-    private JSONArray assembleArray(List<SysConfigEntity> entities) {
-        JSONArray result = new JSONArray();
+    private List<Object> assembleArray(List<SysConfigEntity> entities) {
+        List<Object> result = new ArrayList<>();
         for (SysConfigEntity entity : entities) {
             String path = entity.getScPath();
             Object value = parseValue(entity.getScType(), entity.getScValue());
@@ -136,45 +102,46 @@ public class ConfigAssembler {
 
     /**
      * 设置对象路径值
+     * 使用 look-ahead 判断当前 part 是数组容器还是对象容器
      */
-    private void setPathValue(JSONObject obj, String path, Object value) {
+    private void setPathValue(Map<String, Object> obj, String path, Object value) {
         if (path == null || path.isEmpty()) {
             return;
         }
 
         String[] parts = path.split("\\.");
-        JSONObject current = obj;
+        Map<String, Object> current = obj;
 
-        for (int i = 0; i < parts.length - 1; i++) {
+        int i = 0;
+        while (i < parts.length - 1) {
             String part = parts[i];
-            if (isArrayIndex(part)) {
-                int index = parseArrayIndex(part);
-                String arrayKey = parts[i - 1]; // 前一个部分是数组名
-                JSONArray arr = getOrCreateArray(current, arrayKey);
+            String nextPart = (i + 1 < parts.length) ? parts[i + 1] : null;
+
+            if (!isArrayIndex(part) && nextPart != null && isArrayIndex(nextPart)) {
+                // part 是数组容器名，nextPart 是 [N]：创建数组并导航到元素
+                List<Object> arr = getOrCreateArray(current, part);
+                int index = parseArrayIndex(nextPart);
                 current = ensureArrayElement(arr, index);
-            } else {
+                i += 2; // 跳过 part 和 [N]
+            } else if (!isArrayIndex(part)) {
+                // 普通对象字段
                 current = getOrCreateObject(current, part);
+                i++;
+            } else {
+                // 不应到达这里：[N] 应该总是跟在数组容器名后面被一起处理
+                i++;
             }
         }
 
         // 设置最终值
         String lastPart = parts[parts.length - 1];
         if (isArrayIndex(lastPart)) {
-            int index = parseArrayIndex(lastPart);
+            // lastPart 是 [N]，说明 parts[-2] 是数组容器名
             String arrayKey = parts.length > 1 ? parts[parts.length - 2] : null;
-            if (arrayKey != null && isArrayIndex(arrayKey)) {
-                // 嵌套数组情况
-                JSONArray arr = current.getJSONArray("items");
-                if (arr == null) {
-                    arr = new JSONArray();
-                    current.put("items", arr);
-                }
-                ensureArraySize(arr, index);
-                arr.set(index, value);
-            } else if (arrayKey != null) {
-                JSONArray arr = getOrCreateArray(current, arrayKey);
-                ensureArraySize(arr, index);
-                arr.set(index, value);
+            if (arrayKey != null && !isArrayIndex(arrayKey)) {
+                List<Object> arr = getOrCreateArray(current, arrayKey);
+                ensureArraySize(arr, parseArrayIndex(lastPart));
+                arr.set(parseArrayIndex(lastPart), value);
             }
         } else {
             current.put(lastPart, value);
@@ -184,7 +151,7 @@ public class ConfigAssembler {
     /**
      * 设置数组路径值（根级数组情况）
      */
-    private void setArrayPathValue(JSONArray arr, String path, Object value) {
+    private void setArrayPathValue(List<Object> arr, String path, Object value) {
         if (path == null || path.isEmpty()) {
             return;
         }
@@ -204,11 +171,13 @@ public class ConfigAssembler {
 
         // 需要确保该位置有对象
         Object element = arr.get(rootIndex);
-        JSONObject obj;
-        if (element instanceof JSONObject) {
-            obj = (JSONObject) element;
+        Map<String, Object> obj;
+        if (element instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> existing = (Map<String, Object>) element;
+            obj = existing;
         } else {
-            obj = new JSONObject();
+            obj = new LinkedHashMap<>();
             arr.set(rootIndex, obj);
         }
 
@@ -232,37 +201,45 @@ public class ConfigAssembler {
         return Integer.parseInt(part.substring(1, part.length() - 1));
     }
 
-    private JSONArray getOrCreateArray(JSONObject obj, String key) {
-        JSONArray arr = obj.getJSONArray(key);
-        if (arr == null) {
-            arr = new JSONArray();
-            obj.put(key, arr);
+    private List<Object> getOrCreateArray(Map<String, Object> obj, String key) {
+        Object existing = obj.get(key);
+        if (existing instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<Object> arr = (List<Object>) existing;
+            return arr;
         }
+        List<Object> arr = new ArrayList<>();
+        obj.put(key, arr);
         return arr;
     }
 
-    private JSONObject getOrCreateObject(JSONObject obj, String key) {
-        JSONObject child = obj.getJSONObject(key);
-        if (child == null) {
-            child = new JSONObject();
-            obj.put(key, child);
+    private Map<String, Object> getOrCreateObject(Map<String, Object> obj, String key) {
+        Object existing = obj.get(key);
+        if (existing instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> child = (Map<String, Object>) existing;
+            return child;
         }
+        Map<String, Object> child = new LinkedHashMap<>();
+        obj.put(key, child);
         return child;
     }
 
-    private JSONObject ensureArrayElement(JSONArray arr, int index) {
+    private Map<String, Object> ensureArrayElement(List<Object> arr, int index) {
         ensureArraySize(arr, index);
         Object element = arr.get(index);
-        if (element instanceof JSONObject) {
-            return (JSONObject) element;
+        if (element instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) element;
+            return map;
         } else {
-            JSONObject obj = new JSONObject();
+            Map<String, Object> obj = new LinkedHashMap<>();
             arr.set(index, obj);
             return obj;
         }
     }
 
-    private void ensureArraySize(JSONArray arr, int index) {
+    private void ensureArraySize(List<Object> arr, int index) {
         while (arr.size() <= index) {
             arr.add(null);
         }
