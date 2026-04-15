@@ -48,6 +48,12 @@ public class ConfigFlattener {
         // 处理 Map（JSON 对象，来自 Jackson 反序列化）
         if (value instanceof Map) {
             Map<?, ?> map = (Map<?, ?>) value;
+            if (map.isEmpty()) {
+                // 空对象作为叶子节点存储
+                SysConfigEntity entity = createEntity(module, scCode, path, scName, SysConfigTypeEnum.OBJECT, "{}", description);
+                result.add(entity);
+                return;
+            }
             for (Map.Entry<?, ?> entry : map.entrySet()) {
                 String key = String.valueOf(entry.getKey());
                 String childPath = path.isEmpty() ? key : path + "." + key;
@@ -57,6 +63,12 @@ public class ConfigFlattener {
         // 处理 List（JSON 数组，来自 Jackson 反序列化）
         else if (value instanceof List) {
             List<?> list = (List<?>) value;
+            if (list.isEmpty()) {
+                // 空数组作为叶子节点存储
+                SysConfigEntity entity = createEntity(module, scCode, path, scName, SysConfigTypeEnum.ARRAY, "[]", description);
+                result.add(entity);
+                return;
+            }
             for (int i = 0; i < list.size(); i++) {
                 String childPath = path.isEmpty() ? "[" + i + "]" : path + ".[" + i + "]";
                 doFlatten(module, scCode, scName, description, childPath, list.get(i), result);

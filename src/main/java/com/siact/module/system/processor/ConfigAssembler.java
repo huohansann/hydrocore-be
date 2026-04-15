@@ -72,6 +72,12 @@ public class ConfigAssembler {
     }
 
     private Object parseValue(SysConfigTypeEnum type, String value) {
+        if (type == SysConfigTypeEnum.OBJECT) {
+            return new LinkedHashMap<>();
+        }
+        if (type == SysConfigTypeEnum.ARRAY) {
+            return new ArrayList<>();
+        }
         if (value == null || value.isEmpty()) {
             return null;
         }

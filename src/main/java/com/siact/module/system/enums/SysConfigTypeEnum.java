@@ -12,5 +12,7 @@ public enum SysConfigTypeEnum {
     DOUBLE,    // 双精度浮点
     DECIMAL,   // 高精度数值
     BOOLEAN,   // 布尔值
-    TIMESTAMP  // 时间戳
+    TIMESTAMP, // 时间戳
+    OBJECT,    // 空对象
+    ARRAY      // 空数组
 }
