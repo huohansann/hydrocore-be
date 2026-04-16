@@ -3,7 +3,7 @@ package com.siact.module.system.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
-import java.util.Date;
+import java.sql.Timestamp;
 
 @Data
 @TableName("sys_menu")
@@ -34,13 +34,13 @@ public class SysMenuEntity {
     private String createBy;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
-    private Date createTime;
+    private Timestamp createTime;
 
     @TableField(value = "update_by", fill = FieldFill.INSERT_UPDATE)
     private String updateBy;
 
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
-    private Date updateTime;
+    private Timestamp updateTime;
 
     @TableLogic
     private Boolean deleted;

@@ -386,3 +386,23 @@ CREATE TABLE `process_log`  (
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '工艺日志表';
 
+-- =============================================
+-- 设备点位映射表
+-- =============================================
+CREATE TABLE IF NOT EXISTS `device_mapping` (
+    `id`          BIGINT        NOT NULL COMMENT '主键',
+    `point_name`  VARCHAR(255)  NOT NULL COMMENT '现场点位名称',
+    `item_id`     VARCHAR(100)  NOT NULL COMMENT '点位ID(TAOS_DB编码)',
+    `prop_code`   VARCHAR(255)  NOT NULL COMMENT '属性编码(孪生长码)',
+    `prop_name`   VARCHAR(255)  NOT NULL COMMENT '属性名称',
+    `device_code` VARCHAR(255)  NOT NULL COMMENT '设备编码',
+    `device_name` VARCHAR(255)  NOT NULL COMMENT '设备名称',
+    `create_time` TIMESTAMP     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `remark`      TEXT          COMMENT '备注',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_point_name` (`point_name`),
+    UNIQUE KEY `uk_item_id` (`item_id`),
+    UNIQUE KEY `uk_prop_code` (`prop_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备点位映射表';
+

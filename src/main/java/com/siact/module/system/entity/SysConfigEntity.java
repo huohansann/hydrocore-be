@@ -12,7 +12,7 @@ import lombok.Data;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import java.util.Date;
+import java.sql.Timestamp;
 
 /**
  * 系统选项配置实体
@@ -66,8 +66,8 @@ public class SysConfigEntity {
     private Integer version;
 
     @ApiModelProperty("创建时间")
-    private Date createTime;
+    private Timestamp createTime;
 
     @ApiModelProperty("更新时间")
-    private Date updateTime;
+    private Timestamp updateTime;
 }

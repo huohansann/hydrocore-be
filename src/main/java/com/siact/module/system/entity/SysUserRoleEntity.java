@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.sql.Timestamp;
 
 @Data
 @TableName("sys_user_role")
@@ -20,5 +20,5 @@ public class SysUserRoleEntity implements Serializable {
 
     private Long roleId;
 
-    private Date createTime;
+    private Timestamp createTime;
 }
