@@ -3,8 +3,7 @@ package com.siact.module.forecast.controller;
 
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.siact.common.R;
-import com.siact.module.base.model.AppConfigJsonNode;
-import com.siact.module.base.service.AppConfigService;
+import com.siact.common.utils.JacksonUtils;
 import com.siact.module.forecast.dto.ForecastKilnParamsDTO;
 import com.siact.module.forecast.query.TempForecastQuery;
 import com.siact.module.forecast.service.ForecastKilnService;
@@ -12,13 +11,15 @@ import com.siact.module.forecast.vo.ForecastKilnMenuVO;
 import com.siact.module.forecast.vo.LineChartVO;
 import com.siact.module.forecast.vo.TempForecastShowVO;
 import com.siact.module.forecast.vo.TempForecastVO;
+import com.siact.module.system.dto.SysConfigDTO;
+import com.siact.module.system.service.SysConfigService;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,7 +37,7 @@ import java.util.List;
 @RequestMapping("/forecast")
 public class ForecastKilnController {
     private final ForecastKilnService service;
-    private final AppConfigService acService;
+    private final SysConfigService configService;
 
     @ApiOperationSupport(order = 1)
     @ApiOperation("查询窑炉预测对应的菜单")
@@ -62,9 +63,10 @@ public class ForecastKilnController {
     }
 
     @ApiOperation("查询温度预测点位列表")
+    @SuppressWarnings("unchecked")
     public @GetMapping("/queryTempShowList/{code}") List<TempForecastShowVO> queryTemperatureShowList(@PathVariable String code) {
-        AppConfigJsonNode node = acService.queryValueByAcKey(code);
-        return node.asList(TempForecastShowVO.class);
+        SysConfigDTO dto = configService.getByCode(code);
+        return (List<TempForecastShowVO>) JacksonUtils.fromJson(JacksonUtils.toJson(dto.getData()), List.class);
     }
 
     @ApiOperationSupport(order = 2)
