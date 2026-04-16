@@ -18,8 +18,6 @@ import com.siact.module.algorithm.services.AlgorithmService;
 import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
-import com.siact.module.base.service.TplService;
-import com.siact.module.base.vo.TplVO;
 import com.siact.module.system.constants.SysConfigCodeConstants;
 import com.siact.module.system.dto.SysConfigDTO;
 import com.siact.module.system.service.SysConfigService;
@@ -54,7 +52,6 @@ import java.util.concurrent.TimeUnit;
 public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMapper, IntelligentDataEntity> implements IntelligentDataService {
     private final AlgorithmService algorithmService;
     private final KilnProperty property;
-    private final TplService tplService;
     private final RedisService redis;
     private final SysConfigService sysConfigService;
     private final ControlIntervalConfigService configService;
@@ -124,9 +121,9 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         BigDecimal lastGasSum = result.getBigDecimal("last_gas_sum_sv");
 
         // 获取编码数据
-        TplVO intelliOutputDataCode = tplService.selectTplByCode("intelliOutputDataCode");
+        SysConfigDTO intelliOutputDataCode = sysConfigService.getByCode(SysConfigCodeConstants.INTELLI_OUTPUT_DATACODE);
         // 获取点位名称编码
-        IntelliTplSettingDTO dto = JacksonUtils.fromJson(intelliOutputDataCode.getTplContent(), IntelliTplSettingDTO.class);
+        IntelliTplSettingDTO dto = JacksonUtils.fromJson(JacksonUtils.toJson(intelliOutputDataCode.getData()), IntelliTplSettingDTO.class);
         IntelliTplSettingDetailDTO detailDTO = dto.getDataCodeList().stream().filter(IntelliTplSettingDetailDTO::getActive).findFirst().orElse(null);
         if (ObjectUtils.isEmpty(detailDTO)) return;
 

@@ -12,8 +12,6 @@ import com.siact.module.algorithm.dto.IntelliTplSettingDetailDTO;
 import com.siact.module.algorithm.entity.IntelligentDataEntity;
 import com.siact.module.algorithm.enums.IntelliTypeEnum;
 import com.siact.module.algorithm.repository.IntelligentDataRepository;
-import com.siact.module.base.service.TplService;
-import com.siact.module.base.vo.TplVO;
 import com.siact.module.control.convert.ControlSettingGasConvert;
 import com.siact.module.control.dto.ControlSettingGasDTO;
 import com.siact.module.control.dto.GasForecastQueryDTO;
@@ -28,6 +26,9 @@ import com.siact.module.control.vo.GasForecastDataVO;
 import com.siact.module.control.vo.GasForecastDataValueVO;
 import com.siact.module.control.vo.GasForecastSeriesVO;
 import com.siact.module.control.vo.GasForecastVO;
+import com.siact.module.system.constants.SysConfigCodeConstants;
+import com.siact.module.system.dto.SysConfigDTO;
+import com.siact.module.system.service.SysConfigService;
 import com.siact.sec.dto.IntervalDataDto;
 import com.siact.sec.dto.IntervalValParamsDto;
 import com.siact.sec.sevice.DataService;
@@ -37,7 +38,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
@@ -66,7 +66,7 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
     private final EventPublisher publisher;
     private final ControlSettingGasConvert convert;
     private final DataService dataService;
-    private final TplService tplService;
+    private final SysConfigService configService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /** 测试模式开关：true 时从 JSON 文件读取测试数据，false 时执行正常业务逻辑 */
@@ -95,8 +95,8 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
         Map<String, ControlSettingGasEntity> gasSettingList = settingList.stream().collect(Collectors.toMap(ControlSettingGasEntity::getDataCode, v -> v));
 
         // 查询模板配置
-        TplVO tpl = tplService.selectTplByCode("intelliOutputDataCode");
-        IntelliTplSettingDTO intelliTplSettingDTO = JacksonUtils.fromJson(tpl.getTplContent(), IntelliTplSettingDTO.class);
+        SysConfigDTO config = configService.getByCode(SysConfigCodeConstants.INTELLI_OUTPUT_DATACODE);
+        IntelliTplSettingDTO intelliTplSettingDTO = JacksonUtils.fromJson(JacksonUtils.toJson(config.getData()), IntelliTplSettingDTO.class);
         intelliTplSettingDTO.getDataCodeList().sort(Comparator.comparing(IntelliTplSettingDetailDTO::getName));
 
         // 查询 DCS 实时值
@@ -440,8 +440,8 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
 
     @Override
     public List<Map<String, String>> queryForecastConfig() {
-        TplVO tpl = tplService.selectTplByCode("intelliOutputDataCode");
-        IntelliTplSettingDTO intelliTplSettingDTO = JacksonUtils.fromJson(tpl.getTplContent(), IntelliTplSettingDTO.class);
+        SysConfigDTO config = configService.getByCode(SysConfigCodeConstants.INTELLI_OUTPUT_DATACODE);
+        IntelliTplSettingDTO intelliTplSettingDTO = JacksonUtils.fromJson(JacksonUtils.toJson(config.getData()), IntelliTplSettingDTO.class);
         intelliTplSettingDTO.getDataCodeList().sort(Comparator.comparing(IntelliTplSettingDetailDTO::getName));
 
         return intelliTplSettingDTO.getDataCodeList().stream()
