@@ -31,25 +31,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        // 优先尝试 Authorization header 中的 JWT
         String token = resolveToken(request);
-
-        if (token == null) {
-            filterChain.doFilter(request, response);
+        if (token != null) {
+            processJwtToken(token, request, response, filterChain);
             return;
         }
 
-        // 阶段 1: JWT 解析（与请求处理分离）
+        // 兜底：尝试 query 参数中的下载 token
+        String downloadToken = request.getParameter("token");
+        if (StringUtils.hasText(downloadToken)) {
+            LoginUser loginUser = jwtUtil.consumeDownloadToken(downloadToken);
+            if (loginUser != null) {
+                setAuthentication(request, loginUser);
+                log.debug("Download token authenticated: {}", loginUser.getAccount());
+            }
+        }
+
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            clearContext();
+        }
+    }
+
+    private void processJwtToken(String token, HttpServletRequest request, HttpServletResponse response,
+                                  FilterChain filterChain) throws ServletException, IOException {
         try {
             if (jwtUtil.isTokenValid(token)) {
                 setAuthentication(request, jwtUtil.parseToken(token));
             } else {
-                // Token 过期，尝试刷新
                 String newToken = jwtUtil.refreshToken(token);
                 if (newToken != null) {
                     setAuthentication(request, jwtUtil.parseToken(newToken));
                     response.setHeader("X-New-Token", newToken);
                 }
-                // 刷新失败 → 不设 SecurityContext → Spring Security 拦截 → AuthenticationEntryPointImpl 处理
             }
         } catch (ExpiredJwtException e) {
             log.debug("JWT expired, refresh failed: {}", e.getMessage());
@@ -61,7 +77,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             log.warn("JWT error: {}", e.getMessage());
         }
 
-        // 阶段 2: 请求处理（独立的 try-finally 保证清理时机）
         try {
             filterChain.doFilter(request, response);
         } finally {

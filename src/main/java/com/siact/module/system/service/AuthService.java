@@ -18,4 +18,6 @@ public interface AuthService {
     LoginUser getCurrentUser(LoginUser currentUser);
 
     List<SysMenuTreeVO> getCurrentUserMenus(LoginUser currentUser);
+
+    String generateDownloadToken(LoginUser currentUser);
 }

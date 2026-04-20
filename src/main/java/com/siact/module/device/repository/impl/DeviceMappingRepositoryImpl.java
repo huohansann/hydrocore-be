@@ -11,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Repository
@@ -88,5 +90,86 @@ public class DeviceMappingRepositoryImpl implements DeviceMappingRepository {
                 .eq(StringUtils.isNotBlank(queryDTO.getDeviceCode()), DeviceMappingEntity::getDeviceCode, queryDTO.getDeviceCode())
                 .like(StringUtils.isNotBlank(queryDTO.getDeviceName()), DeviceMappingEntity::getDeviceName, queryDTO.getDeviceName())
                 .orderByDesc(DeviceMappingEntity::getUpdateTime);
+    }
+
+    @Override
+    public List<String> findPropCodesByConditions(List<String> itemIds, String propName, List<String> deviceCodes) {
+        boolean hasItemId = itemIds != null && !itemIds.isEmpty();
+        boolean hasPropName = StringUtils.isNotBlank(propName);
+        boolean hasDeviceCode = deviceCodes != null && !deviceCodes.isEmpty();
+
+        // 无筛选条件时返回所有 propCode
+        if (!hasItemId && !hasPropName && !hasDeviceCode) {
+            return mapper.selectList(Wrappers.<DeviceMappingEntity>lambdaQuery()
+                    .select(DeviceMappingEntity::getPropCode)
+                    .isNotNull(DeviceMappingEntity::getPropCode))
+                    .stream()
+                    .map(DeviceMappingEntity::getPropCode)
+                    .filter(StringUtils::isNotBlank)
+                    .distinct()
+                    .collect(Collectors.toList());
+        }
+
+        LambdaQueryWrapper<DeviceMappingEntity> wrapper = Wrappers.<DeviceMappingEntity>lambdaQuery();
+        wrapper.and(w -> {
+            if (hasItemId) {
+                w.or().in(DeviceMappingEntity::getItemId, itemIds);
+            }
+            if (hasPropName) {
+                w.or().like(DeviceMappingEntity::getPropName, propName);
+            }
+            if (hasDeviceCode) {
+                w.or().in(DeviceMappingEntity::getDeviceCode, deviceCodes);
+            }
+        });
+        wrapper.select(DeviceMappingEntity::getPropCode);
+
+        return mapper.selectList(wrapper).stream()
+                .map(DeviceMappingEntity::getPropCode)
+                .filter(StringUtils::isNotBlank)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<DeviceMappingEntity> findByPropCodes(List<String> propCodes) {
+        if (propCodes == null || propCodes.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return mapper.selectList(Wrappers.<DeviceMappingEntity>lambdaQuery()
+                .in(DeviceMappingEntity::getPropCode, propCodes));
+    }
+
+    @Override
+    public List<String> findAllItemIds() {
+        return mapper.selectList(Wrappers.<DeviceMappingEntity>lambdaQuery()
+                .select(DeviceMappingEntity::getItemId)
+                .isNotNull(DeviceMappingEntity::getItemId)
+                .orderByAsc(DeviceMappingEntity::getItemId))
+                .stream()
+                .map(DeviceMappingEntity::getItemId)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> findAllDeviceCodes() {
+        return mapper.selectList(Wrappers.<DeviceMappingEntity>lambdaQuery()
+                .select(DeviceMappingEntity::getDeviceCode)
+                .isNotNull(DeviceMappingEntity::getDeviceCode)
+                .orderByAsc(DeviceMappingEntity::getDeviceCode))
+                .stream()
+                .map(DeviceMappingEntity::getDeviceCode)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<DeviceMappingEntity> findDistinctDeviceNames() {
+        return mapper.selectList(Wrappers.<DeviceMappingEntity>lambdaQuery()
+                .select(DeviceMappingEntity::getDeviceName, DeviceMappingEntity::getDeviceCode)
+                .isNotNull(DeviceMappingEntity::getDeviceName)
+                .groupBy(DeviceMappingEntity::getDeviceName, DeviceMappingEntity::getDeviceCode)
+                .orderByAsc(DeviceMappingEntity::getDeviceName));
     }
 }

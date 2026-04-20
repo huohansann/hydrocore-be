@@ -96,4 +96,9 @@ public class AuthServiceImpl implements AuthService {
     public List<SysMenuTreeVO> getCurrentUserMenus(LoginUser currentUser) {
         return userService.getUserMenus(currentUser.getId());
     }
+
+    @Override
+    public String generateDownloadToken(LoginUser currentUser) {
+        return jwtUtil.generateDownloadToken(currentUser);
+    }
 }

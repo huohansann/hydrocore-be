@@ -37,6 +37,7 @@ public class JwtUtil {
     private static final String REFRESH_PREFIX = "token:refresh:";
     private static final String STALE_PREFIX = "token:stale:";
     private static final String LOCK_PREFIX = "token:lock:";
+    private static final String DOWNLOAD_PREFIX = "download:";
 
     /**
      * 生成 token 并存入 Redis
@@ -207,5 +208,33 @@ public class JwtUtil {
         if (keys != null && !keys.isEmpty()) {
             redisTemplate.delete(keys);
         }
+    }
+
+    /**
+     * 生成一次性下载 token，存入 Redis（短 TTL，一次性消费）
+     */
+    public String generateDownloadToken(LoginUser loginUser) {
+        String token = UUID.randomUUID().toString().replaceAll("-", "");
+        String value = loginUser.getId() + ":" + loginUser.getAccount() + ":" + loginUser.getUsername();
+        redisTemplate.opsForValue().set(DOWNLOAD_PREFIX + token, value, 30, TimeUnit.SECONDS);
+        return token;
+    }
+
+    /**
+     * 校验并消费下载 token，返回用户信息；token 无效或已过期返回 null
+     */
+    public LoginUser consumeDownloadToken(String token) {
+        String key = DOWNLOAD_PREFIX + token;
+        String value = redisTemplate.opsForValue().get(key);
+        if (value == null) {
+            return null;
+        }
+        redisTemplate.delete(key);
+        String[] parts = value.split(":", 3);
+        LoginUser loginUser = new LoginUser();
+        loginUser.setId(Long.parseLong(parts[0]));
+        loginUser.setAccount(parts[1]);
+        loginUser.setUsername(parts.length > 2 ? parts[2] : "");
+        return loginUser;
     }
 }

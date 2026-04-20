@@ -51,6 +51,13 @@ public class AuthController {
         return authService.getCurrentUserMenus(currentUser);
     }
 
+    @ApiOperation("获取下载验证token")
+    @GetMapping("/download/token")
+    public String generateDownloadToken() {
+        LoginUser currentUser = LoginContext.getUser();
+        return authService.generateDownloadToken(currentUser);
+    }
+
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {

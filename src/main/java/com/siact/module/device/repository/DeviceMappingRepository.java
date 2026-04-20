@@ -27,4 +27,14 @@ public interface DeviceMappingRepository {
     DeviceMappingEntity findByItemId(String itemId);
 
     DeviceMappingEntity findByPropCode(String propCode);
+
+    List<String> findPropCodesByConditions(List<String> itemIds, String propName, List<String> deviceCodes);
+
+    List<DeviceMappingEntity> findByPropCodes(List<String> propCodes);
+
+    List<String> findAllItemIds();
+
+    List<String> findAllDeviceCodes();
+
+    List<DeviceMappingEntity> findDistinctDeviceNames();
 }
