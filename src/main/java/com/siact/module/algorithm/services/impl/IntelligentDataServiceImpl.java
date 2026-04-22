@@ -110,8 +110,8 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         // 响应时间
         String time = TimeUtil.getNow();
 
-        JSONObject rs = response.getJSONObject("result");
-        JSONObject result = rs.getJSONObject("result1");
+        JSONObject result = response.getJSONObject("result");
+        // JSONObject result = rs.getJSONObject("result1");
         // 获取模型训练结果
         BigDecimal modelTransformer = result.getBigDecimal("gas_setValue_transformer");
         BigDecimal modelDeltaC = result.getBigDecimal("gas_deltaC_transformer");
