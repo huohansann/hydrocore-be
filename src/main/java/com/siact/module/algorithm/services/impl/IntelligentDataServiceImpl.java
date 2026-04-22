@@ -113,8 +113,8 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         JSONObject result = response.getJSONObject("result");
         // JSONObject result = rs.getJSONObject("result1");
         // 获取模型训练结果
-        BigDecimal modelTransformer = result.getBigDecimal("gas_setValue_transformer");
-        BigDecimal modelDeltaC = result.getBigDecimal("gas_deltaC_transformer");
+        // BigDecimal modelTransformer = result.getBigDecimal("gas_setValue_transformer");
+        // BigDecimal modelDeltaC = result.getBigDecimal("gas_deltaC_transformer");
         // 获取专家经验结果
         BigDecimal expertDeltaC = getValueInJson("experience_result", "delta_C", result);
         // 获取上次流量总和
@@ -130,8 +130,8 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         IntelligentDataEntity.IntelligentDataEntityBuilder builder = IntelligentDataEntity.builder().name(detailDTO.getName()).dataCode(detailDTO.getDataCode()).time(time).data(JacksonUtils.toJson(response));
 
         ArrayList<IntelligentDataEntity> collect = new ArrayList<>();
-        collect.add(builder.intelliType(IntelliTypeEnum.GAS_TRANSFORMER_MODEL).val(modelTransformer).build());
-        collect.add(builder.intelliType(IntelliTypeEnum.GAS_DELTAC_MODEL).val(modelDeltaC).build());
+        // collect.add(builder.intelliType(IntelliTypeEnum.GAS_TRANSFORMER_MODEL).val(modelTransformer).build());
+        // collect.add(builder.intelliType(IntelliTypeEnum.GAS_DELTAC_MODEL).val(modelDeltaC).build());
         collect.add(builder.intelliType(IntelliTypeEnum.GAS_DELTAC_EXPERT).val(expertDeltaC).build());
         collect.add(builder.intelliType(IntelliTypeEnum.GAS_LAST_SUM).val(lastGasSum).build());
         // 保存数据
