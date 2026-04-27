@@ -322,6 +322,36 @@ public class TaosDataServiceImpl implements TaosDataService {
         return new ArrayList<>();
     }
 
+    // ========== 原始时序数据查询 ==========
+
+    @Override
+    public List<Map<String, Object>> queryRawData(List<String> dataCodes, String startTime, String endTime) {
+        log.info("查询原始时序数据, dataCodes数量: {}, startTime: {}, endTime: {}", dataCodes.size(), startTime, endTime);
+
+        List<Map<String, Object>> results = new ArrayList<>();
+
+        if (dataCodes == null || dataCodes.isEmpty()) {
+            log.error("原始时序数据查询参数为空");
+            return results;
+        }
+
+        try {
+            String sql = TaosSqlBuilder.buildRawDataQuerySql(dataCodes, startTime, endTime);
+            results = jdbcClient.executeQuery(sql, rs -> {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("ts", formatTimestamp(jdbcClient.getString(rs, "ts")));
+                row.put("datacode", jdbcClient.getString(rs, "datacode"));
+                Double value = jdbcClient.getDouble(rs, "itemvalue");
+                row.put("itemvalue", value != null ? BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP) : null);
+                return row;
+            });
+        } catch (Exception e) {
+            log.error("查询原始时序数据失败: {}", e.getMessage(), e);
+        }
+
+        return results;
+    }
+
     // ========== 辅助方法 ==========
 
     private String formatTimestamp(String ts) {

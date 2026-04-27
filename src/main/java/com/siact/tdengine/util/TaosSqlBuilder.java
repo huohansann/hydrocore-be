@@ -99,6 +99,22 @@ public class TaosSqlBuilder {
     }
 
     /**
+     * 构建原始时序数据查询 SQL（无聚合）
+     *
+     * @param dataCodes   数字孪生编码列表
+     * @param startTime   开始时间
+     * @param endTime     结束时间
+     * @return SQL 语句
+     */
+    public static String buildRawDataQuerySql(List<String> dataCodes, String startTime, String endTime) {
+        return String.format(
+            "SELECT ts, devproperty as datacode, itemvalue FROM %s " +
+            "WHERE devproperty IN (%s) AND ts >= '%s' AND ts <= '%s' ORDER BY ts",
+            TABLE_NAME, buildInClause(dataCodes), startTime, endTime
+        );
+    }
+
+    /**
      * 构建节点属性时间段聚合查询 SQL
      * 使用 itemid TAG 过滤属性
      *

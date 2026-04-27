@@ -3,11 +3,13 @@ package com.siact.module.algorithm.services.impl;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.siact.common.config.KilnProperty;
 import com.siact.common.exception.BizException;
 import com.siact.common.redis.RedisService;
 import com.siact.common.utils.JacksonUtils;
 import com.siact.common.utils.TimeUtil;
+import com.siact.module.algorithm.services.PythonAlgorithmService;
 import com.siact.module.algorithm.constants.AlgorithmConstant;
 import com.siact.module.algorithm.dto.IntelliTplSettingDTO;
 import com.siact.module.algorithm.dto.IntelliTplSettingDetailDTO;
@@ -35,6 +37,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMapper, IntelligentDataEntity> implements IntelligentDataService {
     private final AlgorithmService algorithmService;
+    private final PythonAlgorithmService pythonAlgorithmService;
     private final KilnProperty property;
     private final RedisService redis;
     private final SysConfigService sysConfigService;
@@ -152,5 +156,34 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
             json = json.getJSONObject(s);
         }
         return json.getBigDecimal(key);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void callSelfLearningAlgorithm() {
+        log.info("===== 自学习算法调用开始 =====");
+
+        // 1. 读取点位配置
+        SysConfigDTO config = sysConfigService.getByCode(SysConfigCodeConstants.SELF_LEARNING_DATACODE);
+        List<Map<String, String>> points = (List<Map<String, String>>) config.getData();
+
+        if (points == null || points.isEmpty()) {
+            log.error("自学习算法配置中没有点位数据");
+            return;
+        }
+
+        // 2. 构建 name → dataCode 映射
+        Map<String, String> data = new LinkedHashMap<>();
+        for (Map<String, String> point : points) {
+            data.put(point.get("name"), point.get("dataCode"));
+        }
+
+        // 3. 调用 Python 算法
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("data", JacksonUtils.toJson(data));
+
+        Map<String, Object> result = pythonAlgorithmService.execute("incremental_finetune.py", params, new TypeReference<Map<String, Object>>() {});
+        log.info("自学习算法调用成功, 返回结果: {}", result);
+        log.info("===== 自学习算法调用结束 =====");
     }
 }

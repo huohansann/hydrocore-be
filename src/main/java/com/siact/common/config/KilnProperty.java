@@ -45,6 +45,21 @@ public class KilnProperty {
         private long intelliStopInterval;
         // 温度预测定时任务调用时间
         private long predictedInterval;
+        private Ssh ssh;
+
+        @Getter
+        @Setter
+        public static class Ssh {
+            private String host;
+            private int port = 22;
+            private String username;
+            private String password;
+            private String privateKeyPath;
+            private int timeout = 30_000;
+            private String pythonPath = "python3";
+            private String scriptBasePath;
+            private String condaEnv;
+        }
     }
 
     @Getter

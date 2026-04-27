@@ -7,6 +7,7 @@ import com.siact.sec.vo.CommonChartParamsVo;
 import com.siact.sec.vo.CumulativeDataVO;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * TDengine 直接查询服务接口
@@ -95,4 +96,14 @@ public interface TaosDataService {
      * @return 空列表
      */
     List<IntervalDataDto> queryForecastIntervalVal(NodePropFutureValQueryVo params);
+
+    /**
+     * 查询原始时序数据（无聚合）
+     *
+     * @param dataCodes   数字孪生编码列表
+     * @param startTime   开始时间 yyyy-MM-dd HH:mm:ss
+     * @param endTime     结束时间 yyyy-MM-dd HH:mm:ss
+     * @return 每行包含 ts、datacode、itemvalue
+     */
+    List<Map<String, Object>> queryRawData(List<String> dataCodes, String startTime, String endTime);
 }

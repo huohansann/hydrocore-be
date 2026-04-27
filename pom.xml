@@ -213,6 +213,13 @@
             <version>${jep.version}</version>
         </dependency>
 
+        <!-- JSch SSH - 调用远程 Python 算法 -->
+        <dependency>
+            <groupId>com.github.mwiede</groupId>
+            <artifactId>jsch</artifactId>
+            <version>0.2.26</version>
+        </dependency>
+
         <!-- mqtt -->
         <dependency>
             <groupId>com.siact</groupId>
