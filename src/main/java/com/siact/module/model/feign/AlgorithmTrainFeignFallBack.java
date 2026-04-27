@@ -1,6 +1,6 @@
 package com.siact.module.model.feign;
 
-import com.siact.module.model.dto.AlgorithmPublishModelParamDTO;
+import com.siact.module.model.dto.AlgorithmGenerateModelParamDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.stereotype.Component;
@@ -9,13 +9,13 @@ import java.util.LinkedHashMap;
 
 @Slf4j
 @Component
-public class AlgorithmFeignFallBack implements FallbackFactory<AlgorithmFeign> {
+public class AlgorithmTrainFeignFallBack implements FallbackFactory<AlgorithmTrainFeign> {
     @Override
-    public AlgorithmFeign create(Throwable cause) {
-        return new AlgorithmFeign() {
+    public AlgorithmTrainFeign create(Throwable cause) {
+        return new AlgorithmTrainFeign() {
             @Override
-            public LinkedHashMap<String, Object> inference(AlgorithmPublishModelParamDTO paramDTO) {
-                log.error("Feign调用/inference降级, 原因: {}", cause.getMessage(), cause);
+            public LinkedHashMap<String, Object> train(AlgorithmGenerateModelParamDTO paramDTO) {
+                log.error("Feign调用/train降级, 原因: {}", cause.getMessage(), cause);
                 LinkedHashMap<String, Object> result = new LinkedHashMap<>();
                 result.put("code", "500");
                 result.put("message", "Feign降级: " + cause.getMessage());

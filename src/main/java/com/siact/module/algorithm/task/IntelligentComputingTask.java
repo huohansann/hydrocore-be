@@ -30,7 +30,7 @@ public class IntelligentComputingTask {
     /**
      * 每 N 分钟调用一次算法 获取智能计算值
      */
-    @Scheduled(fixedRateString = "#{${spring.kiln.algorithm.intelligent-interval} * 60 * 1000}")
+    @Scheduled(fixedDelayString = "#{${spring.kiln.algorithm.intelligent-interval} * 60 * 1000}")
     public void triggerGetIntelligentComputing() {
         String lockValue = UUID.randomUUID().toString();
         if (!redis.tryLock(LOCK_KEY, lockValue, LOCK_TIMEOUT)) {

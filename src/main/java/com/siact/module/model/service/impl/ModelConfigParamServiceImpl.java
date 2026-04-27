@@ -25,7 +25,7 @@ import com.siact.module.model.dto.ModelInfoDTO;
 import com.siact.module.model.entity.AlgorithmCallInfoEntity;
 import com.siact.module.model.entity.ModelConfigParamEntity;
 import com.siact.module.model.entity.ModelInfoEntity;
-import com.siact.module.model.feign.AlgorithmFeign;
+import com.siact.module.model.feign.AlgorithmTrainFeign;
 import com.siact.module.model.mapper.ModelConfigParamMapper;
 import com.siact.module.model.service.AlgorithmCallInfoService;
 import com.siact.module.model.service.ModelConfigParamService;
@@ -88,7 +88,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
     private IProcessLogService processLogService;
 
     @Autowired
-    private AlgorithmFeign algorithmFeign;
+    private AlgorithmTrainFeign algorithmTrainFeign;
 
     @Autowired
     private AlgorithmCallInfoService algorithmCallInfoService;
@@ -331,7 +331,7 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
         threadIoPoolTaskExecutor.execute(() -> {
             LinkedHashMap<String, Object> projectListByDateRange = null;
             try {
-                projectListByDateRange = algorithmFeign.train(generateModelParamDto);
+                projectListByDateRange = algorithmTrainFeign.train(generateModelParamDto);
                 log.info("调用算法接口返回数据.projectListByDateRange:{}", JSON.toJSONString(projectListByDateRange));
                 algorithmCallInfo.setRespTime(TimeUtil.getNow());
                 algorithmCallInfo.setRespJson(JSON.toJSONString(projectListByDateRange));

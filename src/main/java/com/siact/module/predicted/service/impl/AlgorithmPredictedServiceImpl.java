@@ -47,13 +47,10 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -96,7 +93,6 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
     @Autowired
     private ProcessConfig processConfig;
 
-    private @Resource(name = "threadIoPoolTaskExecutor") Executor executor;
 
     @Override
     public void algorithmInference() {
@@ -107,37 +103,30 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         List<AlgorithmPredictionDataCodeTplDTO> predictionDataList = tplService.getListByCode("algorithmPredictionDataCode", AlgorithmPredictionDataCodeTplDTO.class);
         List<String> dataCodes = predictionDataList.stream().map(AlgorithmPredictionDataCodeTplDTO::getDataCode).distinct().collect(Collectors.toList());
 
-        // 2025-12-08 调整为单个点位依次调用, 防止单次调用超时
+        // 依次调用每个dataCode的预测, 避免并发请求争抢Python端ProcessPoolExecutor worker导致超时
         for (String dataCode : dataCodes) {
-            CompletableFuture.runAsync(() -> {
-                try{
-                    List<String> dataCodeList = Collections.singletonList(dataCode);
-                    // 1.2:过滤出已选择的模型数据
-                    List<ModelPublishInfoEntity> lastPublishInfoList = modelPublishInfoService.queryLastPublishInfoByDataCodeList(dataCodeList);
-                    String allSelectedModelIdList = lastPublishInfoList.stream().map(ModelPublishInfoEntity::getPublishModelInfoIds).collect(Collectors.joining(ConstantSymbol.COMMA));
-                    // 1.3: 根据配置的模型id查找模型信息
-                    List<ModelInfoEntity> modelInfoEntityList = modelInfoService.listByIds(Arrays.asList(allSelectedModelIdList.split(ConstantSymbol.COMMA)));
-                    // 1.4: 为防止调用算法失败,额外过滤出已完成回调的模型信息
-                    modelInfoEntityList = modelInfoEntityList.stream().filter(o -> o.getAlgorithmCallStatus().equals(AlgorithmCallStatusEnum.SUCCESS.getStatus())).collect(Collectors.toList());
+            try {
+                List<String> dataCodeList = Collections.singletonList(dataCode);
+                List<ModelPublishInfoEntity> lastPublishInfoList = modelPublishInfoService.queryLastPublishInfoByDataCodeList(dataCodeList);
+                String allSelectedModelIdList = lastPublishInfoList.stream().map(ModelPublishInfoEntity::getPublishModelInfoIds).collect(Collectors.joining(ConstantSymbol.COMMA));
+                List<ModelInfoEntity> allModelInfoList = modelInfoService.listByIds(Arrays.asList(allSelectedModelIdList.split(ConstantSymbol.COMMA)));
+                List<ModelInfoEntity> modelInfoEntityList = allModelInfoList.stream().filter(o -> o.getAlgorithmCallStatus().equals(AlgorithmCallStatusEnum.SUCCESS.getStatus())).collect(Collectors.toList());
 
-                    if (modelInfoEntityList.isEmpty()) {
-                        log.info("没有已完成回调的模型数据,nowTimeStr:{}", nowTimeStr);
-                        return;
-                    }
-
-                    // 1:构造模型调用的入参
-                    AlgorithmPublishModelParamDTO modelCallParamDTO = generateModelCallParam(dataCodeList, nowTimeStr, modelInfoEntityList);
-                    log.info("调用模型预测,入参:{}", JSON.toJSONString(modelCallParamDTO));
-
-                    // 2:调用算法的预测接口并记录调用信息
-                    LinkedHashMap<String, Object> response = callAlgorithmInterFaceData(modelCallParamDTO);
-
-                    // 3:解析算法返回的数据 并记录预测数据
-                    parseCallRespDataAndSavePredictionData(response, modelCallParamDTO, modelInfoEntityList, nowTimeStr);
-                }catch (Exception e) {
-                    log.error("异步执行模型预测时发生异常, dataCode: {}", dataCode, e);
+                if (modelInfoEntityList.isEmpty()) {
+                    log.warn("没有已完成回调的模型数据, dataCode:{}, 已发布模型总数:{}, nowTimeStr:{}", dataCode, allModelInfoList.size(), nowTimeStr);
+                    continue;
                 }
-            }, executor);
+
+                AlgorithmPublishModelParamDTO modelCallParamDTO = generateModelCallParam(dataCodeList, nowTimeStr, modelInfoEntityList);
+                log.info("调用模型预测, dataCode:{}, 入参:{}", dataCode, JSON.toJSONString(modelCallParamDTO));
+
+                LinkedHashMap<String, Object> response = callAlgorithmInterFaceData(modelCallParamDTO);
+
+                parseCallRespDataAndSavePredictionData(response, modelCallParamDTO, modelInfoEntityList, nowTimeStr);
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error("执行模型预测时发生异常, dataCode: {}", dataCode, e);
+            }
         }
     }
 
@@ -212,8 +201,8 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             List<ModelConfigParamDetailDTO> timeRange = publicParamDto.getRange();
             Map<String, Object> timeRangeCodeMap = timeRange.stream().collect(Collectors.toMap(ModelConfigParamDetailDTO::getParamCode, ModelConfigParamDetailDTO::getValue));
 
-            Integer hisDataStartTime = (Integer) timeRangeCodeMap.get("hisDataStartTime");
-            Integer hisDataEndTime = (Integer) timeRangeCodeMap.get("hisDataEndTime");
+            Integer hisDataStartTime = Integer.valueOf(timeRangeCodeMap.get("hisDataStartTime").toString());
+            Integer hisDataEndTime = Integer.valueOf(timeRangeCodeMap.get("hisDataEndTime").toString());
 
             detailParam.setRangeStart(hisDataStartTime);// 开始时间范围,单位是分钟
             detailParam.setRangeEnd(hisDataEndTime);// 结束时间范围,单位是分钟
