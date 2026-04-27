@@ -10,6 +10,7 @@ import com.siact.common.redis.RedisService;
 import com.siact.common.utils.JacksonUtils;
 import com.siact.common.utils.TimeUtil;
 import com.siact.module.algorithm.services.PythonAlgorithmService;
+import com.siact.module.algorithm.socket.AlgorithmMessageWebSocket;
 import com.siact.module.algorithm.constants.AlgorithmConstant;
 import com.siact.module.algorithm.dto.IntelliTplSettingDTO;
 import com.siact.module.algorithm.dto.IntelliTplSettingDetailDTO;
@@ -59,6 +60,7 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
     private final RedisService redis;
     private final SysConfigService sysConfigService;
     private final ControlIntervalConfigService configService;
+    private final AlgorithmMessageWebSocket message;
 
     /**
      * 调用智能计算算法接口
@@ -145,6 +147,7 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         if (!BigDecimal.ZERO.equals(expertDeltaC)) {
             // 设置 cache 四十分钟过期
             redis.setCacheObject(AlgorithmConstant.INTELLI_ALGORITHM_CACHE_KEY, lastGasSum.add(expertDeltaC), property.getAlgorithm().getIntelliStopInterval(), TimeUnit.MINUTES);
+            message.intelliUpdate();
         }
     }
 
