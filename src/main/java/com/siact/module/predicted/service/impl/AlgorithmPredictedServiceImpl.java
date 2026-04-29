@@ -223,7 +223,11 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             }
 
             detailParam.setType(predictedTypeEnum.getAlgorithmCode());
-            detailParam.setFuture_number(predictedTypeEnum.getStep());
+            // 如果包含v2, 则视为使用v2版本,对步长做除10处理
+            int futureNumber = predictedTypeEnum.getCode().contains("v2")
+                    ? predictedTypeEnum.getStep() / 10
+                    : predictedTypeEnum.getStep();
+            detailParam.setFuture_number(futureNumber);
 
 
             // 处理算法配置参数
@@ -338,7 +342,10 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             } else {
                 // 当前模型是多步预测  则取多步预测的步长的预测结果
                 // for (int i = 0; i < predictedTypeEnum.getStep() * 2; i++) {
-                for (int i = 0; i < predictedTypeEnum.getStep(); i++) {
+                int loopCount = predictedTypeEnum.getCode().contains("v2")
+                        ? predictedTypeEnum.getStep() / 10
+                        : predictedTypeEnum.getStep();
+                for (int i = 0; i < loopCount; i++) {
 
                     // ps:目前多步预测返回的是160个数据  其中 30s一个点 ,但是数据库当中 1min一个点,因此只保留偶数索引的点
                     // if (i % 2 != 0) {
