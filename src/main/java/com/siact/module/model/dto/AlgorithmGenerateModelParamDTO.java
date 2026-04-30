@@ -7,6 +7,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @Description: 算法生成模型需要的参数
+ */
 @Data
 public class AlgorithmGenerateModelParamDTO {
     @ApiModelProperty("窑炉系统的,唯一标识id")

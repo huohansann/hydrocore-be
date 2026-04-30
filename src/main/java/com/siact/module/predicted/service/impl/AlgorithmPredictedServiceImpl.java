@@ -99,11 +99,10 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         String nowTimeStr = TimeUtil.getNowStr(ConstantTime.DATE_TIME_MM_00);
         log.info("开始调用模型预测,nowTimeStr:{}", nowTimeStr);
 
-        // 1:读取模型数据当中的预测相关的dataCode MC1/MC5/MC10
+        // 1:读取模型数据当中的预测相关的dataCode TE201/TE206/TE213
         List<AlgorithmPredictionDataCodeTplDTO> predictionDataList = tplService.getListByCode("algorithmPredictionDataCode", AlgorithmPredictionDataCodeTplDTO.class);
         List<String> dataCodes = predictionDataList.stream().map(AlgorithmPredictionDataCodeTplDTO::getDataCode).distinct().collect(Collectors.toList());
 
-        // 依次调用每个dataCode的预测, 避免并发请求争抢Python端ProcessPoolExecutor worker导致超时
         for (String dataCode : dataCodes) {
             try {
                 List<String> dataCodeList = Collections.singletonList(dataCode);
@@ -223,10 +222,7 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             }
 
             detailParam.setType(predictedTypeEnum.getAlgorithmCode());
-            // 如果包含v2, 则视为使用v2版本,对步长做除10处理
-            int futureNumber = predictedTypeEnum.getCode().contains("v2")
-                    ? predictedTypeEnum.getStep() / 10
-                    : predictedTypeEnum.getStep();
+            int futureNumber = getStepByModelVersion(predictedTypeEnum);
             detailParam.setFuture_number(futureNumber);
 
 
@@ -342,9 +338,8 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
             } else {
                 // 当前模型是多步预测  则取多步预测的步长的预测结果
                 // for (int i = 0; i < predictedTypeEnum.getStep() * 2; i++) {
-                int loopCount = predictedTypeEnum.getCode().contains("v2")
-                        ? predictedTypeEnum.getStep() / 10
-                        : predictedTypeEnum.getStep();
+                //
+                int loopCount = getStepByModelVersion(predictedTypeEnum);
                 for (int i = 0; i < loopCount; i++) {
 
                     // ps:目前多步预测返回的是160个数据  其中 30s一个点 ,但是数据库当中 1min一个点,因此只保留偶数索引的点
@@ -362,6 +357,18 @@ public class AlgorithmPredictedServiceImpl implements AlgorithmPredictedService 
         log.info("模型预测数据已更新,predictedDataList:{},nowTimeStr:{}", predictedDataList, nowTimeStr);
         // 3:保存/更新数据表(同时间点进行覆盖  单步覆盖单步  多步覆盖多步  即 根据typeCode进行 和 time进行覆盖)
         saveOrUpdateBatchByAlgorithmResult(predictedDataList);
+    }
+
+    /**
+     * @author: HouBo
+     * @CreateTime: 2026/4/30 8:36
+     * @Description: 根据不同版本返回对应的步长
+     * 目前分化两套版本,以此适应下述需求:同一个点位、步长需要同时跑两个模型,但是页面仅展示一个, 因此枚举中如下：V1 -> 80  V2 -> 800, 返回算法仍需按照正常步长返回,因此V2版本除10
+     */
+    private Integer getStepByModelVersion(PredictedTypeEnum predictedTypeEnum) {
+        return predictedTypeEnum.getCode().contains("v2")
+                ? predictedTypeEnum.getStep() / 10
+                : predictedTypeEnum.getStep();
     }
 
     /**

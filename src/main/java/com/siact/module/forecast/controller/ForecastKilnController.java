@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -66,7 +67,11 @@ public class ForecastKilnController {
     @SuppressWarnings("unchecked")
     public @GetMapping("/queryTempShowList/{code}") List<TempForecastShowVO> queryTemperatureShowList(@PathVariable String code) {
         SysConfigDTO dto = configService.getByCode(code);
-        return (List<TempForecastShowVO>) JacksonUtils.fromJson(JacksonUtils.toJson(dto.getData()), List.class);
+        Object data = dto.getData();
+        if (!(data instanceof List)) {
+            return new ArrayList<>();
+        }
+        return (List<TempForecastShowVO>) JacksonUtils.fromJson(JacksonUtils.toJson(data), List.class);
     }
 
     @ApiOperationSupport(order = 2)
