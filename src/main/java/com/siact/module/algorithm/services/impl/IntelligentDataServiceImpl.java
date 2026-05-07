@@ -14,13 +14,17 @@ import com.siact.module.algorithm.socket.AlgorithmMessageWebSocket;
 import com.siact.module.algorithm.constants.AlgorithmConstant;
 import com.siact.module.algorithm.dto.IntelliTplSettingDTO;
 import com.siact.module.algorithm.dto.IntelliTplSettingDetailDTO;
+import com.siact.module.algorithm.entity.IncrementalLearnEntity;
 import com.siact.module.algorithm.entity.IntelligentDataEntity;
 import com.siact.module.algorithm.enums.IntelliTypeEnum;
+import com.siact.module.algorithm.mapper.IncrementalLearnMapper;
 import com.siact.module.algorithm.mapper.IntelligentDataMapper;
 import com.siact.module.algorithm.services.AlgorithmService;
 import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
+import com.siact.module.device.entity.DeviceMappingEntity;
+import com.siact.module.device.repository.DeviceMappingRepository;
 import com.siact.module.system.constants.SysConfigCodeConstants;
 import com.siact.module.system.dto.SysConfigDTO;
 import com.siact.module.system.service.SysConfigService;
@@ -61,6 +65,8 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
     private final SysConfigService sysConfigService;
     private final ControlIntervalConfigService configService;
     private final AlgorithmMessageWebSocket message;
+    private final IncrementalLearnMapper incrementalLearnMapper;
+    private final DeviceMappingRepository deviceMappingRepository;
 
     /**
      * 调用智能计算算法接口
@@ -73,21 +79,7 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         log.info("开始获取智能计算数据,执行时间:{}", now.format(TimeUtil.df));
 
         // 封装参数
-        JSONObject params = new JSONObject();
-
-        SysConfigDTO intelliComputingParams = sysConfigService.getByCode(SysConfigCodeConstants.INTELLI_COMPUTING_PARAMS);
-        Map<String, Object> icpData = (Map<String, Object>) intelliComputingParams.getData();
-
-        params.put("ts", MapUtils.getString(icpData,"ts"));
-        params.put("startTime", now.plusMinutes(-MapUtils.getInteger(icpData, "tracingTime")).format(TimeUtil.df));
-        params.put("endTime", now.format(TimeUtil.df));
-        Map<String, String> data = new HashMap<>();
-        System.out.println(icpData.get("keyData"));
-        List<Map<String, String>> keyData = (List<Map<String, String>>) icpData.get("keyData");
-        keyData.forEach(item -> {
-            data.put(MapUtils.getString(item,"algorithmCode"), MapUtils.getString(item,"dataCode"));
-        });
-        params.put("data", data);
+        JSONObject params = buildBaseParams(SysConfigCodeConstants.INTELLI_COMPUTING_PARAMS);
 
         // 添加温度设定值参数
         SysConfigDTO controlTargetPoints = sysConfigService.getByCode(SysConfigCodeConstants.CONTROL_TARGET_POINTS);
@@ -151,6 +143,26 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private JSONObject buildBaseParams(String configCode) {
+        LocalDateTime now = LocalDateTime.now().withSecond(0);
+
+        SysConfigDTO configDTO = sysConfigService.getByCode(configCode);
+        Map<String, Object> cfgData = (Map<String, Object>) configDTO.getData();
+
+        JSONObject params = new JSONObject();
+        params.put("ts", MapUtils.getString(cfgData, "ts"));
+        params.put("startTime", now.plusMinutes(-MapUtils.getInteger(cfgData, "tracingTime")).format(TimeUtil.df));
+        params.put("endTime", now.format(TimeUtil.df));
+
+        Map<String, String> data = new HashMap<>();
+        List<Map<String, String>> keyData = (List<Map<String, String>>) cfgData.get("keyData");
+        keyData.forEach(item -> data.put(MapUtils.getString(item, "algorithmCode"), MapUtils.getString(item, "dataCode")));
+        params.put("data", data);
+
+        return params;
+    }
+
     private BigDecimal getValueInJson(String mc, String key, JSONObject resultJson) {
         JSONObject json = resultJson.getJSONObject(mc);
         String[] keys = key.split("\\.");
@@ -188,5 +200,65 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         Map<String, Object> result = pythonAlgorithmService.execute("incremental_finetune.py", params, new TypeReference<Map<String, Object>>() {});
         log.info("自学习算法调用成功, 返回结果: {}", result);
         log.info("===== 自学习算法调用结束 =====");
+    }
+
+    @Override
+    public void callIncrementalLearn() {
+        log.info("===== 增量学习算法调用开始 =====");
+
+        // 1. 读取参数配置
+        JSONObject params = buildBaseParams(SysConfigCodeConstants.INCREMENTAL_LEARN_PARAMS);
+
+        // 2. 调用算法接口
+        JSONObject response;
+        try {
+            response = algorithmService.callResolve(
+                    "incremental_learn",
+                    JSONObject.toJSONString(params),
+                    () -> HttpUtil.post(property.getAlgorithm().getBaseUrl() + "/incremental_learn", params.toJSONString(), property.getAlgorithm().getIntelligentTimeout())
+            );
+        } catch (BizException e) {
+            log.error("增量学习算法调用异常: {}", e.getMessage());
+            return;
+        }
+
+        // 3. 解析结果
+        JSONObject result = response.getJSONObject("result");
+        JSONObject trainInfos = result.getJSONObject("train_infos");
+        String targetColumn = trainInfos.getString("target_column");
+        String savePath = trainInfos.getString("save_path");
+
+        JSONObject valMetrics = trainInfos.getJSONObject("val_metrics");
+        JSONObject testMetrics = trainInfos.getJSONObject("test_metrics");
+
+        // 4. 通过 target_column 查询 device_mapping 获取 data_code
+        String dataCode = null;
+        DeviceMappingEntity mapping = deviceMappingRepository.findByPropName(targetColumn);
+        if (mapping != null) {
+            dataCode = mapping.getPropCode();
+        } else {
+            log.warn("未在 device_mapping 中找到 target_column={} 对应的记录", targetColumn);
+        }
+
+        // 5. 保存到 incremental_learn 表
+        IncrementalLearnEntity entity = IncrementalLearnEntity.builder()
+                .dataCode(dataCode)
+                .targetName(targetColumn)
+                .modelPath(savePath)
+                .valLoss(valMetrics.getBigDecimal("loss"))
+                .valMae(valMetrics.getBigDecimal("mae"))
+                .valRmse(valMetrics.getBigDecimal("rmse"))
+                .valR2(valMetrics.getBigDecimal("r2"))
+                .testLoss(testMetrics.getBigDecimal("loss"))
+                .testMae(testMetrics.getBigDecimal("mae"))
+                .testRmse(testMetrics.getBigDecimal("rmse"))
+                .testR2(testMetrics.getBigDecimal("r2"))
+                .validity(false)
+                .remark(JacksonUtils.toJson(response))
+                .build();
+        incrementalLearnMapper.insert(entity);
+
+        log.info("增量学习结果已保存, target={}, model={}", targetColumn, savePath);
+        log.info("===== 增量学习算法调用结束 =====");
     }
 }

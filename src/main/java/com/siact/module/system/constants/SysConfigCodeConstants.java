@@ -6,4 +6,5 @@ public class SysConfigCodeConstants {
   public static final String INTELLI_COMPUTING_PARAMS = "intelli_computing_params";
   public static final String INTELLI_OUTPUT_DATACODE = "intelli_output_datacode";
   public static final String SELF_LEARNING_DATACODE = "self_learning_datacode";
+  public static final String  INCREMENTAL_LEARN_PARAMS = "incremental_learn_params";
 }

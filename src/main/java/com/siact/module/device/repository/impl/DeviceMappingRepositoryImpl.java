@@ -81,6 +81,12 @@ public class DeviceMappingRepositoryImpl implements DeviceMappingRepository {
                 .eq(DeviceMappingEntity::getPropCode, propCode));
     }
 
+    @Override
+    public DeviceMappingEntity findByPropName(String propName) {
+        return mapper.selectOne(Wrappers.<DeviceMappingEntity>lambdaQuery()
+                .eq(DeviceMappingEntity::getPropName, propName));
+    }
+
     private LambdaQueryWrapper<DeviceMappingEntity> buildQueryWrapper(DeviceMappingQueryDTO queryDTO) {
         return Wrappers.<DeviceMappingEntity>lambdaQuery()
                 .like(StringUtils.isNotBlank(queryDTO.getPointName()), DeviceMappingEntity::getPointName, queryDTO.getPointName())

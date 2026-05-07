@@ -20,4 +20,6 @@ public interface IntelligentDataService extends IService<IntelligentDataEntity> 
      * 调用自学习算法：查询历史数据 → 生成 JSON 文件 → 调用远程 Python 算法
      */
     void callSelfLearningAlgorithm();
+
+    void callIncrementalLearn();
 }
