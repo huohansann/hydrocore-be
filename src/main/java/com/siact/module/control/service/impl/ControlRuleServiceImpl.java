@@ -1,6 +1,7 @@
 package com.siact.module.control.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.siact.common.constant.ConstantNum;
 import com.siact.common.utils.ConvertUtils;
@@ -36,6 +37,7 @@ public class ControlRuleServiceImpl extends ServiceImpl<ControlRuleMapper, Contr
     @Override
     public List<ControlRuleVO> selectControlRuleList(ControlRuleQuery query) {
         List<ControlRuleEntity> list = queryRuleByTypes(query.getTypes());
+        System.out.println("logone == " + query.getTypes());
 
         List<ControlRuleVO> rtnDto = list.stream().map(e -> ConvertUtils.sourceToTarget(e, ControlRuleVO.class)).collect(Collectors.toList());
         // 校验每一条约束规则  是否合法
@@ -80,6 +82,16 @@ public class ControlRuleServiceImpl extends ServiceImpl<ControlRuleMapper, Contr
             e.setUpdateTime(updateTime);
         });
         return this.updateBatchById(entities) ? 1 : 0;
+    }
+
+    @Override
+    public int logicalDeleteControlRuleByIds(Long[] ids) {
+        return baseMapper.update(
+                null,
+                new LambdaUpdateWrapper<ControlRuleEntity>()
+                        .in(ControlRuleEntity::getId, java.util.Arrays.asList(ids))
+                        .set(ControlRuleEntity::getStatus, 0)
+        );
     }
 
     @Override

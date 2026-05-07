@@ -68,6 +68,18 @@ public class KilnInfoServiceImpl extends ServiceImpl<KilnInfoMapper, KilnInfoEnt
     }
 
     @Override
+    public int logicalDeleteKilnInfoByIds(Long[] ids) {
+        int count = 0;
+        for (Long id : ids) {
+            KilnInfoEntity entity = new KilnInfoEntity();
+            entity.setId(id);
+            entity.setState(false);
+            count += kilnInfoMapper.updateById(entity);
+        }
+        return count;
+    }
+
+    @Override
     public int deleteKilnInfoByIds(Long[] ids) {
         int count = 0;
         for (Long id : ids) {

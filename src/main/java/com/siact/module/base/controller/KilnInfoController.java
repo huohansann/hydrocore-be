@@ -74,6 +74,17 @@ public class KilnInfoController {
         return toAjax(kilnInfoService.deleteKilnInfoByIds(ids));
     }
 
+    /**
+     * @Author: HouBo
+     * @Date: 2026/5/7 10:13
+     * @Description: 逻辑删除炉子信息
+     */
+    @ApiOperation("逻辑删除炉子信息")
+    @GetMapping("/logicalDelete/{ids}")
+    public R logicalDelete(@PathVariable Long[] ids) {
+        return toAjax(kilnInfoService.logicalDeleteKilnInfoByIds(ids));
+    }
+
     private R toAjax(int rows) {
         return rows > 0 ? R.success() : R.fail("");
     }

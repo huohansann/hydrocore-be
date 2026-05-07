@@ -22,6 +22,8 @@ public interface ControlRuleService extends IService<ControlRuleEntity> {
 
     int deleteControlRuleByIds(Long[] ids);
 
+    int logicalDeleteControlRuleByIds(Long[] ids);
+
     /**
      * 判断类型数据是否可以修改
      * @param query

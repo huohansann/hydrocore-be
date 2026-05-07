@@ -54,4 +54,15 @@ public class ControlRuleController {
     public R remove(@PathVariable Long[] ids) {
         return R.data(controlRuleService.deleteControlRuleByIds(ids));
     }
+
+    /**
+     * @Author: HouBo
+     * @Date: 2026/5/7 11:22
+     * @Description: 逻辑删除约束规则
+     */
+    @ApiOperation("逻辑删除约束规则")
+    @GetMapping("/logicalRemove/{ids}")
+    public R logicalRemove(@PathVariable Long[] ids) {
+        return R.data(controlRuleService.logicalDeleteControlRuleByIds(ids));
+    }
 }

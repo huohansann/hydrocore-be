@@ -21,6 +21,8 @@ public interface IKilnInfoService extends IService<KilnInfoEntity> {
     int updateKilnInfo(KilnInfoDTO dto);
     int deleteKilnInfoByIds(Long[] ids);
 
+    int logicalDeleteKilnInfoByIds(Long[] ids);
+
     int saveKilnInfoBatch(List<KilnInfoDTO> list);
 
     int updateDistribute(List<KilnInfoDistributeDTO> list);

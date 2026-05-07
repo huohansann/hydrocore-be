@@ -507,19 +507,14 @@ public class ModelConfigParamServiceImpl extends ServiceImpl<ModelConfigParamMap
                 secEndTime = endTimeStr;
             }
 
-            // 上饶专属逻辑, 为适配信义暂时注掉
-//            if (secStartTime.compareTo(secEndTime) > 0) {
-//                log.error("工况时间段错误:{}", curProcess);
-//                throw new CustomException("工况时间段错误:" + curProcess + "请核对工况录入");
-//            }
-
             buildAlgorithmDataValMap(entity, featuresDataCodeList, secStartTime, secEndTime, curProcess, algorithmDataValMap);
         }
 
         return algorithmDataValMap;
     }
 
-    private void buildAlgorithmDataValMap(ModelConfigParamEntity entity, List<String> featuresDataCodeList, String secStartTime, String secEndTime, ProcessLogEntity curProcess, Map<String, List<Map<String, List<Object>>>> algorithmDataValMap) {
+    private void buildAlgorithmDataValMap(ModelConfigParamEntity entity, List<String> featuresDataCodeList, String secStartTime, String secEndTime,
+                                          ProcessLogEntity curProcess, Map<String, List<Map<String, List<Object>>>> algorithmDataValMap) {
         // 2:查询孪生时间范围内的数据
         // 查询时间范围内的孪生数据
         IntervalValParamsDto queryParam = new IntervalValParamsDto();
