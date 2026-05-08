@@ -39,9 +39,14 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
 
 import javax.annotation.Resource;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -65,6 +70,10 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
     private @Resource PredictedDataService predictedDataService;
     private @Resource ControlIntervalConfigService controlIntervalConfigService;
     private @Resource ForecastSupport support;
+
+    /** 测试模式开关：true 时从 JSON 文件读取测试数据，false 时执行正常业务逻辑 */
+    @Value("${forecast.test-mode.enabled:false}")
+    private boolean testModeEnabled;
 
 
     /**
@@ -555,6 +564,22 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
 
     @Override
     public TempForecastVO queryTemperature(TempForecastQuery query) {
+        // 测试模式：从 JSON 文件读取测试数据
+        if (testModeEnabled) {
+            log.info("测试模式开启，从 JSON 文件读取测试数据");
+            try {
+                ClassPathResource resource = new ClassPathResource("testJson/forecast/queryTemperature.json");
+                InputStreamReader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);
+                String jsonContent = FileCopyUtils.copyToString(reader);
+                return com.alibaba.fastjson.JSON.parseObject(jsonContent, TempForecastVO.class);
+            } catch (Exception e) {
+                log.error("读取测试 JSON 文件失败", e);
+                // 读取失败时降级为正常模式
+                log.warn("降级为正常模式执行查询");
+            }
+        }
+
+        // 正常模式：执行原有业务逻辑
         // 获取当前时间设置为查询结束时间, 点位数据需将秒进行归 0
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern(ConstantTime.DATE_TIME_MM_00));
 
