@@ -406,3 +406,60 @@ CREATE TABLE IF NOT EXISTS `device_mapping` (
     UNIQUE KEY `uk_prop_code` (`prop_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备点位映射表';
 
+-- ----------------------------
+-- 液位控制配置表
+-- ----------------------------
+DROP TABLE IF EXISTS `level_control_config`;
+CREATE TABLE `level_control_config` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `data_code` VARCHAR(64) NOT NULL COMMENT '点位编码',
+  `mode` VARCHAR(16) NOT NULL DEFAULT 'ai' COMMENT '控制模式：ai/pid/manual',
+  `ai_predict_window` DECIMAL(10,2) DEFAULT NULL COMMENT 'AI预测窗口',
+  `ai_predict_duration` DECIMAL(10,2) DEFAULT NULL COMMENT 'AI预测时长',
+  `pid_pb` DECIMAL(10,2) DEFAULT NULL COMMENT 'PID比例带PB',
+  `pid_ti` DECIMAL(10,2) DEFAULT NULL COMMENT 'PID积分时间TI',
+  `pid_td` DECIMAL(10,2) DEFAULT NULL COMMENT 'PID微分时间TD',
+  `manual_control_value` DECIMAL(10,2) DEFAULT NULL COMMENT '人工控制值',
+  `safe_limit` DECIMAL(10,2) DEFAULT NULL COMMENT '安全限制',
+  `opening_upper_limit` DECIMAL(10,2) DEFAULT NULL COMMENT '开度上限',
+  `create_time` DATETIME DEFAULT NULL,
+  `update_time` DATETIME DEFAULT NULL,
+  `create_by` VARCHAR(64) DEFAULT NULL,
+  `update_by` VARCHAR(64) DEFAULT NULL,
+  `deleted` TINYINT(1) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_data_code` (`data_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='液位控制配置表';
+
+-- ----------------------------
+-- 液位算法结果表
+-- ----------------------------
+DROP TABLE IF EXISTS `level_algorithm_result`;
+CREATE TABLE `level_algorithm_result` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `data_code` VARCHAR(64) NOT NULL COMMENT '点位编码',
+  `level_trend` DECIMAL(10,4) DEFAULT NULL COMMENT '液位趋势值',
+  `recommended_opening` DECIMAL(10,4) DEFAULT NULL COMMENT '推荐开度',
+  `level_status` VARCHAR(32) DEFAULT NULL COMMENT '液位状态：normal/warning/alarm',
+  `create_time` DATETIME DEFAULT NULL,
+  `update_time` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_data_code` (`data_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='液位算法结果表';
+
+-- ----------------------------
+-- 液位预测数据表（预留）
+-- ----------------------------
+DROP TABLE IF EXISTS `level_predicted_data`;
+CREATE TABLE `level_predicted_data` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `data_code` VARCHAR(64) NOT NULL COMMENT '点位编码',
+  `predicted_time` VARCHAR(32) DEFAULT NULL COMMENT '预测时间点',
+  `predicted_value` DECIMAL(10,4) DEFAULT NULL COMMENT '预测值',
+  `predicted_type` INT DEFAULT NULL COMMENT '预测类型（预留）',
+  `unit` VARCHAR(16) DEFAULT NULL COMMENT '单位',
+  `create_time` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_data_code_time` (`data_code`, `predicted_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='液位预测数据表';
+
