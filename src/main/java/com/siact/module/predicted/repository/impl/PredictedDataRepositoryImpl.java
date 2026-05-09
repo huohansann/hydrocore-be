@@ -9,6 +9,7 @@ import com.siact.module.predicted.repository.PredictedDataRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,6 +44,7 @@ public class PredictedDataRepositoryImpl extends BaseRepositoryImpl<PredictedDat
                 .in(PredictedDataEntity::getDataCode, dataCodes)
                 .in(PredictedDataEntity::getPredictedTypeCode, typeCodes)
                 .between(PredictedDataEntity::getTime, startTime, endTime)
+                .ge(PredictedDataEntity::getCreateTime, LocalDateTime.now().minusMonths(1))
         );
         return predictedDataEntities.stream().collect(Collectors.groupingBy(PredictedDataEntity::getPredictedType));
     }
