@@ -16,9 +16,11 @@ import com.siact.module.algorithm.dto.IntelliTplSettingDTO;
 import com.siact.module.algorithm.dto.IntelliTplSettingDetailDTO;
 import com.siact.module.algorithm.entity.IncrementalLearnEntity;
 import com.siact.module.algorithm.entity.IntelligentDataEntity;
+import com.siact.module.algorithm.entity.TemperaturePredictEntity;
 import com.siact.module.algorithm.enums.IntelliTypeEnum;
 import com.siact.module.algorithm.mapper.IncrementalLearnMapper;
 import com.siact.module.algorithm.mapper.IntelligentDataMapper;
+import com.siact.module.algorithm.repository.TemperaturePredictRepository;
 import com.siact.module.algorithm.services.AlgorithmService;
 import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
@@ -68,6 +70,7 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
     private final AlgorithmMessageWebSocket message;
     private final IncrementalLearnMapper incrementalLearnMapper;
     private final DeviceMappingRepository deviceMappingRepository;
+    private final TemperaturePredictRepository temperaturePredictRepository;
 
     /**
      * 调用智能计算算法接口
@@ -139,6 +142,40 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
         // collect.add(builder.intelliType(IntelliTypeEnum.GAS_DELTAC_MODEL).val(modelDeltaC).build());
         collect.add(builder.intelliType(IntelliTypeEnum.GAS_DELTAC_EXPERT).val(expertDeltaC).build());
         collect.add(builder.intelliType(IntelliTypeEnum.GAS_LAST_SUM).val(lastGasSum).build());
+
+        // 解析温度预测数据
+        JSONObject temps = result.getJSONObject("temps");
+        if (temps != null) {
+            ArrayList<TemperaturePredictEntity> predictList = new ArrayList<>();
+            for (Map.Entry<String, Map<String, Object>> entry : cptData.entrySet()) {
+                String pointName = entry.getKey();
+                Map<String, Object> pointConfig = entry.getValue();
+                String propName = MapUtils.getString(pointConfig, "name");
+                String propCode = MapUtils.getString(pointConfig, "code");
+
+                JSONObject tempData = temps.getJSONObject(propName);
+                if (tempData == null) {
+                    continue;
+                }
+                BigDecimal predValue = tempData.getBigDecimal("pred_value");
+                log.info("pointName: {}, propName: {}, tempData: {}, predValue: {}", pointName, propName, tempData, predValue);
+                if (predValue == null) {
+                    continue;
+                }
+
+                predictList.add(TemperaturePredictEntity.builder()
+                        .pointName(pointName)
+                        .propName(propName)
+                        .propCode(propCode)
+                        .time(time)
+                        .itemValue(predValue)
+                        .build());
+            }
+            if (!predictList.isEmpty()) {
+                temperaturePredictRepository.saveBatch(predictList);
+            }
+        }
+
         // 保存数据
         saveBatch(collect);
 

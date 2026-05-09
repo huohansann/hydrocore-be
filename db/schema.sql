@@ -463,3 +463,14 @@ CREATE TABLE `level_predicted_data` (
   KEY `idx_data_code_time` (`data_code`, `predicted_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='液位预测数据表';
 
+-- 温度预测数据表
+create table if not exists temperature_predict
+(
+    id          bigint primary key not null comment '主键',
+    point_name  varchar(100)       not null comment '点位名称',
+    prop_name   varchar(255)       not null comment '属性名称',
+    prop_code   varchar(100)       not null comment '属性编码',
+    time        varchar(50)    default null comment '预测时间点',
+    item_value  decimal(10, 4) default null comment '预测值',
+    create_time datetime       default current_timestamp comment '创建时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='温度预测数据表';
