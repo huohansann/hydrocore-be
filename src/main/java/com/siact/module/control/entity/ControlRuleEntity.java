@@ -37,6 +37,9 @@ public class ControlRuleEntity {
     // 比较值公式,ps:这里逻辑处理为比较值*比较值公式
     private String compareFormula;
 
+    // 调节周期(分钟)
+    private Integer adjustCycle;
+
     // 单位转换系数
     private BigDecimal factor;
 

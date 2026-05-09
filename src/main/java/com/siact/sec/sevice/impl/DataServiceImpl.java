@@ -41,11 +41,15 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -68,6 +72,9 @@ public class DataServiceImpl implements DataService {
     @Value("${node.history.timeout}")
     private Long nodeHistoryTimeOut;
 
+    @Value("${forecast.test-mode.enabled:false}")
+    private boolean testModeEnabled;
+
     /**
      * 节点历史的redis-key
      */
@@ -81,6 +88,19 @@ public class DataServiceImpl implements DataService {
      */
     @Override
     public CommonChartResultDto queryCommonChartData(CommonChartParamsVo vo) {
+        if (testModeEnabled) {
+            log.info("测试模式开启，从 JSON 文件读取测试数据");
+            try {
+                ClassPathResource resource = new ClassPathResource("testJson/forecast/queryCommonChartData.json");
+                InputStreamReader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);
+                String jsonContent = FileCopyUtils.copyToString(reader);
+                return com.alibaba.fastjson.JSON.parseObject(jsonContent, CommonChartResultDto.class);
+            } catch (Exception e) {
+                log.error("读取测试 JSON 文件失败", e);
+                log.warn("降级为正常模式执行查询");
+            }
+        }
+
         log.info("查询柱状图、折线图等图表数据(量), params:{}", com.alibaba.fastjson2.JSON.toJSONString(vo));
         // 是否进行短码替换
         if (CollectionUtils.isNotEmpty(vo.getPropModelCodes())) {

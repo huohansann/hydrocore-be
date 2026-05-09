@@ -42,6 +42,9 @@ public class ControlRuleVO {
     @ApiModelProperty(value = "比较值公式")
     private String compareFormula;
 
+    @ApiModelProperty(value = "调节周期(分钟)")
+    private Integer adjustCycle;
+
     @ApiModelProperty(value = "单位转换系数")
     private BigDecimal factor;
 
