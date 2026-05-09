@@ -46,6 +46,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author : kzuo
@@ -83,11 +84,17 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
 
         // 添加温度设定值参数
         SysConfigDTO controlTargetPoints = sysConfigService.getByCode(SysConfigCodeConstants.CONTROL_TARGET_POINTS);
-        Map<String, String> cptData =(Map<String, String>) controlTargetPoints.getData();
-        List<ControlIntervalConfigDTO> targetTemps = configService.selectListByDataCodeList(new ArrayList<>(cptData.values()));
+        Map<String, Map<String, Object>> cptData = (Map<String, Map<String, Object>>) controlTargetPoints.getData();
+        List<String> dataCodeList = cptData.values().stream()
+                .map(v -> MapUtils.getString(v, "code"))
+                .collect(Collectors.toList());
+        List<ControlIntervalConfigDTO> targetTemps = configService.selectListByDataCodeList(dataCodeList);
         for (ControlIntervalConfigDTO dto : targetTemps) {
           params.put(dto.getMeasurePoint() + "_SP", new BigDecimal(dto.getTemperatureSet()));
         }
+
+        // 构建温度限制参数 EK
+        params.put("EK", buildEKParams(cptData, targetTemps));
 
         Object cacheObject = redis.getCacheObject(AlgorithmConstant.INTELLI_ALGORITHM_CACHE_KEY);
         params.put("flag", ObjectUtils.isNotEmpty(cacheObject));
@@ -171,6 +178,35 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
             json = json.getJSONObject(s);
         }
         return json.getBigDecimal(key);
+    }
+
+    private Map<String, Map<String, BigDecimal>> buildEKParams(Map<String, Map<String, Object>> cptData, List<ControlIntervalConfigDTO> targetTemps) {
+        // 按 measurePoint 建立 targetTemps 索引
+        Map<String, ControlIntervalConfigDTO> tempMap = new HashMap<>();
+        for (ControlIntervalConfigDTO dto : targetTemps) {
+            tempMap.put(dto.getMeasurePoint(), dto);
+        }
+
+        Map<String, Map<String, BigDecimal>> ek = new LinkedHashMap<>();
+        for (Map.Entry<String, Map<String, Object>> entry : cptData.entrySet()) {
+            String pointName = entry.getKey();
+            Map<String, Object> pointConfig = entry.getValue();
+
+            BigDecimal ekl = new BigDecimal(MapUtils.getString(pointConfig, "ekl"));
+            ControlIntervalConfigDTO tempConfig = tempMap.get(pointName);
+            if (tempConfig == null) {
+                log.warn("EK参数构建: 未找到点位 {} 对应的温度控制配置", pointName);
+                continue;
+            }
+
+            BigDecimal temperatureSet = new BigDecimal(tempConfig.getTemperatureSet());
+            Map<String, BigDecimal> limitMap = new LinkedHashMap<>();
+            limitMap.put("EKL", ekl);
+            limitMap.put("EKH", temperatureSet.subtract(new BigDecimal(tempConfig.getLowControl())).abs());
+            limitMap.put("EKS", temperatureSet.subtract(new BigDecimal(tempConfig.getLowAlarm())).abs());
+            ek.put(pointName, limitMap);
+        }
+        return ek;
     }
 
     @SuppressWarnings("unchecked")
