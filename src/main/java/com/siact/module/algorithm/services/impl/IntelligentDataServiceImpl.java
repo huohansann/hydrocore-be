@@ -156,7 +156,6 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
                     continue;
                 }
                 BigDecimal predValue = tempData.getBigDecimal("pred_value");
-                log.info("pointName: {}, propName: {}, tempData: {}, predValue: {}", pointName, propName, tempData, predValue);
                 if (predValue == null) {
                     continue;
                 }

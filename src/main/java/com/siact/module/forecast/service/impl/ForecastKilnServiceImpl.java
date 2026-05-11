@@ -724,7 +724,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
                 .collect(Collectors.groupingBy(
                         TemperaturePredictEntity::getPropCode,
                         LinkedHashMap::new,
-                        Collectors.mapping(e -> new Object[]{e.getTime(), e.getItemValue().setScale(1, RoundingMode.HALF_UP)}, Collectors.toList())
+                        Collectors.mapping(e -> new Object[]{e.getTime(), e.getItemValue()}, Collectors.toList())
                 ));
 
         // 3. 获取显示配置
