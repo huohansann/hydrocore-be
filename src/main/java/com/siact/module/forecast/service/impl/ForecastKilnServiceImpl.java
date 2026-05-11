@@ -51,7 +51,6 @@ import javax.annotation.Resource;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -479,68 +478,6 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         return attributeInfoVO;
     }
 
-
-    private KilnForecastLineChartVO buildKilnForecastLineChart(CommonChartParamsDto commonChartParamsDto, ColumnChartDTO singlePredictionData, ColumnChartDTO multiPredictionData, List<String> timeList) {
-        // 获取属性信息Code
-        List<String> dataCodeList = commonChartParamsDto.getDataCodes();
-        // 获取参数属性
-        InfoListQueryVo infoListQueryVo = new InfoListQueryVo();
-        infoListQueryVo.setDataCodes(new HashSet<>(dataCodeList));
-        // 获取单步预测属性信息
-        List<BasicDataDTO> singlePredictionDataList = singlePredictionData.getData();
-        Map<String, List<Object[]>> singlePredictionDataMap = singlePredictionDataList.stream().collect(Collectors.toMap(BasicDataDTO::getDataCode, BasicDataDTO::getData, (v1, v2) -> v1));
-
-        // 获取多步预测属性信息
-        List<BasicDataDTO> multiBasicDataDTOList = multiPredictionData.getData();
-        Map<String, List<Object[]>> multiPredictionDataMap = multiBasicDataDTOList.stream().collect(Collectors.toMap(BasicDataDTO::getDataCode, BasicDataDTO::getData, (v1, v2) -> v1));
-
-        List<KilnForecastDetailVO> data = new ArrayList<>(dataCodeList.size());
-        dataCodeList.stream().forEach(dataCode -> {
-            KilnForecastDetailVO basicDataDTO = new KilnForecastDetailVO();
-            basicDataDTO.setTimeList(timeList);
-            basicDataDTO.setDataCode(dataCode);
-            basicDataDTO.setSingleStepForecastValueList(singlePredictionDataMap.get(dataCode));
-            basicDataDTO.setMultiStepForecastValueList(multiPredictionDataMap.get(dataCode));
-            data.add(basicDataDTO);
-        });
-        KilnForecastLineChartVO kilnForecastLineChartVO = new KilnForecastLineChartVO();
-        kilnForecastLineChartVO.setData(data);
-        kilnForecastLineChartVO.setXAxis(timeList);
-        return kilnForecastLineChartVO;
-    }
-
-    /**
-     * @param historyData          历史数据
-     * @param singlePredictionData 单步预测数据
-     * @param multiPredictionData  多步预测数据
-     * @param timeList
-     * @return
-     * @desc: 组装结果
-     */
-    private KilnLineChartVO buildForecastKilnResult(ColumnChartDTO historyData, ColumnChartDTO singlePredictionData, ColumnChartDTO multiPredictionData, List<String> timeList) {
-        // 获取单步预测属性信息
-        List<BasicDataDTO> signleData = singlePredictionData.getData();
-        Map<String, List<Object[]>> signleDataMap = signleData.stream().collect(Collectors.toMap(BasicDataDTO::getDataCode, BasicDataDTO::getData, (v1, v2) -> v1));
-
-        // 获取多步预测属性信息
-        List<BasicDataDTO> multidata = multiPredictionData.getData();
-        Map<String, List<Object[]>> multidataDataMap = multidata.stream().collect(Collectors.toMap(BasicDataDTO::getDataCode, BasicDataDTO::getData, (v1, v2) -> v1));
-
-        List<BasicDataDTO> historyBaseList = historyData.getData();
-        List<KilnDetailVO> forecastKilnDetailVOList = new ArrayList<>(historyBaseList.size());
-        historyBaseList.forEach(basicDataDTO -> {
-            KilnDetailVO forecastKilnDetailVO = ConvertUtils.sourceToTarget(basicDataDTO, KilnDetailVO.class);
-            forecastKilnDetailVO.setActualValueList(basicDataDTO.getData());
-            forecastKilnDetailVO.setSingleStepForecastValueList(signleDataMap.get(basicDataDTO.getDataCode()));
-            forecastKilnDetailVO.setMultiStepForecastValueList(multidataDataMap.get(basicDataDTO.getDataCode()));
-            forecastKilnDetailVOList.add(forecastKilnDetailVO);
-        });
-        // 组装结果
-        KilnLineChartVO forecastKilnLineChartVO = new KilnLineChartVO();
-        forecastKilnLineChartVO.setData(forecastKilnDetailVOList);
-        forecastKilnLineChartVO.setXAxis(timeList);
-        return forecastKilnLineChartVO;
-    }
 
     /**
      * @param parmsVo

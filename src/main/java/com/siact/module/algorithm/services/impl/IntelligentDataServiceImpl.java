@@ -160,11 +160,14 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
                     continue;
                 }
 
+                Integer step = MapUtils.getInteger(pointConfig, "step");
+                String predictTime = step != null ? TimeUtil.getCalcTime(time, step, "MIN") : time;
+
                 predictList.add(TemperaturePredictEntity.builder()
                         .pointName(pointName)
                         .propName(propName)
                         .propCode(propCode)
-                        .time(time)
+                        .time(predictTime)
                         .itemValue(predValue)
                         .build());
             }
