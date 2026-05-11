@@ -54,21 +54,45 @@ public class IntelligentDataRepositoryImpl implements IntelligentDataRepository 
     }
 
     /**
-     * 获取指定类型最后的时间点的智能算法值
-     *
      * @param types 要查询的智能算法值类型
      * @return 返回 key 为 dataCode, 值为以类型分组的数据的查询结果
+     * @update: 查询最新的 rule_valid = 1 的数据，同时返回最新数据的校验状态
      */
     @Override
     public Map<String, Map<IntelliTypeEnum, IntelligentDataEntity>> queryByTypeWithLastTime(IntelliTypeEnum... types) {
-        Map<String, Map<IntelliTypeEnum, List<IntelligentDataEntity>>> map = this.queryByTypeAndLimit("limit 1, 1", types);
-        if (map.isEmpty()) return Collections.emptyMap();
+        // 1. 查询最新一条 rule_valid = 1 的记录，获取时间点
+        IntelligentDataEntity latestValidEntity = mapper.selectOne(Wrappers.<IntelligentDataEntity>lambdaQuery()
+                .in(IntelligentDataEntity::getIntelliType, Arrays.asList(types))
+                .eq(IntelligentDataEntity::getRuleValid, true)
+                .orderByDesc(IntelligentDataEntity::getTime)
+                .last("limit 1"));
+        if (latestValidEntity == null) return Collections.emptyMap();
+        String validTime = latestValidEntity.getTime();
 
-        return map.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey, entry -> entry.getValue().entrySet().stream()
-                        .filter(innerEntry -> CollectionUtils.isNotEmpty(innerEntry.getValue()))
-                        .collect(Collectors.toMap(Map.Entry::getKey, innerEntry -> innerEntry.getValue().get(0)))
-        ));
+        // 2. 查询该时间点所有 rule_valid = 1 的数据
+        List<IntelligentDataEntity> entities = mapper.selectList(Wrappers.<IntelligentDataEntity>lambdaQuery()
+                .in(IntelligentDataEntity::getIntelliType, Arrays.asList(types))
+                .eq(IntelligentDataEntity::getTime, validTime)
+                .eq(IntelligentDataEntity::getRuleValid, true));
+
+        // 3. 查询绝对最新记录的 rule_valid 状态
+        IntelligentDataEntity absoluteLatest = mapper.selectOne(Wrappers.<IntelligentDataEntity>lambdaQuery()
+                .in(IntelligentDataEntity::getIntelliType, Arrays.asList(types))
+                .orderByDesc(IntelligentDataEntity::getTime)
+                .last("limit 1"));
+        boolean latestValid = absoluteLatest != null && Boolean.TRUE.equals(absoluteLatest.getRuleValid());
+
+        // 4. 组装结果，根据最新记录设置 ruleValid
+        boolean finalLatestValid = latestValid;
+        return entities.stream().collect(
+                Collectors.groupingBy(IntelligentDataEntity::getDataCode,
+                        Collectors.collectingAndThen(Collectors.toList(), list ->
+                                list.stream().collect(Collectors.toMap(
+                                        IntelligentDataEntity::getIntelliType,
+                                        entity -> { entity.setRuleValid(finalLatestValid); return entity; }
+                                ))
+                        ))
+        );
     }
 
     /**

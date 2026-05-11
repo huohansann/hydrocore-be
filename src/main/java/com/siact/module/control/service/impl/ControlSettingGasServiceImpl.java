@@ -84,6 +84,14 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
                 IntelliTypeEnum.GAS_DELTAC_EXPERT
         );
 
+        // 提取 ruleValid 状态（从任意一条记录中获取）
+        Boolean ruleValid = intelliValues.values().stream()
+                .flatMap(typeMap -> typeMap.values().stream())
+                .map(IntelligentDataEntity::getRuleValid)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+
         List<ControlSettingGasDTO> result = new ArrayList<>();
         List<ControlSettingGasEntity> settingList = repository.queryValid();
         if (ObjectUtils.isEmpty(settingList)) {
@@ -145,6 +153,7 @@ public class ControlSettingGasServiceImpl extends ServiceImpl<ControlSettingGasM
                 dto.setAdjustValue(deltaC.getVal());
             }
             if (Objects.isNull(dto.getAutoState())) dto.setAutoState(false);
+            dto.setRuleValid(ruleValid);
             result.add(dto);
         });
         this.setStatusAndRecord(result); // 记录状态并触发保存事件

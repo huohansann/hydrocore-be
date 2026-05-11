@@ -116,4 +116,12 @@ public class KilnInfoServiceImpl extends ServiceImpl<KilnInfoMapper, KilnInfoEnt
         return kilnInfoEntities.size();
     }
 
+    @Override
+    public KilnInfoEntity getEnabledTotal() {
+        LambdaQueryWrapper<KilnInfoEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(KilnInfoEntity::getState, true)
+                .eq(KilnInfoEntity::getNumber, "总量");
+        return getOne(wrapper);
+    }
+
 } 

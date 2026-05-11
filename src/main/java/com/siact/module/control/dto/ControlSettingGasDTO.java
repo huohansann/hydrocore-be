@@ -34,6 +34,9 @@ public class ControlSettingGasDTO {
     @ApiModelProperty("是否自动模式,1:是 0:否")
     private Boolean autoState;
 
+    @ApiModelProperty("是否通过智控校验,1:是 0:否")
+    private Boolean ruleValid;
+
     // 变化值
     private BigDecimal adjustValue;
 

@@ -31,4 +31,9 @@ public interface IKilnInfoService extends IService<KilnInfoEntity> {
 
     int updateWindDis(List<KilnInfoWindDisDTO> list);
 
+    /**
+     * 查询启用的总量记录，用于获取天然气流量设定值上下限
+     */
+    KilnInfoEntity getEnabledTotal();
+
 }

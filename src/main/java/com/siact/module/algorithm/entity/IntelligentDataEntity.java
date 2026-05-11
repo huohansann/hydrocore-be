@@ -33,6 +33,8 @@ public class IntelligentDataEntity implements Serializable {
     private String time;
     /* 算法输出 */
     private String data;
+    /* 是否通过约束规则校验：true=通过，false=未通过，null=未校验 */
+    private Boolean ruleValid;
     /* 创建时间 */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private Date createTime;

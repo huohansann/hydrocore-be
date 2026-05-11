@@ -24,7 +24,9 @@ import com.siact.module.algorithm.repository.TemperaturePredictRepository;
 import com.siact.module.algorithm.services.AlgorithmService;
 import com.siact.module.algorithm.services.IntelligentDataService;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
+import com.siact.module.base.entity.KilnInfoEntity;
 import com.siact.module.base.service.ControlIntervalConfigService;
+import com.siact.module.base.service.IKilnInfoService;
 import com.siact.module.device.entity.DeviceMappingEntity;
 import com.siact.module.device.repository.DeviceMappingRepository;
 import com.siact.module.system.constants.SysConfigCodeConstants;
@@ -41,12 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -70,6 +67,7 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
     private final AlgorithmMessageWebSocket message;
     private final IncrementalLearnMapper incrementalLearnMapper;
     private final DeviceMappingRepository deviceMappingRepository;
+    private final IKilnInfoService kilnInfoService;
     private final TemperaturePredictRepository temperaturePredictRepository;
 
     /**
@@ -176,6 +174,9 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
             }
         }
 
+        // 校验约束规则并设置 ruleValid 字段
+        validateGasCalcResult(collect);
+
         // 保存数据
         saveBatch(collect);
 
@@ -185,6 +186,45 @@ public class IntelligentDataServiceImpl extends ServiceImpl<IntelligentDataMappe
             redis.setCacheObject(AlgorithmConstant.INTELLI_ALGORITHM_CACHE_KEY, lastGasSum.add(expertDeltaC), property.getAlgorithm().getIntelliStopInterval(), TimeUnit.MINUTES);
             message.intelliUpdate();
         }
+    }
+
+    /**
+     * @Author: HouBo
+     * @Date: 2026/5/11 10:18
+     * @Description: 校验智控计算值是否在天然气流量设定值上下限范围内
+     * 智控计算值 = last_gas_sum_sv + delta_C
+     */
+    private void validateGasCalcResult(ArrayList<IntelligentDataEntity> collect) {
+        BigDecimal lastGasSum = null;
+        BigDecimal deltaC = null;
+        for (IntelligentDataEntity entity : collect) {
+            if (IntelliTypeEnum.GAS_LAST_SUM.equals(entity.getIntelliType()) && entity.getVal() != null) {
+                lastGasSum = entity.getVal();
+            }
+            if (IntelliTypeEnum.GAS_DELTAC_EXPERT.equals(entity.getIntelliType()) && entity.getVal() != null) {
+                deltaC = entity.getVal();
+            }
+        }
+
+        if (lastGasSum == null || deltaC == null) {
+            log.warn("智控校验：未获取到 GAS_LAST_SUM 或 GAS_DELTAC_EXPERT 数据，跳过校验");
+            return;
+        }
+
+        BigDecimal calcValue = lastGasSum.add(deltaC);
+
+        KilnInfoEntity kilnInfo = kilnInfoService.getEnabledTotal();
+        if (kilnInfo == null || kilnInfo.getGasValUp() == null || kilnInfo.getGasValLow() == null) {
+            log.warn("智控校验：未查询到 kiln_info 总量记录或上下限未配置，跳过校验");
+            return;
+        }
+
+        BigDecimal upperLimit = kilnInfo.getGasValUp();
+        BigDecimal lowerLimit = kilnInfo.getGasValLow();
+        boolean outOfRange = calcValue.compareTo(lowerLimit) < 0 || calcValue.compareTo(upperLimit) > 0;
+
+        log.info("智控校验：计算值={}, 上限={}, 下限={}, 是否超限={}", calcValue, upperLimit, lowerLimit, outOfRange);
+        collect.forEach(e -> e.setRuleValid(!outOfRange));
     }
 
     @SuppressWarnings("unchecked")
