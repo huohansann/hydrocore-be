@@ -5,6 +5,7 @@ import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.siact.common.R;
 import com.siact.common.utils.JacksonUtils;
 import com.siact.module.forecast.dto.ForecastKilnParamsDTO;
+import com.siact.module.forecast.query.TempActualForecastQuery;
 import com.siact.module.forecast.query.TempForecastQuery;
 import com.siact.module.forecast.service.ForecastKilnService;
 import com.siact.module.forecast.vo.ForecastKilnMenuVO;
@@ -101,5 +102,12 @@ public class ForecastKilnController {
             r = R.fail(e.getMessage());
         }
         return r;
+    }
+
+    @ApiOperationSupport(order = 60)
+    @ApiOperation("查询温度实际值与预测值曲线")
+    @PostMapping("/queryActualAndForecast")
+    public TempForecastVO queryActualAndForecast(@RequestBody @Validated TempActualForecastQuery query) {
+        return service.queryActualAndForecast(query);
     }
 }

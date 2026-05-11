@@ -15,6 +15,9 @@ import com.siact.module.base.service.TplService;
 import com.siact.module.base.vo.TplVO;
 import com.siact.module.forecast.dto.ForecastKilnParamsDTO;
 import com.siact.module.forecast.dto.PredictionDataShowTplDTO;
+import com.siact.module.algorithm.entity.TemperaturePredictEntity;
+import com.siact.module.algorithm.repository.TemperaturePredictRepository;
+import com.siact.module.forecast.query.TempActualForecastQuery;
 import com.siact.module.forecast.query.TempForecastQuery;
 import com.siact.module.forecast.service.ForecastKilnService;
 import com.siact.module.forecast.support.ForecastSupport;
@@ -48,6 +51,7 @@ import javax.annotation.Resource;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -70,6 +74,7 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
     private @Resource PredictedDataService predictedDataService;
     private @Resource ControlIntervalConfigService controlIntervalConfigService;
     private @Resource ForecastSupport support;
+    private @Resource TemperaturePredictRepository temperaturePredictRepository;
 
     /** 测试模式开关：true 时从 JSON 文件读取测试数据，false 时执行正常业务逻辑 */
     @Value("${forecast.test-mode.enabled:false}")
@@ -700,6 +705,74 @@ public class ForecastKilnServiceImpl implements ForecastKilnService {
         }
 
         // 返回结果
+        return TempForecastVO.builder().xdata(xdata).series(series).build();
+    }
+
+    @Override
+    public TempForecastVO queryActualAndForecast(TempActualForecastQuery query) {
+        List<String> dataCodes = query.getDataCodes();
+        List<String> names = query.getNames();
+
+        // 1. 查询实际值（TDengine）
+        IntervalValParamsDto dto = ConvertUtils.sourceToTarget(query, IntervalValParamsDto.class);
+        List<IntervalDataDto> intervalDataDtos = taosDataService.queryIntervalVal(dto);
+        Map<String, List<Object[]>> historyData = support.buildForecastValueMap(intervalDataDtos, ConvertUtils.sourceToTarget(dto, CommonChartParamsDto.class));
+
+        // 2. 查询预测值（temperature_predict）
+        List<TemperaturePredictEntity> predictEntities = temperaturePredictRepository.queryByPropCodesAndTimeRange(dataCodes, query.getStartTime(), query.getEndTime());
+        Map<String, List<Object[]>> predictData = predictEntities.stream()
+                .collect(Collectors.groupingBy(
+                        TemperaturePredictEntity::getPropCode,
+                        LinkedHashMap::new,
+                        Collectors.mapping(e -> new Object[]{e.getTime(), e.getItemValue().setScale(1, RoundingMode.HALF_UP)}, Collectors.toList())
+                ));
+
+        // 3. 获取显示配置
+        List<PredictionDataShowTplDTO> dataShowTplDTOList = tplService.getListByCode("kilnPredictionDataShow", PredictionDataShowTplDTO.class);
+        Map<String, PredictionDataShowTplDTO> dataShowTplDTOMap = dataShowTplDTOList.stream().collect(Collectors.toMap(
+                PredictionDataShowTplDTO::getDataCode, o -> o, (v1, v2) -> v1));
+
+        // 4. 获取控制限配置
+        Map<String, ControlIntervalConfigHisChartDataDTO> controlConfigMaps = controlIntervalConfigService.queryHistoryConfigChart(
+                dataCodes, query.getStartTime(), query.getEndTime(), query.getTs(), query.getTsUnit(), query.getFormatVal());
+
+        // 5. 生成时间轴
+        List<String> xdata = IntervalTimeUtil.getIntervalTimeList(query.getStartTime(), query.getEndTime(), query.getTsUnit(), query.getTs(), query.getFormatVal());
+
+        // 6. 组装结果
+        List<TempForecastInfoVO> series = new ArrayList<>();
+        for (int i = 0; i < dataCodes.size(); i++) {
+            String dataCode = dataCodes.get(i);
+            String dataName = CollectionUtils.isNotEmpty(names) ? names.get(i) : null;
+            ControlIntervalConfigHisChartDataDTO hisChartDataDTO = controlConfigMaps.get(dataCode);
+
+            PredictionDataShowTplDTO tpl = dataShowTplDTOMap.get(dataCode);
+            HashMap<String, TempForecastInfoValueVO> dataMap = new HashMap<>();
+            if (ObjectUtils.isNotEmpty(tpl)) {
+                dataMap.put("dcs", TempForecastInfoValueVO.createIfMatch(tpl.getShowActual(), "运行值", historyData.get(dataCode)));
+                dataMap.put("predict", TempForecastInfoValueVO.createIfMatch(true, "预测值", predictData.get(dataCode)));
+                dataMap.put("upControl", TempForecastInfoValueVO.createIfMatch(tpl.getShowUpControl(), "上波动限", hisChartDataDTO.getUpControlChart()));
+                dataMap.put("lowControl", TempForecastInfoValueVO.createIfMatch(tpl.getShowLowControl(), "下波动限", hisChartDataDTO.getLowControlChart()));
+                dataMap.put("upAlarm", TempForecastInfoValueVO.createIfMatch(tpl.getShowUpAlarm(), "上告警限", hisChartDataDTO.getUpAlarmChart()));
+                dataMap.put("lowAlarm", TempForecastInfoValueVO.createIfMatch(tpl.getShowLowAlarm(), "下告警限", hisChartDataDTO.getLowAlarmChart()));
+                dataMap.put("temperatureSet", TempForecastInfoValueVO.createIfMatch(tpl.getShowTemperatureSet(), "温度设定值", hisChartDataDTO.getTemperatureSetChart()));
+            }
+
+            TempForecastInfoVO tempForecastInfoVO = TempForecastInfoVO.builder()
+                    .dataCode(dataCode)
+                    .name(StringUtils.isNotBlank(dataName) ? dataName + "趋势" : null)
+                    .maxUpControlVal(NumberUtils.createBigDecimal(hisChartDataDTO.getMaxUpControlVal()))
+                    .minLowControlVal(NumberUtils.createBigDecimal(hisChartDataDTO.getMinLowControlVal()))
+                    .maxUpAlarmVal(NumberUtils.createBigDecimal(hisChartDataDTO.getMaxUpAlarmVal()))
+                    .minLowAlarmVal(NumberUtils.createBigDecimal(hisChartDataDTO.getMinLowAlarmVal()))
+                    .maxTemperatureSetVal(NumberUtils.createBigDecimal(hisChartDataDTO.getMaxTemperatureSetVal()))
+                    .minTemperatureSetVal(NumberUtils.createBigDecimal(hisChartDataDTO.getMinTemperatureSetVal()))
+                    .data(dataMap)
+                    .build();
+
+            series.add(tempForecastInfoVO);
+        }
+
         return TempForecastVO.builder().xdata(xdata).series(series).build();
     }
 
