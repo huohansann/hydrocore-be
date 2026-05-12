@@ -28,6 +28,7 @@
         <mapstruct.version>1.5.3.Final</mapstruct.version>
         <maven-surefire-plugin>2.22.2</maven-surefire-plugin>
         <jep.version>3.4</jep.version>
+        <lwjgl.version>3.3.6</lwjgl.version>
         <siact-common-code.version>0.0.1-SNAPSHOT</siact-common-code.version>
     </properties>
 
@@ -251,6 +252,36 @@
             <version>2.5.1</version>
         </dependency>
 
+        <!-- LWJGL OpenAL 跨平台音频 -->
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-openal</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl</artifactId>
+            <classifier>natives-windows</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-openal</artifactId>
+            <classifier>natives-windows</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl</artifactId>
+            <classifier>natives-linux</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-openal</artifactId>
+            <classifier>natives-linux</classifier>
+        </dependency>
+
     </dependencies>
 
     <dependencyManagement>
@@ -280,6 +311,15 @@
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-bom</artifactId>
                 <version>${log4j.version}</version>
+            </dependency>
+
+            <!-- LWJGL BOM -->
+            <dependency>
+                <groupId>org.lwjgl</groupId>
+                <artifactId>lwjgl-bom</artifactId>
+                <version>${lwjgl.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
