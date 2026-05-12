@@ -1,7 +1,6 @@
 package com.siact.module.base.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.siact.common.config.KilnProperty;
 import com.siact.core.alarm.KictonePlayer;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
@@ -38,12 +37,12 @@ public class TemperatureAlarmServiceImpl implements TemperatureAlarmService {
                                        ControlIntervalConfigService configService,
                                        DataService dataService,
                                        SimpMessagingTemplate messagingTemplate,
-                                       KilnProperty kilnProperty) {
+                                       KictonePlayer tonePlayer) {
         this.sysConfigService = sysConfigService;
         this.configService = configService;
         this.dataService = dataService;
         this.messagingTemplate = messagingTemplate;
-        this.tonePlayer = new KictonePlayer(kilnProperty);
+        this.tonePlayer = tonePlayer;
     }
 
     @Override

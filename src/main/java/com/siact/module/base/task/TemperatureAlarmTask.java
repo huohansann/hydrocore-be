@@ -3,13 +3,13 @@ package com.siact.module.base.task;
 import com.siact.common.redis.RedisService;
 import com.siact.module.base.service.TemperatureAlarmService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+// import org.springframework.scheduling.annotation.Scheduled;
+// import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 @Slf4j
-@Component
+// @Component
 public class TemperatureAlarmTask {
 
     private static final String LOCK_KEY = "lock:temperature_alarm";
@@ -23,7 +23,7 @@ public class TemperatureAlarmTask {
         this.redis = redis;
     }
 
-    @Scheduled(fixedDelay = 60000)
+    // @Scheduled(fixedDelay = 60000)
     public void checkTemperatureAlarm() {
         String lockValue = UUID.randomUUID().toString();
         if (!redis.tryLock(LOCK_KEY, lockValue, LOCK_TIMEOUT)) {

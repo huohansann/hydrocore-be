@@ -1,7 +1,6 @@
 package com.siact.module.algorithm.socket;
 
-import com.siact.common.config.KilnProperty;
-import com.siact.common.utils.SshUtils;
+import com.siact.core.alarm.KictonePlayer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -19,9 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AlgorithmMessageWebSocket {
 
-    private static final String NOTIFY_SCRIPT = "bash /home/software/microservice-docker-jars/kic-notify.sh";
-
-    private final KilnProperty property;
+    private final KictonePlayer kictonePlayer;
 
     public void intelliUpdate() {
         intelliUpdate("status");
@@ -34,14 +31,7 @@ public class AlgorithmMessageWebSocket {
     @Async
     public void playNotify(String notifyType) {
         try {
-            KilnProperty.Algorithm.Ssh ssh = property.getAlgorithm().getSsh();
-            String command = NOTIFY_SCRIPT + " " + notifyType;
-            SshUtils.execute(
-                    ssh.getHost(), ssh.getPort(),
-                    ssh.getUsername(), ssh.getPassword(),
-                    ssh.getPrivateKeyPath(), ssh.getTimeout(),
-                    command
-            );
+            kictonePlayer.play(KictonePlayer.ToneType.ALARM, 10_000);
         } catch (Exception e) {
             log.error("播放通知音失败: {}", e.getMessage(), e);
         }
