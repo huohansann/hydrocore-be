@@ -92,4 +92,16 @@ public class KilnInfoEntity {
     @TableField("wind_dis_low")
     private BigDecimal windDisLow;
 
+    /**
+     * 天然气流量设定值区间上限
+     */
+    @TableField("gas_range_up")
+    private BigDecimal gasRangeUp;
+
+    /**
+     * 天然气流量设定值区间下限
+     */
+    @TableField("gas_range_low")
+    private BigDecimal gasRangeLow;
+
 }

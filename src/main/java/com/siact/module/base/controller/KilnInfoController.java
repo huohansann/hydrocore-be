@@ -43,6 +43,8 @@ public class KilnInfoController {
             curObj.put("gasValLow", kilnInfoVO.getGasValLow() == null ? null : kilnInfoVO.getGasValLow().doubleValue());
             curObj.put("windDisUp", kilnInfoVO.getWindDisUp() == null ? null : kilnInfoVO.getWindDisUp().doubleValue());
             curObj.put("windDisLow", kilnInfoVO.getWindDisLow() == null ? null : kilnInfoVO.getWindDisLow().doubleValue());
+            curObj.put("gasRangeUp", kilnInfoVO.getGasRangeUp() == null ? null : kilnInfoVO.getGasRangeUp().doubleValue());
+            curObj.put("gasRangeLow", kilnInfoVO.getGasRangeLow() == null ? null : kilnInfoVO.getGasRangeLow().doubleValue());
             rtnData.add(curObj);
         }
 

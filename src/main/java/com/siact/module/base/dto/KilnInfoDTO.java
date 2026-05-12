@@ -33,4 +33,8 @@ public class KilnInfoDTO implements Serializable {
     private BigDecimal windDisUp;
     /** 气量分布下限 */
     private BigDecimal windDisLow;
+    /** 天然气流量设定值区间上限 */
+    private BigDecimal gasRangeUp;
+    /** 天然气流量设定值区间下限 */
+    private BigDecimal gasRangeLow;
 } 

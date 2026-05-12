@@ -63,5 +63,13 @@ public class KilnInfoVO implements Serializable {
     @ApiModelProperty(value = "气量分布下限")
     @JsonSerialize(using = BigDecimalTrimmingConverter.class)
     private BigDecimal windDisLow;
+    /** 天然气流量设定值区间上限 */
+    @ApiModelProperty(value = "天然气流量设定值区间上限")
+    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
+    private BigDecimal gasRangeUp;
+    /** 天然气流量设定值区间下限 */
+    @ApiModelProperty(value = "天然气流量设定值区间下限")
+    @JsonSerialize(using = BigDecimalTrimmingConverter.class)
+    private BigDecimal gasRangeLow;
 
 } 
