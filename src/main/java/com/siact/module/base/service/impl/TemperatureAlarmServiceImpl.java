@@ -1,7 +1,8 @@
 package com.siact.module.base.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.siact.core.alarm.IndustrialTonePlayer;
+import com.siact.common.config.KilnProperty;
+import com.siact.core.alarm.KictonePlayer;
 import com.siact.module.base.dto.ControlIntervalConfigDTO;
 import com.siact.module.base.service.ControlIntervalConfigService;
 import com.siact.module.base.service.TemperatureAlarmService;
@@ -31,17 +32,18 @@ public class TemperatureAlarmServiceImpl implements TemperatureAlarmService {
     private final ControlIntervalConfigService configService;
     private final DataService dataService;
     private final SimpMessagingTemplate messagingTemplate;
-    private final IndustrialTonePlayer tonePlayer;
+    private final KictonePlayer tonePlayer;
 
     public TemperatureAlarmServiceImpl(SysConfigService sysConfigService,
                                        ControlIntervalConfigService configService,
                                        DataService dataService,
-                                       SimpMessagingTemplate messagingTemplate) {
+                                       SimpMessagingTemplate messagingTemplate,
+                                       KilnProperty kilnProperty) {
         this.sysConfigService = sysConfigService;
         this.configService = configService;
         this.dataService = dataService;
         this.messagingTemplate = messagingTemplate;
-        this.tonePlayer = new IndustrialTonePlayer();
+        this.tonePlayer = new KictonePlayer(kilnProperty);
     }
 
     @Override
@@ -128,7 +130,7 @@ public class TemperatureAlarmServiceImpl implements TemperatureAlarmService {
                     .build();
             // 启动响铃
             if (!tonePlayer.isPlaying()) {
-                tonePlayer.startLoop(IndustrialTonePlayer.ToneType.ALARM);
+                tonePlayer.startLoop(KictonePlayer.ToneType.ALARM);
                 log.info("温度超限告警：已启动响铃");
             }
         } else {
@@ -155,7 +157,7 @@ public class TemperatureAlarmServiceImpl implements TemperatureAlarmService {
 
     @Override
     public void playTone(String toneType) {
-        IndustrialTonePlayer.ToneType type = IndustrialTonePlayer.ToneType.valueOf(toneType.toUpperCase());
+        KictonePlayer.ToneType type = KictonePlayer.ToneType.valueOf(toneType.toUpperCase());
         tonePlayer.startLoop(type);
         log.info("手动测试音频播放: {}", type);
     }
