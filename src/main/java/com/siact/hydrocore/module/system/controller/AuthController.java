@@ -1,5 +1,6 @@
 package com.siact.hydrocore.module.system.controller;
 
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.common.context.LoginContext;
 import com.siact.hydrocore.module.system.command.LoginCommand;
 import com.siact.hydrocore.module.system.command.ModifyPasswordCommand;
@@ -25,37 +26,38 @@ public class AuthController {
 
     @ApiOperation("登录")
     @PostMapping("/login")
-    public String login(@Valid @RequestBody LoginCommand command) {
-        return authService.login(command);
+    public ApiResponse<String> login(@Valid @RequestBody LoginCommand command) {
+        return ApiResponse.success(authService.login(command));
     }
 
     @ApiOperation("修改密码")
     @PostMapping("/modify-password")
-    public void modifyPassword(@Valid @RequestBody ModifyPasswordCommand command, HttpServletRequest request) {
+    public ApiResponse<Void> modifyPassword(@Valid @RequestBody ModifyPasswordCommand command, HttpServletRequest request) {
         String token = resolveToken(request);
         LoginUser currentUser = LoginContext.getUser();
         authService.modifyPassword(token, currentUser, command);
+        return ApiResponse.success(null);
     }
 
     @ApiOperation("获取当前用户信息")
     @GetMapping("/current")
-    public LoginUser getCurrentUser() {
+    public ApiResponse<LoginUser> getCurrentUser() {
         LoginUser currentUser = LoginContext.getUser();
-        return authService.getCurrentUser(currentUser);
+        return ApiResponse.success(authService.getCurrentUser(currentUser));
     }
 
     @ApiOperation("获取当前用户菜单树")
     @GetMapping("/menus")
-    public List<SysMenuTreeVO> getCurrentUserMenus() {
+    public ApiResponse<List<SysMenuTreeVO>> getCurrentUserMenus() {
         LoginUser currentUser = LoginContext.getUser();
-        return authService.getCurrentUserMenus(currentUser);
+        return ApiResponse.success(authService.getCurrentUserMenus(currentUser));
     }
 
     @ApiOperation("获取下载验证token")
     @GetMapping("/download/token")
-    public String generateDownloadToken() {
+    public ApiResponse<String> generateDownloadToken() {
         LoginUser currentUser = LoginContext.getUser();
-        return authService.generateDownloadToken(currentUser);
+        return ApiResponse.success(authService.generateDownloadToken(currentUser));
     }
 
     private String resolveToken(HttpServletRequest request) {

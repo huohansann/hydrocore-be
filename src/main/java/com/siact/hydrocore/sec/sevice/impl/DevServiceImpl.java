@@ -48,7 +48,7 @@ public class DevServiceImpl implements DevService {
             List<EqVO> eqPropList = getDevPropInfo(vo, "dynamic");
             return eqPropList.stream().collect(Collectors.toMap(eq -> eq.getDefinitionProperty().getDataCode(), eq -> ClassConvertor2DTO.INSTANCE.eqDypropInsVos2DTOs(eq.getDynamicProperties())));
         } catch (ActiveException e) {
-            log.error("批量查询设备对应属性短码的静态属性信息发生异常", e);
+            log.error("sec device property query failed, operation=queryDeviceDynamicProp, dataCodes={}, propTypes={}, propModelCodes={}", vo.getDataCodes(), vo.getPropTypes(), vo.getPropModelCodes(), e);
             return new HashMap<>();
         }
     }
@@ -68,7 +68,7 @@ public class DevServiceImpl implements DevService {
             List<EqVO> eqPropList = getDevPropInfo(vo, "static");
             return eqPropList.stream().collect(Collectors.toMap(eq -> eq.getDefinitionProperty().getDataCode(), eq -> ClassConvertor2DTO.INSTANCE.eqStpropInsVos2DTOs(eq.getStaticProperties())));
         } catch (ActiveException e) {
-            log.error("批量查询设备对应属性短码的静态属性信息发生异常", e);
+            log.error("sec device property query failed, operation=queryDeviceStaticProp, dataCodes={}, propTypes={}, propModelCodes={}", vo.getDataCodes(), vo.getPropTypes(), vo.getPropModelCodes(), e);
             return new HashMap<>();
         }
     }

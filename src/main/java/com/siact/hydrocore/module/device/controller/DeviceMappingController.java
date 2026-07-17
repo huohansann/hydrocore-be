@@ -1,6 +1,7 @@
 package com.siact.hydrocore.module.device.controller;
 
 import com.siact.hydrocore.common.annotation.NoResponseAdvice;
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.common.vo.PageVO;
 import com.siact.hydrocore.module.device.command.DeviceMappingCommand;
 import com.siact.hydrocore.module.device.query.DeviceMappingQuery;
@@ -26,50 +27,50 @@ public class DeviceMappingController {
 
     @ApiOperation("分页查询")
     @GetMapping("/page")
-    public PageVO<DeviceMappingVO> page(DeviceMappingQuery query) {
-        return service.list(query);
+    public ApiResponse<PageVO<DeviceMappingVO>> page(DeviceMappingQuery query) {
+        return ApiResponse.success(service.list(query));
     }
 
     @ApiOperation("查询单条")
     @GetMapping("/{id}")
-    public DeviceMappingVO getById(@PathVariable Long id) {
-        return service.getById(id);
+    public ApiResponse<DeviceMappingVO> getById(@PathVariable Long id) {
+        return ApiResponse.success(service.getById(id));
     }
 
     @ApiOperation("新增")
     @PostMapping("/add")
-    public Boolean add(@Valid @RequestBody DeviceMappingCommand command) {
-        return service.add(command);
+    public ApiResponse<Boolean> add(@Valid @RequestBody DeviceMappingCommand command) {
+        return ApiResponse.success(service.add(command));
     }
 
     @ApiOperation("修改")
     @PutMapping("/update")
-    public Boolean update(@Valid @RequestBody DeviceMappingCommand command) {
-        return service.update(command);
+    public ApiResponse<Boolean> update(@Valid @RequestBody DeviceMappingCommand command) {
+        return ApiResponse.success(service.update(command));
     }
 
     @ApiOperation("单条删除")
     @DeleteMapping("/{id}")
-    public Boolean delete(@PathVariable Long id) {
-        return service.delete(id);
+    public ApiResponse<Boolean> delete(@PathVariable Long id) {
+        return ApiResponse.success(service.delete(id));
     }
 
     @ApiOperation("批量删除")
     @DeleteMapping("/batch")
-    public Boolean deleteBatch(@RequestBody List<Long> ids) {
-        return service.deleteBatch(ids);
+    public ApiResponse<Boolean> deleteBatch(@RequestBody List<Long> ids) {
+        return ApiResponse.success(service.deleteBatch(ids));
     }
 
     @ApiOperation("全部清空")
     @DeleteMapping("/clear")
-    public Boolean clear() {
-        return service.clear();
+    public ApiResponse<Boolean> clear() {
+        return ApiResponse.success(service.clear());
     }
 
     @ApiOperation("导入设备点位")
     @PostMapping("/import")
-    public DeviceImportResult importData(@RequestParam("file") MultipartFile file) {
-        return service.importData(file);
+    public ApiResponse<DeviceImportResult> importData(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.success(service.importData(file));
     }
 
     @NoResponseAdvice

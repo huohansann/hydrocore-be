@@ -2,7 +2,8 @@ package com.siact.hydrocore.sec.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
-import com.siact.hydrocore.common.R;
+import com.siact.hydrocore.common.annotation.NoResponseAdvice;
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.sec.dto.CommonChartResultDto;
 import com.siact.hydrocore.sec.dto.CumulativeDataDTO;
 import com.siact.hydrocore.sec.dto.IntervalDataDto;
@@ -46,15 +47,13 @@ public class DataController {
     @ApiOperation(value = "(量)查询柱状图、折线图等图表数据")
     @ApiOperationSupport(order = 1)
     @PostMapping("/queryCommonChartData")
-    public R<CommonChartResultDto> queryCommonChartData(@Valid @RequestBody CommonChartParamsVo vo) {
-        R r;
+    public ApiResponse<CommonChartResultDto> queryCommonChartData(@Valid @RequestBody CommonChartParamsVo vo) {
         try {
-            r = R.data(dataService.queryCommonChartData(vo));
+            return ApiResponse.success(dataService.queryCommonChartData(vo));
         } catch (Exception e) {
             log.error("查询图表数据出错--->", e);
-            r = R.fail(e.getMessage());
+            return ApiResponse.fail(500, e.getMessage());
         }
-        return r;
     }
 
     @PostMapping("/exportIntervalInstantData")
@@ -74,6 +73,7 @@ public class DataController {
             @ApiImplicitParam(name = "fileName", value = "文件名", paramType = "query", required = true, dataType =
                     "string")
     })
+    @NoResponseAdvice
     public void exportIntervalInstantData(HttpServletResponse response,
                                           @RequestBody @Validated ExportCommonChartParamsVO vo) {
         try {
@@ -95,12 +95,12 @@ public class DataController {
      */
     @ApiOperation(value = "查询某个时间段的量")
     @GetMapping("/queryBetweenVal")
-    public JSONObject queryBetweenVal(String dataCodes, String startTime, String endTime, String calcType) {
+    public ApiResponse<JSONObject> queryBetweenVal(String dataCodes, String startTime, String endTime, String calcType) {
         if (StringUtils.isEmpty(dataCodes) || StringUtils.isEmpty(startTime) || StringUtils.isEmpty(endTime)) {
             throw new RuntimeException("查询某个时间段的量参数校验不通过");
         }
 
-        return dataService.queryBetweenVal(dataCodes, startTime, endTime, calcType);
+        return ApiResponse.success(dataService.queryBetweenVal(dataCodes, startTime, endTime, calcType));
     }
 
 
@@ -112,15 +112,15 @@ public class DataController {
      */
     @ApiOperation(value = "查询等时间间隔的量")
     @PostMapping("/queryIntervalVal")
-    public List<IntervalDataDto> queryIntervalVal(@RequestBody @Validated IntervalValParamsDto dto) {
+    public ApiResponse<List<IntervalDataDto>> queryIntervalVal(@RequestBody @Validated IntervalValParamsDto dto) {
 
         try {
-            return dataService.queryIntervalVal(dto);
+            return ApiResponse.success(dataService.queryIntervalVal(dto));
         } catch (Exception e) {
             log.error("查询等时间间隔的量出错-->", e);
         }
 
-        return new ArrayList<>();
+        return ApiResponse.success(new ArrayList<>());
     }
 
 
@@ -132,8 +132,8 @@ public class DataController {
      */
     @ApiOperation(value = "查询实时值（最后一包数据）")
     @GetMapping("/queryRealValue")
-    public JSONObject queryRealValue(String dataCodes) {
-        return dataService.queryRealValue(dataCodes);
+    public ApiResponse<JSONObject> queryRealValue(String dataCodes) {
+        return ApiResponse.success(dataService.queryRealValue(dataCodes));
     }
 
     /**
@@ -148,13 +148,13 @@ public class DataController {
      */
     @ApiOperation(value = "查询节点下属性某个时间段的量")
     @GetMapping("/queryNoteBetweenVal")
-    public JSONObject queryNoteBetweenVal(String dataCode, String propModelCodes, String startTime, String endTime,
+    public ApiResponse<JSONObject> queryNoteBetweenVal(String dataCode, String propModelCodes, String startTime, String endTime,
                                           String calcType) {
         try {
-            return dataService.queryNoteBetweenVal(dataCode, propModelCodes, startTime, endTime, calcType);
+            return ApiResponse.success(dataService.queryNoteBetweenVal(dataCode, propModelCodes, startTime, endTime, calcType));
         } catch (Exception e) {
             log.error("查询节点下属性某个时间段的量出错-->", e);
-            return null;
+            return ApiResponse.fail(500, e.getMessage());
         }
     }
 
@@ -166,12 +166,12 @@ public class DataController {
      */
     @ApiOperation(value = "查询节点下属性等时间间隔的量")
     @PostMapping("/queryNoteIntervalVal")
-    public List<IntervalDataDto> queryNoteIntervalVal(@RequestBody @Validated IntervalNoteValParamsDto dto) {
+    public ApiResponse<List<IntervalDataDto>> queryNoteIntervalVal(@RequestBody @Validated IntervalNoteValParamsDto dto) {
         try {
-            return dataService.queryNoteIntervalVal(dto);
+            return ApiResponse.success(dataService.queryNoteIntervalVal(dto));
         } catch (Exception e) {
             log.error("查询等时间间隔的量出错-->", e);
-            return new ArrayList<>();
+            return ApiResponse.success(new ArrayList<>());
         }
     }
 
@@ -187,8 +187,8 @@ public class DataController {
             @ApiImplicitParam(name = "yoy", value = "是否同比(默认false，不进行比较)", paramType = "query", dataType = "boolean"),
             @ApiImplicitParam(name = "qoq", value = "是否环比(默认false，不进行比较)", paramType = "query", dataType = "boolean"),
     })
-    public R<List<CumulativeDataDTO>> queryCumulativeData(@RequestBody CumulativeDataVO vo) {
+    public ApiResponse<List<CumulativeDataDTO>> queryCumulativeData(@RequestBody CumulativeDataVO vo) {
         List<CumulativeDataDTO> data = dataService.queryCumulativeData(vo);
-        return R.data(data);
+        return ApiResponse.success(data);
     }
 }

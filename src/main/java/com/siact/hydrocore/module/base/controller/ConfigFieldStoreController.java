@@ -1,6 +1,6 @@
 package com.siact.hydrocore.module.base.controller;
 
-import com.siact.hydrocore.common.result.R;
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.module.base.dto.ConfigFieldStoreDTO;
 import com.siact.hydrocore.module.base.dto.ConfigFieldStoreQuery;
 import com.siact.hydrocore.module.base.service.IConfigFieldStoreService;
@@ -20,31 +20,31 @@ public class ConfigFieldStoreController {
 
     @ApiOperation("查询配置列表")
     @PostMapping("/list")
-    public R list(@RequestBody ConfigFieldStoreQuery query) {
-        return R.data(configFieldStoreService.selectConfigFieldStoreList(query));
+    public ApiResponse<?> list(@RequestBody ConfigFieldStoreQuery query) {
+        return ApiResponse.success(configFieldStoreService.selectConfigFieldStoreList(query));
     }
 
     @ApiOperation("获取配置信息")
     @GetMapping("/getInfo/{id}")
-    public R getInfo(@PathVariable("id") Long id) {
-        return R.data(configFieldStoreService.selectConfigFieldStoreById(id));
+    public ApiResponse<?> getInfo(@PathVariable("id") Long id) {
+        return ApiResponse.success(configFieldStoreService.selectConfigFieldStoreById(id));
     }
 
     @ApiOperation("新增配置")
     @PostMapping("/add")
-    public R add(@RequestBody ConfigFieldStoreDTO dto) {
-        return R.data(configFieldStoreService.insertConfigFieldStore(dto));
+    public ApiResponse<?> add(@RequestBody ConfigFieldStoreDTO dto) {
+        return ApiResponse.success(configFieldStoreService.insertConfigFieldStore(dto));
     }
 
     @ApiOperation("修改配置")
     @PostMapping("/batchEdit")
-    public R edit(@RequestBody List<ConfigFieldStoreDTO> dtoList) {
-        return R.data(configFieldStoreService.updateConfigFieldStore(dtoList));
+    public ApiResponse<?> edit(@RequestBody List<ConfigFieldStoreDTO> dtoList) {
+        return ApiResponse.success(configFieldStoreService.updateConfigFieldStore(dtoList));
     }
 
     @ApiOperation("删除配置")
     @GetMapping("/remove/{ids}")
-    public R remove(@PathVariable Long[] ids) {
-        return R.data(configFieldStoreService.deleteConfigFieldStoreByIds(ids));
+    public ApiResponse<?> remove(@PathVariable Long[] ids) {
+        return ApiResponse.success(configFieldStoreService.deleteConfigFieldStoreByIds(ids));
     }
-} 
+}

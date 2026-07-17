@@ -12,6 +12,7 @@ import java.io.Serializable;
  * @author example
  */
 @Data
+@Deprecated
 public class R<T> implements Serializable {
 
     private static final long serialVersionUID = 1L;

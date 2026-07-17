@@ -1,5 +1,6 @@
 package com.siact.hydrocore.module.system.controller;
 
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.common.vo.PageVO;
 import com.siact.hydrocore.module.system.command.SysRoleCreateCommand;
 import com.siact.hydrocore.module.system.command.SysRoleUpdateCommand;
@@ -22,38 +23,38 @@ public class SysRoleController {
 
     @ApiOperation("分页列表")
     @PostMapping("/list")
-    public PageVO<SysRoleVO> list(@RequestBody SysRoleQuery query) {
-        return service.list(query);
+    public ApiResponse<PageVO<SysRoleVO>> list(@RequestBody SysRoleQuery query) {
+        return ApiResponse.success(service.list(query));
     }
 
     @ApiOperation("新增角色")
     @PostMapping
-    public Boolean create(@RequestBody SysRoleCreateCommand command) {
-        return service.create(command);
+    public ApiResponse<Boolean> create(@RequestBody SysRoleCreateCommand command) {
+        return ApiResponse.success(service.create(command));
     }
 
     @ApiOperation("编辑角色")
     @PutMapping
-    public Boolean update(@RequestBody SysRoleUpdateCommand command) {
-        return service.update(command);
+    public ApiResponse<Boolean> update(@RequestBody SysRoleUpdateCommand command) {
+        return ApiResponse.success(service.update(command));
     }
 
     @ApiOperation("删除角色")
     @DeleteMapping("/{id}")
-    public Boolean delete(@PathVariable Long id) {
-        return service.delete(id);
+    public ApiResponse<Boolean> delete(@PathVariable Long id) {
+        return ApiResponse.success(service.delete(id));
     }
 
     @ApiOperation("分配菜单权限")
     @PutMapping("/{id}/menus")
-    public Boolean assignMenus(@PathVariable Long id, @RequestBody List<Long> menuIds) {
+    public ApiResponse<Boolean> assignMenus(@PathVariable Long id, @RequestBody List<Long> menuIds) {
         service.assignMenus(id, menuIds);
-        return true;
+        return ApiResponse.success(true);
     }
 
     @ApiOperation("获取角色菜单ID列表")
     @GetMapping("/{id}/menus")
-    public List<Long> getMenuIds(@PathVariable Long id) {
-        return service.getMenuIds(id);
+    public ApiResponse<List<Long>> getMenuIds(@PathVariable Long id) {
+        return ApiResponse.success(service.getMenuIds(id));
     }
 }

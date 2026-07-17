@@ -1,7 +1,7 @@
 package com.siact.hydrocore.module.base.controller;
 
 import com.github.pagehelper.PageInfo;
-import com.siact.hydrocore.common.R;
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.module.base.dto.TplDTO;
 import com.siact.hydrocore.module.base.dto.TplQuery;
 import com.siact.hydrocore.module.base.service.TplService;
@@ -36,45 +36,45 @@ public class TplController {
 
     @ApiOperation(value = "查询模板列表")
     @GetMapping("/list")
-    public R list(TplQuery query) {
+    public ApiResponse<PageInfo<TplVO>> list(TplQuery query) {
         List<TplVO> list = tplService.selectTplList(query);
-        return R.data(new PageInfo<>(list));
+        return ApiResponse.success(new PageInfo<>(list));
     }
 
     @ApiOperation(value = "获取模板详细信息")
     @GetMapping("/{id}")
-    public R getInfo(@PathVariable("id") Long id) {
-        return R.data(tplService.selectTplById(id));
+    public ApiResponse<?> getInfo(@PathVariable("id") Long id) {
+        return ApiResponse.success(tplService.selectTplById(id));
     }
 
 
     @ApiOperation(value = "根据模板类型查询模板数据")
     @GetMapping("/type/{tplType}")
-    public R getTplByType(@PathVariable("tplType") String tplType) {
-        return R.data(tplService.selectTplByType(tplType));
+    public ApiResponse<?> getTplByType(@PathVariable("tplType") String tplType) {
+        return ApiResponse.success(tplService.selectTplByType(tplType));
     }
 
     @ApiOperation(value = "根据模板编码查询模板数据")
     @GetMapping("/code/{tplCode}")
-    public R getTplByCode(@PathVariable("tplCode") String tplCode) {
-        return R.data(tplService.selectTplByCode(tplCode));
+    public ApiResponse<?> getTplByCode(@PathVariable("tplCode") String tplCode) {
+        return ApiResponse.success(tplService.selectTplByCode(tplCode));
     }
 
     @ApiOperation(value = "新增模板")
     @PostMapping
-    public R add(@RequestBody TplDTO dto) {
+    public ApiResponse<Void> add(@RequestBody TplDTO dto) {
         return toAjax(tplService.insertTpl(dto));
     }
 
     @ApiOperation(value = "修改模板")
     @PutMapping
-    public R edit(@RequestBody TplDTO dto) {
+    public ApiResponse<Void> edit(@RequestBody TplDTO dto) {
         return toAjax(tplService.updateTpl(dto));
     }
 
     @ApiOperation(value = "删除模板")
     @DeleteMapping("/{ids}")
-    public R remove(@PathVariable Long[] ids) {
+    public ApiResponse<Void> remove(@PathVariable Long[] ids) {
         return toAjax(tplService.deleteTplByIds(ids));
     }
 
@@ -84,7 +84,7 @@ public class TplController {
      * @param rows 影响行数
      * @return 操作结果
      */
-    private R toAjax(int rows) {
-        return rows > 0 ? R.success() : R.fail("");
+    private ApiResponse<Void> toAjax(int rows) {
+        return rows > 0 ? ApiResponse.success(null) : ApiResponse.fail(500, "操作失败");
     }
-} 
+}

@@ -154,7 +154,7 @@ public class DataServiceImpl implements DataService {
 
             return resJson;
         } catch (ActiveException e) {
-            log.error("请求数字孪生查询某个时间段的量发生异常", e);
+            log.error("sec history query failed, operation=queryBetweenVal, dataCodes={}, startTime={}, endTime={}, calcType={}", dataCodes, startTime, endTime, calcType, e);
             return null;
         }
     }
@@ -184,7 +184,7 @@ public class DataServiceImpl implements DataService {
 
             return resJson;
         } catch (ActiveException e) {
-            log.error("请求数字孪生查询某个时间段的量发生异常", e);
+            log.error("sec history query failed, operation=queryBetweenValDto, params={}", JSONObject.toJSONString(parms), e);
             return null;
         }
     }
@@ -214,7 +214,7 @@ public class DataServiceImpl implements DataService {
                 analysisRequestData(dataDtoList, itemData, dataCode);
             });
         } catch (ActiveException e) {
-            log.error("请求数字孪生查询节点下属性等时间间隔的量发生异常", e);
+            log.error("sec interval query failed, operation=queryIntervalVal, params={}", JSONObject.toJSONString(dto), e);
         }
 
         return dataDtoList;
@@ -295,7 +295,7 @@ public class DataServiceImpl implements DataService {
 
             return resJson;
         } catch (ActiveException e) {
-            log.error("请求数字孪生查询节点下属性某个时间段的量发生异常,{}", e);
+            log.error("sec node history query failed, operation=queryNoteBetweenVal, dataCode={}, propModelCodes={}, startTime={}, endTime={}, calcType={}", dataCode, propModelCodes, startTime, endTime, calcType, e);
             return null;
         }
     }
@@ -338,7 +338,7 @@ public class DataServiceImpl implements DataService {
                 dataDtoList = JSONObject.parseArray(JSON.toJSONString(obj), IntervalDataDto.class);
             }
         } catch (ActiveException e) {
-            log.error("请求数字孪生查询节点下属性等时间间隔的量发生异常{}", e);
+            log.error("sec node interval query failed, operation=queryNoteIntervalVal, params={}", JSONObject.toJSONString(dto), e);
         }
         return dataDtoList;
     }
@@ -355,7 +355,7 @@ public class DataServiceImpl implements DataService {
         String fileName = vo.getFileName();
         CommonChartResultDto commonChartResultDto = queryCommonChartData(vo);
         if (null == commonChartResultDto) {
-            log.error(fileName + "未查询到数据");
+            log.warn("chart export has no data, fileName={}", fileName);
             return;
         }
         List<CommonChartDataDto> list = commonChartResultDto.getList();
@@ -466,7 +466,7 @@ public class DataServiceImpl implements DataService {
                 analysisRequestData(dataDtoList, itemData, dataCode);
             });
         } catch (ActiveException e) {
-            log.error("请求数字孪生查询节点下属性等时间间隔的量发生异常", e);
+            log.error("sec forecast interval query failed, operation=queryForecastIntervalVal, params={}", JSONObject.toJSONString(vo), e);
         }
 
         return dataDtoList;

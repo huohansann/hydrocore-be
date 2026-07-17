@@ -1,6 +1,7 @@
 package com.siact.hydrocore.sec.controller;
 
 import com.siact.api.common.api.vo.common.InfoListQueryVo;
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.sec.dto.EqDypropInsDTO;
 import com.siact.hydrocore.sec.dto.EqStpropInsDTO;
 import com.siact.hydrocore.sec.dto.InsTreeDTO;
@@ -40,12 +41,12 @@ public class SecInsController {
      */
     @ApiOperation("查询实例下使用指定设备模型长码的设备")
     @GetMapping("/queryInsListByModeCode")
-    public List<TMInsSimpleDTO> queryInsListByModeCode(String dataCode, String modelDataCode) {
+    public ApiResponse<List<TMInsSimpleDTO>> queryInsListByModeCode(String dataCode, String modelDataCode) {
         if (StringUtils.isEmpty(dataCode) || StringUtils.isEmpty(modelDataCode)) {
             throw new RuntimeException("查询实例下使用指定设备模型长码的设备参数校验不通过");
         }
 
-        return secInsService.queryInsListByModeCode(dataCode, modelDataCode);
+        return ApiResponse.success(secInsService.queryInsListByModeCode(dataCode, modelDataCode));
     }
 
     /**
@@ -55,12 +56,12 @@ public class SecInsController {
      */
     @ApiOperation("查询实例下所有设备")
     @GetMapping("/queryAllDevUnderIns")
-    public List<InsTreeDTO> queryAllDevUnderIns(String dataCode) {
+    public ApiResponse<List<InsTreeDTO>> queryAllDevUnderIns(String dataCode) {
         if (StringUtils.isEmpty(dataCode)) {
             throw new RuntimeException("查询实例下使用指定设备模型长码的设备参数校验不通过");
         }
 
-        return secInsService.queryAllDevUnderIns(dataCode);
+        return ApiResponse.success(secInsService.queryAllDevUnderIns(dataCode));
     }
 
     /**
@@ -72,9 +73,9 @@ public class SecInsController {
      */
     @ApiOperation("查询实例树")
     @GetMapping("/queryTree")
-    public List<InsTreeDTO> queryTree(String dataCode, boolean hasEq, boolean hasSub) {
+    public ApiResponse<List<InsTreeDTO>> queryTree(String dataCode, boolean hasEq, boolean hasSub) {
 
-        return secInsService.queryTree(dataCode, hasEq, hasSub);
+        return ApiResponse.success(secInsService.queryTree(dataCode, hasEq, hasSub));
     }
 
     /**
@@ -87,13 +88,13 @@ public class SecInsController {
      */
     @ApiOperation("批量查询实例对应属性短码的动态属性信息(可通过实例长码+属性短码获取属性长码)")
     @PostMapping("/queryInsDynamicProp")
-    public Map<String, List<EqDypropInsDTO>> queryInsDynamicProp(@RequestBody @Validated InfoListQueryVo vo) {
+    public ApiResponse<Map<String, List<EqDypropInsDTO>>> queryInsDynamicProp(@RequestBody @Validated InfoListQueryVo vo) {
         Set<String> dataCodes = vo.getDataCodes();
         if (CollectionUtils.isEmpty(dataCodes)) {
             throw new RuntimeException("批量查询实例对应属性短码的动态属性信息(可通过实例长码+属性短码获取属性长码)参数校验不通过");
         }
 
-        return secInsService.queryInsDynamicProp(vo);
+        return ApiResponse.success(secInsService.queryInsDynamicProp(vo));
     }
 
     /**
@@ -106,12 +107,12 @@ public class SecInsController {
      */
     @ApiOperation("批量查询实例对应属性短码的静态属性信息(可通过实例长码+属性短码获取属性长码)")
     @PostMapping("/queryInsStaticProp")
-    public Map<String, List<EqStpropInsDTO>> queryInsStaticProp(@RequestBody @Validated InfoListQueryVo vo) {
+    public ApiResponse<Map<String, List<EqStpropInsDTO>>> queryInsStaticProp(@RequestBody @Validated InfoListQueryVo vo) {
         Set<String> dataCodes = vo.getDataCodes();
         if (CollectionUtils.isEmpty(dataCodes)) {
             throw new RuntimeException("批量查询实例对应属性短码的静态属性信息(可通过实例长码+属性短码获取属性长码)参数校验不通过");
         }
 
-        return secInsService.queryInsStaticProp(vo);
+        return ApiResponse.success(secInsService.queryInsStaticProp(vo));
     }
 }

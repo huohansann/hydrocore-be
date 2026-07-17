@@ -1,5 +1,7 @@
 package com.siact.hydrocore.core.event.config;
 
+import com.siact.hydrocore.core.common.config.RuntimeThreadPoolProperties;
+import com.siact.hydrocore.core.common.config.ThreadPoolTaskExecutorBuilder;
 import com.siact.hydrocore.core.event.interceptor.CompositeEventInterceptor;
 import com.siact.hydrocore.core.event.interceptor.EventInterceptor;
 import lombok.RequiredArgsConstructor;
@@ -9,11 +11,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author : kzuo
@@ -24,11 +24,13 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 @Slf4j
 @RequiredArgsConstructor
-@EnableConfigurationProperties(EventProperties.class)
+@EnableConfigurationProperties({EventProperties.class, RuntimeThreadPoolProperties.class})
 @EnableAsync
 @Configuration
 public class EventConfiguration {
     private final EventProperties properties;
+    private final RuntimeThreadPoolProperties runtimeThreadPoolProperties;
+    private final ThreadPoolTaskExecutorBuilder builder;
 
     /**
      * 事件处理器线程池
@@ -38,22 +40,10 @@ public class EventConfiguration {
             log.warn("Event Framework is disabled and uses synchronous executors");
             return Runnable::run;
         }
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        EventProperties.ThreadPool poolConfig = properties.getThreadPool();
-
-        executor.setCorePoolSize(poolConfig.getCoreSize());
-        executor.setMaxPoolSize(poolConfig.getMaxSize());
-        executor.setQueueCapacity(poolConfig.getQueueCapacity());
-        executor.setThreadNamePrefix(poolConfig.getThreadNamePrefix());
-        executor.setKeepAliveSeconds(poolConfig.getKeepAliveSeconds());
-        executor.setAllowCoreThreadTimeOut(poolConfig.isAllowCoreThreadTimeout());
-        executor.setWaitForTasksToCompleteOnShutdown(poolConfig.isWaitForTasksToCompleteOnShutdown());
-        executor.setAwaitTerminationSeconds(poolConfig.getAwaitTerminationSeconds());
-        // 拒绝策略: 由调用线程处理
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.initialize();
+        RuntimeThreadPoolProperties.Pool poolConfig = runtimeThreadPoolProperties.getEvent();
+        properties.applyThreadPoolTo(poolConfig);
         log.info("The event thread pool is initialized: core={}, max={}, queue={}", poolConfig.getCoreSize(), poolConfig.getMaxSize(), poolConfig.getQueueCapacity());
-        return executor;
+        return builder.build(poolConfig);
     }
 
     /**

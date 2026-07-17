@@ -1075,7 +1075,7 @@ public class TimeUtil {
             SimpleDateFormat format = new SimpleDateFormat(type);
             dateString = format.format(date);
         } catch (ParseException e) {
-            e.printStackTrace();
+            LOGGER.warn("time utility operation failed", e);
         }
         return dateString;
     }
@@ -1217,7 +1217,7 @@ public class TimeUtil {
         try {
             dBegin = sdf.parse(startDate);
         } catch (ParseException e) {
-            e.printStackTrace();
+            LOGGER.warn("time utility operation failed", e);
         }
         Calendar calBegin = Calendar.getInstance();
         calBegin.setTime(dBegin);
@@ -1246,7 +1246,7 @@ public class TimeUtil {
         try {
             dEnd = sdf.parse(endDate);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("time utility operation failed", e);
         }
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(dEnd);
@@ -1619,7 +1619,7 @@ public class TimeUtil {
         Date date= myFormatter.parse(endTime );
         Date mydate= myFormatter.parse( beginTime);
         long min =(date.getTime()-mydate.getTime())/(60*1000);
-        System.out.println(min);
+        LOGGER.debug("time utility sample minute={}", min);
         BigDecimal minBig = new BigDecimal(Long.toString(min));
         BigDecimal indexBig = new BigDecimal(Long.toString(60*24));
         BigDecimal divide = minBig.divide(indexBig, 4, RoundingMode.HALF_UP);
@@ -1684,7 +1684,7 @@ public class TimeUtil {
                 }
             }
         }catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("time utility operation failed", e);
         }
 
         return timeList;
@@ -2096,7 +2096,7 @@ public class TimeUtil {
         try {
             date = (Date) formatter.parse(time);
         } catch (ParseException e) {
-            e.printStackTrace();
+            LOGGER.warn("time utility operation failed", e);
         }
         Calendar instance = Calendar.getInstance();
         instance.setTime(date);
@@ -2136,7 +2136,7 @@ public class TimeUtil {
                 startTime += interValue;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("time utility operation failed", e);
             timeList = new ArrayList<>();
         }
         return timeList;
@@ -2164,7 +2164,7 @@ public class TimeUtil {
                 startTime += interValue;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("time utility operation failed", e);
             timeList = new ArrayList<>();
         }
         return timeList;

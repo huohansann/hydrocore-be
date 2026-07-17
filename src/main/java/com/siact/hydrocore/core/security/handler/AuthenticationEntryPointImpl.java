@@ -1,8 +1,9 @@
 package com.siact.hydrocore.core.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.siact.hydrocore.common.entity.ResponseEntity;
-import com.siact.hydrocore.common.enums.ResponseEnum;
+import com.siact.hydrocore.common.api.ApiResponse;
+import com.siact.hydrocore.common.api.ApiResponseCode;
+import com.siact.hydrocore.common.web.TraceIdResolver;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -19,10 +20,10 @@ public class AuthenticationEntryPointImpl implements AuthenticationEntryPoint {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        ResponseEntity<Void> result = ResponseEntity.<Void>builder()
-                .code(ResponseEnum.UNAUTHORIZED.code())
-                .message(ResponseEnum.UNAUTHORIZED.content())
-                .build();
+        ApiResponse<Void> result = ApiResponse.fail(
+                ApiResponseCode.UNAUTHORIZED.getCode(),
+                ApiResponseCode.UNAUTHORIZED.getMessage(),
+                TraceIdResolver.currentTraceId());
         response.getWriter().write(new ObjectMapper().writeValueAsString(result));
     }
 }

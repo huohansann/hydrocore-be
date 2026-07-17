@@ -1,5 +1,6 @@
 package com.siact.hydrocore.core.event.config;
 
+import com.siact.hydrocore.core.common.config.RuntimeThreadPoolProperties;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.transaction.annotation.Propagation;
@@ -108,6 +109,17 @@ public class EventProperties {
     public @PostConstruct void validate() {
         if (threadPool.coreSize <= 0) throw new IllegalArgumentException("event.thread-pool.core-size must be greater than 0");
         if (threadPool.maxSize < threadPool.coreSize) throw new IllegalArgumentException("event.thread-pool.max-size must be greater than or equal to core-size");
+    }
+
+    public void applyThreadPoolTo(RuntimeThreadPoolProperties.Pool target) {
+        target.setCoreSize(threadPool.getCoreSize());
+        target.setMaxSize(threadPool.getMaxSize());
+        target.setQueueCapacity(threadPool.getQueueCapacity());
+        target.setKeepAliveSeconds(threadPool.getKeepAliveSeconds());
+        target.setThreadNamePrefix(threadPool.getThreadNamePrefix());
+        target.setAllowCoreThreadTimeout(threadPool.isAllowCoreThreadTimeout());
+        target.setWaitForTasksToCompleteOnShutdown(threadPool.isWaitForTasksToCompleteOnShutdown());
+        target.setAwaitTerminationSeconds(threadPool.getAwaitTerminationSeconds());
     }
 
     /**

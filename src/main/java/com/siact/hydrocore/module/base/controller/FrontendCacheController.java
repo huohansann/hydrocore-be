@@ -1,6 +1,6 @@
 package com.siact.hydrocore.module.base.controller;
 
-import com.siact.hydrocore.common.R;
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.module.base.service.FrontendCacheService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -34,10 +34,10 @@ public class FrontendCacheController {
             @ApiImplicitParam(name = "key", value = "配置键", required = true, paramType = "query", dataType = "string"),
             @ApiImplicitParam(name = "value", value = "配置值", required = true, paramType = "query", dataType = "string")
     })
-    public R setConfig(String userId, String key, String value) {
+    public ApiResponse<Void> setConfig(String userId, String key, String value) {
 
         frontendCacheService.setConfig(userId, key, value);
-        return R.success();
+        return ApiResponse.success(null);
     }
 
     /**
@@ -52,8 +52,8 @@ public class FrontendCacheController {
             @ApiImplicitParam(name = "userId", value = "用户ID", required = true, paramType = "query", dataType = "string"),
             @ApiImplicitParam(name = "keys", value = "配置键", required = true, paramType = "query", dataType = "string")
     })
-    public R<Map<String, String>> getConfig(String userId, String keys) {
-        return R.data(frontendCacheService.getConfig(userId, keys));
+    public ApiResponse<Map<String, String>> getConfig(String userId, String keys) {
+        return ApiResponse.success(frontendCacheService.getConfig(userId, keys));
     }
 
     /**
@@ -68,9 +68,9 @@ public class FrontendCacheController {
             @ApiImplicitParam(name = "userId", value = "用户ID", required = true, paramType = "query", dataType = "string"),
             @ApiImplicitParam(name = "keys", value = "配置键", required = true, paramType = "query", dataType = "string")
     })
-    public R deleteConfig(String userId, String keys) {
+    public ApiResponse<Void> deleteConfig(String userId, String keys) {
         frontendCacheService.deleteConfig(userId, keys);
-        return R.success();
+        return ApiResponse.success(null);
     }
 
 

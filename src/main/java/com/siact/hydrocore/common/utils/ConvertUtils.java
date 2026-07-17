@@ -88,7 +88,7 @@ public class ConvertUtils {
                 }
                 field.setAccessible(accessFlag);
             } catch (IllegalArgumentException | IllegalAccessException ex){
-                log.error("objToMap方法发生异常",ex);
+                log.warn("object to map field conversion failed, field={}", varName, ex);
             }
         }
         return map;

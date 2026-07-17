@@ -1,5 +1,6 @@
 package com.siact.hydrocore.module.system.controller;
 
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.common.vo.PageVO;
 import com.siact.hydrocore.module.system.command.SysOrganizationCreateCommand;
 import com.siact.hydrocore.module.system.command.SysOrganizationUpdateCommand;
@@ -23,31 +24,31 @@ public class SysOrganizationController {
 
     @ApiOperation("分页列表")
     @PostMapping("/list")
-    public PageVO<SysOrganizationVO> list(@RequestBody SysOrganizationQuery query) {
-        return service.list(query);
+    public ApiResponse<PageVO<SysOrganizationVO>> list(@RequestBody SysOrganizationQuery query) {
+        return ApiResponse.success(service.list(query));
     }
 
     @ApiOperation("组织树")
     @GetMapping("/tree")
-    public List<SysOrganizationTreeVO> tree() {
-        return service.tree();
+    public ApiResponse<List<SysOrganizationTreeVO>> tree() {
+        return ApiResponse.success(service.tree());
     }
 
     @ApiOperation("新增组织")
     @PostMapping
-    public Boolean create(@RequestBody SysOrganizationCreateCommand command) {
-        return service.create(command);
+    public ApiResponse<Boolean> create(@RequestBody SysOrganizationCreateCommand command) {
+        return ApiResponse.success(service.create(command));
     }
 
     @ApiOperation("编辑组织")
     @PutMapping
-    public Boolean update(@RequestBody SysOrganizationUpdateCommand command) {
-        return service.update(command);
+    public ApiResponse<Boolean> update(@RequestBody SysOrganizationUpdateCommand command) {
+        return ApiResponse.success(service.update(command));
     }
 
     @ApiOperation("删除组织")
     @DeleteMapping("/{id}")
-    public Boolean delete(@PathVariable Long id) {
-        return service.delete(id);
+    public ApiResponse<Boolean> delete(@PathVariable Long id) {
+        return ApiResponse.success(service.delete(id));
     }
 }

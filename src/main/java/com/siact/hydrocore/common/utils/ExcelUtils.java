@@ -11,6 +11,8 @@ import com.alibaba.fastjson2.JSONObject;
 import com.siact.hydrocore.sec.dto.TableDataDto;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -27,6 +29,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 public class ExcelUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExcelUtils.class);
 
     /**
      * 导出Excel，指定表头和数据
@@ -40,7 +43,7 @@ public class ExcelUtils {
         try {
             downLoadExcel(fileName, response, workbook);
         } catch (IOException e){
-            System.out.println("导出出错");
+            LOGGER.warn("excel export failed, fileName={}", fileName, e);
         }
     }
 
@@ -56,7 +59,7 @@ public class ExcelUtils {
         try {
             downLoadExcel(fileName, response, workbook);
         } catch (IOException e){
-            System.out.println("导出出错");
+            LOGGER.warn("excel export failed, fileName={}", fileName, e);
         }
     }
 
@@ -72,7 +75,7 @@ public class ExcelUtils {
         try {
             downLoadExcel(fileName, response, workbook);
         } catch (IOException e){
-            System.out.println("导出出错");
+            LOGGER.warn("excel export failed, fileName={}", fileName, e);
         }
     }
 
@@ -181,7 +184,7 @@ public class ExcelUtils {
             response.setHeader("Content-Length", String.valueOf(baos.size()));
             out.write( baos.toByteArray() );
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("excel download failed, fileName={}", fileName, e);
         }
     }
 
@@ -194,7 +197,7 @@ public class ExcelUtils {
             try {
                 workbook.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.warn("excel workbook close failed", e);
             }
         }
     }

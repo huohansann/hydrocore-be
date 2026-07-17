@@ -2,6 +2,7 @@ package com.siact.hydrocore.sec.controller;
 
 
 import com.siact.api.common.api.vo.eq.EqListQueryVo;
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.sec.dto.EqDypropInsDTO;
 import com.siact.hydrocore.sec.dto.EqStpropInsDTO;
 import com.siact.hydrocore.sec.sevice.DevService;
@@ -42,13 +43,13 @@ public class DevController {
      */
     @ApiOperation("批量查询设备对应属性短码的动态属性信息(可通过实例长码+属性短码获取属性长码)")
     @PostMapping("/queryDeviceDynamicProp")
-    public Map<String, List<EqDypropInsDTO>> queryDeviceDynamicProp(@RequestBody @Validated EqListQueryVo vo) {
+    public ApiResponse<Map<String, List<EqDypropInsDTO>>> queryDeviceDynamicProp(@RequestBody @Validated EqListQueryVo vo) {
         List<String> dataCodes = vo.getDataCodes();
         if (CollectionUtils.isEmpty(dataCodes)) {
             throw new RuntimeException("查询某个时间段的量参数校验不通过");
         }
 
-        return devService.queryDeviceDynamicProp(vo);
+        return ApiResponse.success(devService.queryDeviceDynamicProp(vo));
     }
 
     /**
@@ -61,12 +62,12 @@ public class DevController {
      */
     @ApiOperation("批量查询设备对应属性短码的静态属性信息(可通过实例长码+属性短码获取属性长码)")
     @PostMapping("/queryDeviceStaticProp")
-    public Map<String, List<EqStpropInsDTO>> queryDeviceStaticProp(@RequestBody @Validated EqListQueryVo vo) {
+    public ApiResponse<Map<String, List<EqStpropInsDTO>>> queryDeviceStaticProp(@RequestBody @Validated EqListQueryVo vo) {
         List<String> dataCodes = vo.getDataCodes();
         if (CollectionUtils.isEmpty(dataCodes)) {
             throw new RuntimeException("查询某个时间段的量参数校验不通过");
         }
 
-        return devService.queryDeviceStaticProp(vo);
+        return ApiResponse.success(devService.queryDeviceStaticProp(vo));
     }
 }

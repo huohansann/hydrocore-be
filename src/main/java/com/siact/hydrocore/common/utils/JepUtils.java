@@ -6,6 +6,8 @@ import com.singularsys.jep.EvaluationException;
 import com.singularsys.jep.Jep;
 import com.singularsys.jep.JepException;
 import com.singularsys.jep.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
  * @date 2023/10/19 17:16:20
  */
 public class JepUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JepUtils.class);
 
     /**
      * 公式计算
@@ -66,7 +69,7 @@ public class JepUtils {
                     jep.addVariable(s, param2Vals.get(s));
                 }
             } catch (JepException e) {
-                e.printStackTrace();
+                LOGGER.warn("jep variable binding failed, variable={}", s, e);
                 throw new RuntimeException("JEP添加变量异常");
             }
         }
@@ -111,7 +114,7 @@ public class JepUtils {
 
         // 区间比较
         String formula1 = "(lowVal <= val) && (val <= upLow)";
-        System.out.println(calc);
+        LOGGER.debug("jep calculation sample result={}", calc);
     }
 
 }

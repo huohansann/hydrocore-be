@@ -84,9 +84,9 @@ public class ConvertUtils {
                 }
                 field.setAccessible(accessFlag);
             } catch (IllegalArgumentException ex){
-                ex.printStackTrace();
+                logger.warn("object field conversion skipped, field={}", varName, ex);
             } catch (IllegalAccessException ex){
-                ex.printStackTrace();
+                logger.warn("object field conversion denied, field={}", varName, ex);
             }
         }
         return map;

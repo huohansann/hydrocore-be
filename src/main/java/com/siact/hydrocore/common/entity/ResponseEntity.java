@@ -15,6 +15,7 @@ import java.io.Serializable;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
+@Deprecated
 public class ResponseEntity<T> implements Serializable {
     private final static long serialVersionUID = 1L;
     private Integer code;

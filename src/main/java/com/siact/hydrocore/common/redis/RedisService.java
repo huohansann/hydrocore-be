@@ -1,5 +1,7 @@
 package com.siact.hydrocore.common.redis;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.HashOperations;
@@ -22,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RedisService
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RedisService.class);
+
     @Autowired
     public RedisTemplate redisTemplate;
 
@@ -159,7 +163,7 @@ public class RedisService
             redisTemplate.opsForValue().set(key, value, time, timeUnit);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("redis cache collection failed, key={}", key, e);
             return false;
         }
     }
@@ -175,7 +179,7 @@ public class RedisService
             redisTemplate.opsForValue().set(key, value);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("redis cache map failed, key={}", key, e);
             return false;
         }
     }

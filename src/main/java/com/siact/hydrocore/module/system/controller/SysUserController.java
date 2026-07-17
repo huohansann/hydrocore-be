@@ -1,5 +1,6 @@
 package com.siact.hydrocore.module.system.controller;
 
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.common.vo.PageVO;
 import com.siact.hydrocore.module.system.command.AssignUserRoleCommand;
 import com.siact.hydrocore.module.system.command.ResetPasswordCommand;
@@ -25,50 +26,50 @@ public class SysUserController {
 
     @ApiOperation("分页列表")
     @PostMapping("/list")
-    public PageVO<SysUserVO> list(@RequestBody SysUserQuery query) {
-        return service.list(query);
+    public ApiResponse<PageVO<SysUserVO>> list(@RequestBody SysUserQuery query) {
+        return ApiResponse.success(service.list(query));
     }
 
     @ApiOperation("新增用户")
     @PostMapping
-    public Boolean create(@RequestBody SysUserCreateCommand command) {
-        return service.create(command);
+    public ApiResponse<Boolean> create(@RequestBody SysUserCreateCommand command) {
+        return ApiResponse.success(service.create(command));
     }
 
     @ApiOperation("编辑用户")
     @PutMapping
-    public Boolean update(@RequestBody SysUserUpdateCommand command) {
-        return service.update(command);
+    public ApiResponse<Boolean> update(@RequestBody SysUserUpdateCommand command) {
+        return ApiResponse.success(service.update(command));
     }
 
     @ApiOperation("删除用户")
     @DeleteMapping("/{id}")
-    public Boolean delete(@PathVariable Long id) {
-        return service.delete(id);
+    public ApiResponse<Boolean> delete(@PathVariable Long id) {
+        return ApiResponse.success(service.delete(id));
     }
 
     @ApiOperation("重置密码")
     @PutMapping("/{id}/reset-password")
-    public Boolean resetPassword(@PathVariable Long id, @RequestBody ResetPasswordCommand command) {
-        return service.resetPassword(id, command);
+    public ApiResponse<Boolean> resetPassword(@PathVariable Long id, @RequestBody ResetPasswordCommand command) {
+        return ApiResponse.success(service.resetPassword(id, command));
     }
 
     @ApiOperation("分配角色")
     @PutMapping("/{id}/roles")
-    public Boolean assignRoles(@PathVariable Long id, @RequestBody AssignUserRoleCommand command) {
+    public ApiResponse<Boolean> assignRoles(@PathVariable Long id, @RequestBody AssignUserRoleCommand command) {
         service.assignRoles(id, command.getRoleIds());
-        return true;
+        return ApiResponse.success(true);
     }
 
     @ApiOperation("获取用户角色ID列表")
     @GetMapping("/{id}/roles")
-    public List<Long> getRoleIds(@PathVariable Long id) {
-        return service.getRoleIds(id);
+    public ApiResponse<List<Long>> getRoleIds(@PathVariable Long id) {
+        return ApiResponse.success(service.getRoleIds(id));
     }
 
     @ApiOperation("获取用户菜单树")
     @GetMapping("/{id}/menus")
-    public List<SysMenuTreeVO> getUserMenus(@PathVariable Long id) {
-        return service.getUserMenus(id);
+    public ApiResponse<List<SysMenuTreeVO>> getUserMenus(@PathVariable Long id) {
+        return ApiResponse.success(service.getUserMenus(id));
     }
 }

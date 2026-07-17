@@ -53,7 +53,7 @@ public class SecInsServiceImpl implements SecInsService {
             List<TMInsSimpleVo> tmInsSimpleVos = SiactSecApiFeignUtil.list(r);
             return ClassConvertor2DTO.INSTANCE.tMInsSimpleVos2DTOs(tmInsSimpleVos);
         } catch (ActiveException e) {
-            log.error("可实例化列表发生异常", e);
+            log.error("sec instance list query failed, operation=queryInsListByModeCode, dataCode={}, modelDataCode={}", dataCode, modelDataCode, e);
             return new ArrayList<>();
         }
     }
@@ -121,7 +121,7 @@ public class SecInsServiceImpl implements SecInsService {
             List<InsVO> insPropList = getInsPropInfo(vo, "dynamic");
             return insPropList.stream().collect(Collectors.toMap(ins -> ins.getDefinitionProperty().getDataCode(), ins -> ClassConvertor2DTO.INSTANCE.insDypropInsVos2DTOs(ins.getDynamicProperties())));
         } catch (ActiveException e) {
-            log.error("批量查询设备对应属性短码的静态属性信息发生异常", e);
+            log.error("sec instance property query failed, operation=queryInsDynamicProp, dataCodes={}, propTypes={}, propModelCodes={}", vo.getDataCodes(), vo.getPropTypes(), vo.getPropModelCodes(), e);
             return new HashMap<>();
         }
     }
@@ -141,7 +141,7 @@ public class SecInsServiceImpl implements SecInsService {
             List<InsVO> insPropList = getInsPropInfo(vo, "static");
             return insPropList.stream().collect(Collectors.toMap(ins -> ins.getDefinitionProperty().getDataCode(), ins -> ClassConvertor2DTO.INSTANCE.insStpropInsVos2DTOs(ins.getStaticProperties())));
         } catch (ActiveException e) {
-            log.error("批量查询设备对应属性短码的静态属性信息发生异常", e);
+            log.error("sec instance property query failed, operation=queryInsStaticProp, dataCodes={}, propTypes={}, propModelCodes={}", vo.getDataCodes(), vo.getPropTypes(), vo.getPropModelCodes(), e);
             return new HashMap<>();
         }
     }

@@ -2,6 +2,7 @@ package com.siact.hydrocore.sec.controller;
 
 import com.siact.api.common.api.vo.prop.NodePropValQueryVo;
 import com.siact.api.common.api.vo.prop.PropValFMResultVo;
+import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.sec.sevice.PropInsService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -29,8 +30,8 @@ public class PropController {
      */
     @ApiOperation("节点属性历史数据批量查询（动态属性-带公式计算")
     @PostMapping("/queryNodeHistory")
-    public List<PropValFMResultVo> queryNodeHistory(@RequestBody NodePropValQueryVo queryVo) {
+    public ApiResponse<List<PropValFMResultVo>> queryNodeHistory(@RequestBody NodePropValQueryVo queryVo) {
 
-        return propInsService.queryNodeHistory(queryVo);
+        return ApiResponse.success(propInsService.queryNodeHistory(queryVo));
     }
 }
