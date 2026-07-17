@@ -1,0 +1,13 @@
+# ============================================================
+# Knife4j / OpenAPI (Nacos data-id: sec-knife4j.yml)
+# ============================================================
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher

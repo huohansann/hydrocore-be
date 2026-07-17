@@ -2,15 +2,15 @@ spring:
   profiles:
     active: dev
   application:
-    name: kiln-intelligent-control
+    name: hydrocore
   cloud:
     nacos:
-      # nacos IP端口配置
+      # Local default. Override server-addr and namespace per environment.
       server-addr: localhost:8848
       username: nacos
       password: 123456
-      namespace: kic-xyg
-      # 注册中心配置，使用独立命名空间
+      # Nacos namespace ID. Create/use a HydroCore namespace for this baseline.
+      namespace: hydrocore
       discovery:
         namespace: ${spring.cloud.nacos.namespace}
         server-addr: ${spring.cloud.nacos.server-addr}
@@ -18,9 +18,10 @@ spring:
         file-extension: yml
         namespace: ${spring.cloud.nacos.namespace}
         server-addr: ${spring.cloud.nacos.server-addr}
-        # 加载公共配置文件redis、mybatis-plus
+        # Templates live in src/main/resources/nacos/.
+        # Publish them with scripts/publish-nacos-configs.ps1.
         extension-configs:
-          - data-id: kiln-intelligent-control.yml
+          - data-id: hydrocore.yml
             refresh: true
           - data-id: redis.yml
             refresh: true
@@ -28,9 +29,9 @@ spring:
             refresh: true
           - data-id: pagehelper.yml
             refresh: true
-          - data-id: kiln-constant.yml
+          - data-id: hydrocore-constant.yml
             refresh: true
           - data-id: sec-knife4j.yml
             refresh: true
-          - data-id: kiln-config.properties
+          - data-id: hydrocore-config.properties
             refresh: true

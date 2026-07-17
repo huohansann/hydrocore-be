@@ -1,0 +1,16 @@
+{
+  "list": [
+    {
+      "name": "Sample Series",
+      "dataCode": "sample_data_code",
+      "data": [
+        ["2026-07-17 00:00:00", 0]
+      ],
+      "totalValue": 0,
+      "aveValue": 0,
+      "unit": "",
+      "showTable": true
+    }
+  ],
+  "xAxisData": ["2026-07-17 00:00:00"]
+}

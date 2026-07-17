@@ -1,0 +1,16 @@
+# ============================================================
+# Shared Redis (Nacos data-id: redis.yml)
+# ============================================================
+
+spring:
+  redis:
+    host: CHANGE_ME_REDIS_HOST
+    port: 6379
+    password: CHANGE_ME_REDIS_PASSWORD
+    database: 0
+    timeout: 5000ms
+    lettuce:
+      pool:
+        max-active: 16
+        max-idle: 8
+        min-idle: 2

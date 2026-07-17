@@ -32,6 +32,13 @@ build/
 .vscode/
 .mvn
 
+### Local agent / IDE runtime config ###
+.claude/
+.cursor/
+.codex/
+.agents/
+.github/skills/
+
 ### springboot ###
 *.log
 *.lck

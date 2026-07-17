@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true" scanPeriod="60 seconds">
-    <contextName>kiln-logback</contextName>
+    <contextName>hydrocore-logback</contextName>
     <property name="log.path" value="logs"/>
     <springProfile name="dev">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -33,7 +33,7 @@
                 </timeBasedFileNamingAndTriggeringPolicy>
                 <maxHistory>15</maxHistory>
             </rollingPolicy>
-            <filter class="com.siact.core.common.filter.LogbackEvaluatorFilter">
+            <filter class="com.siact.hydrocore.core.common.filter.LogbackEvaluatorFilter">
                 <patterns>
                     <pattern>.*\.mapper(\.|$).*</pattern>
                     <pattern>^com\.baomidou\.mybatisplus\..*</pattern>
@@ -116,7 +116,7 @@
         <logger name="com.baomidou.mybatisplus" level="debug" additivity="false">
             <appender-ref ref="SQL_FILE"/>
         </logger>
-        <logger name="com.siact" level="debug">
+        <logger name="com.siact.hydrocore" level="debug">
             <appender-ref ref="SQL_FILE"/>
         </logger>
         <root level="DEBUG">

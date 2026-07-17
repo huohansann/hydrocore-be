@@ -9,10 +9,10 @@
         <relativePath/>
     </parent>
     <groupId>com.siact</groupId>
-    <artifactId>kic-xyg</artifactId>
+    <artifactId>hydrocore</artifactId>
     <version>v2</version>
-    <name>kiln-intelligent-control</name>
-    <description>窑炉控制系统</description>
+    <name>hydrocore</name>
+    <description>HydroCore water treatment platform</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

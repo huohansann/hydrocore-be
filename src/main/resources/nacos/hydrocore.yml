@@ -1,0 +1,58 @@
+# ============================================================
+# HydroCore main application config (Nacos data-id: hydrocore.yml)
+# Upload to Nacos: Group=DEFAULT_GROUP, namespace matching bootstrap.yml
+# Replace all CHANGE_ME values before use.
+# HydroCore baseline application settings.
+# ============================================================
+
+server:
+  port: 9010
+  # servlet:
+  #   context-path: /hydrocore   # uncomment if gateway expects a context path
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://CHANGE_ME_HOST:3306/hydrocore?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: CHANGE_ME_USER
+    password: CHANGE_ME_PASSWORD
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  # TDengine (optional for trends; leave empty to skip taos pool)
+  datasource.taos:
+    url: jdbc:TAOS-RS://CHANGE_ME_TAOS_HOST:6041/CHANGE_ME_DB?timezone=UTC-8
+    username: root
+    password: taosdata
+    maximum-pool-size: 10
+    connection-timeout: 5000
+
+  event:
+    enabled: true
+    defaultTimeout: 5000
+
+# JWT (required to start)
+jwt:
+  secret: CHANGE_ME_USE_A_LONG_RANDOM_SECRET_BASE64_OR_STRING
+  expiration: 86400000
+  refresh-window: 1800000
+  stale-ttl: 3600000
+  # legacy salt used by some older profiles (safe to omit if unused)
+  salt: siact
+
+# Twin / history query timeout (ms). Used by DataServiceImpl.
+node:
+  history:
+    timeout: 10000
+
+# Optional local sample chart fixture. Keep disabled for the baseline.
+sample:
+  chart:
+    enabled: false
+
+# Logging (optional overrides; logback-spring.xml is primary)
+logging:
+  level:
+    com.siact.hydrocore: info

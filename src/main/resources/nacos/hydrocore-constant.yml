@@ -1,0 +1,10 @@
+# ============================================================
+# HydroCore dynamic constants (Nacos data-id: hydrocore-constant.yml)
+# Bound to @ConfigurationProperties(prefix = "constant")
+# Empty map is valid for the clean baseline.
+# ============================================================
+
+constant:
+  # Example placeholders:
+  # twin.projectCode: HydroCore
+  # twin.defaultTsUnit: m
