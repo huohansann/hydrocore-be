@@ -1,10 +1,10 @@
-# HydroCore Backend
+# HydroCore 后端
 
-HydroCore backend is the Spring Boot foundation for a water-treatment secondary-development baseline. It keeps generic capabilities only: authentication, authorization, users, roles, menus, organizations, system configuration, device/point management, generic data query plumbing, Redis, Nacos, TDengine access, MQTT infrastructure, and WebSocket support.
+HydroCore 后端是水处理系统二次开发基线中的 Spring Boot 底座。它只保留通用能力：认证、授权、用户、角色、菜单、组织、系统配置、设备与点位管理、通用数据查询管道、Redis、Nacos、TDengine 接入、MQTT 基础设施和 WebSocket 支持。
 
-Real process models, control algorithms, prediction algorithms, production reports, and plant-specific data are not part of this baseline.
+真实工艺模型、控制算法、预测算法、生产报表和现场专用数据不属于当前基线范围。
 
-## Tech Stack
+## 技术栈
 
 - JDK 8
 - Spring Boot 2.6.13
@@ -13,39 +13,39 @@ Real process models, control algorithms, prediction algorithms, production repor
 - MySQL, Redis, TDengine, Nacos
 - Knife4j, JWT, STOMP/WebSocket
 
-## Entry Point
+## 启动入口
 
 ```text
 com.siact.hydrocore.HydrocoreApplication
 ```
 
-## Database
+## 数据库
 
-Import `src/main/resources/db/schema/hydrocore_schema.sql` for a fresh local baseline.
+全新本地基线环境请导入 `src/main/resources/db/schema/hydrocore_schema.sql`。
 
-The seed account `admin / ChangeMe123!` is for local development only. Change its password or recreate accounts before any production deployment.
+初始化账号 `admin / ChangeMe123!` 仅用于本地开发。生产部署前必须修改密码或重新创建账号。
 
 ## Nacos
 
-Use the templates in `src/main/resources/nacos/`. Production secrets, database hosts, Redis hosts, TDengine hosts, and external service URLs must be supplied by the deployment environment.
+使用 `src/main/resources/nacos/` 中的模板。生产密钥、数据库地址、Redis 地址、TDengine 地址和外部服务 URL 必须由部署环境提供。
 
-Publish local templates with:
+发布本地模板：
 
 ```powershell
 .\scripts\publish-nacos-configs.ps1 -ServerAddr "localhost:8848" -Namespace "hydrocore" -Username "nacos" -Password "123456"
 ```
 
-## Verify
+## 验证
 
 ```powershell
 mvn -q -DskipTests compile
 mvn -q test
 ```
 
-Private dependencies may require VPN or internal Nexus access.
+私有依赖可能需要 VPN 或内部 Nexus 访问权限。
 
-## Documentation
+## 文档
 
-- Backend architecture: `docs/architecture.md`
-- System config API: `docs/api/sys-config-api.md`
-- Root Comet/OpenSpec work products: `..\docs\` and `..\openspec\`
+- 后端架构：`docs/architecture.md`
+- 系统配置 API：`docs/api/sys-config-api.md`
+- 根仓库 Comet/OpenSpec 产物：`..\docs\` 和 `..\openspec\`

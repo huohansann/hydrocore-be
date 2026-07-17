@@ -1,22 +1,22 @@
-# Nacos Templates
+# Nacos 模板
 
-These files are the HydroCore baseline Nacos templates.
+这些文件是 HydroCore 基线的 Nacos 模板。
 
-| data-id | Template | Purpose |
+| data-id | 模板 | 用途 |
 |---|---|---|
-| `hydrocore.yml` | `nacos/hydrocore.yml` | Main application settings |
-| `hydrocore-constant.yml` | `nacos/hydrocore-constant.yml` | Dynamic constants |
-| `hydrocore-config.properties` | `nacos/hydrocore-config.properties` | Extra key/value properties |
-| `redis.yml` | `nacos/redis.yml` | Redis settings |
-| `mybatis-plus.yml` | `nacos/mybatis-plus.yml` | MyBatis-Plus settings |
-| `pagehelper.yml` | `nacos/pagehelper.yml` | PageHelper settings |
-| `sec-knife4j.yml` | `nacos/sec-knife4j.yml` | API documentation settings |
+| `hydrocore.yml` | `nacos/hydrocore.yml` | 主应用配置 |
+| `hydrocore-constant.yml` | `nacos/hydrocore-constant.yml` | 动态常量 |
+| `hydrocore-config.properties` | `nacos/hydrocore-config.properties` | 额外键值配置 |
+| `redis.yml` | `nacos/redis.yml` | Redis 配置 |
+| `mybatis-plus.yml` | `nacos/mybatis-plus.yml` | MyBatis-Plus 配置 |
+| `pagehelper.yml` | `nacos/pagehelper.yml` | PageHelper 配置 |
+| `sec-knife4j.yml` | `nacos/sec-knife4j.yml` | API 文档配置 |
 
-For a fresh baseline, create a HydroCore namespace and publish these files. Replace every `CHANGE_ME_*` value before running outside local development.
+全新基线环境需要先创建 HydroCore 命名空间，再发布这些文件。在本地开发以外的环境运行前，必须替换所有 `CHANGE_ME_*` 值。
 
 ```powershell
 cd D:\project\HydroCore\hydrocore-be
 .\scripts\publish-nacos-configs.ps1 -ServerAddr "localhost:8848" -Namespace "hydrocore" -Username "nacos" -Password "123456"
 ```
 
-Historical migration scripts may mention removed legacy business terms. Current Nacos templates should not enable those capabilities by default.
+历史迁移脚本中可能仍会出现已移除的旧业务术语。当前 Nacos 模板不应默认启用这些能力。
