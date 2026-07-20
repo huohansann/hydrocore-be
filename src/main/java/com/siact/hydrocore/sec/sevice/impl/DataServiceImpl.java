@@ -53,6 +53,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -318,8 +319,12 @@ public class DataServiceImpl implements DataService {
             String mdsObjStr = MD5Utils.md5Hex(JSONObject.toJSONString(dto), "UTF-8");
             log.info("redis的唯一标识field为{}", mdsObjStr);
             //先从缓存里面去 缓存里面没有再去进行接口调用
-            Object obj = redisService.getCacheMapValue(REDISKEY_NODEHISTORY, mdsObjStr);
-            if (Objects.isNull(obj)) {
+            List<IntervalDataDto> cached = redisService.getHashJson(
+                    REDISKEY_NODEHISTORY,
+                    mdsObjStr,
+                    new com.alibaba.fastjson2.TypeReference<List<IntervalDataDto>>() {}
+            );
+            if (Objects.isNull(cached)) {
                 log.info("nodeHistory 缓存中没有需要通过接口获取!!!");
                 R<List<PropValFMResultVo>> propData = propService.nodeHistory(vo);
                 List<PropValFMResultVo> propDataDataList = analysisSiactSecData(propData);
@@ -332,10 +337,10 @@ public class DataServiceImpl implements DataService {
                 dataDtoList = dataDtoListCopy;
                 //将该数据保存在Redis缓存中
                 if (CollectionUtils.isNotEmpty(dataDtoList)) {
-                    redisService.setCacheMapValue(REDISKEY_NODEHISTORY, mdsObjStr, dataDtoList, nodeHistoryTimeOut);
+                    redisService.putHashJson(REDISKEY_NODEHISTORY, mdsObjStr, dataDtoList, nodeHistoryTimeOut, TimeUnit.SECONDS);
                 }
             } else {
-                dataDtoList = JSONObject.parseArray(JSON.toJSONString(obj), IntervalDataDto.class);
+                dataDtoList = cached;
             }
         } catch (ActiveException e) {
             log.error("sec node interval query failed, operation=queryNoteIntervalVal, params={}", JSONObject.toJSONString(dto), e);

@@ -1,5 +1,9 @@
 package com.siact.hydrocore.tdengine.util;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -10,6 +14,9 @@ import java.util.stream.Collectors;
 public class TaosSqlBuilder {
 
     private static final String TABLE_NAME = "datasource";
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter
+            .ofPattern("uuuu-MM-dd HH:mm:ss")
+            .withResolverStyle(ResolverStyle.STRICT);
 
     /**
      * 构建等时间间隔聚合查询 SQL
@@ -27,6 +34,8 @@ public class TaosSqlBuilder {
                                                 String calcType) {
         String aggregateFunc = getAggregateFunction(calcType);
         String intervalUnit = convertIntervalUnit(unit);
+        String safeStartTime = sanitizeTimestamp(startTime);
+        String safeEndTime = sanitizeTimestamp(endTime);
 
         // TDengine 2.4 使用 _wstartts，LAST 类型不支持 INTERVAL
         if ("LAST".equals(aggregateFunc)) {
@@ -34,7 +43,7 @@ public class TaosSqlBuilder {
                 "SELECT ts, devproperty as datacode, itemvalue FROM %s " +
                 "WHERE devproperty IN (%s) AND ts >= '%s' AND ts <= '%s' " +
                 "ORDER BY ts DESC",
-                TABLE_NAME, buildInClause(dataCodes), startTime, endTime
+                TABLE_NAME, buildInClause(dataCodes), safeStartTime, safeEndTime
             );
         }
 
@@ -42,7 +51,7 @@ public class TaosSqlBuilder {
             "SELECT _wstartts as ts, devproperty as datacode, %s(itemvalue) as itemvalue FROM %s " +
             "WHERE devproperty IN (%s) AND ts >= '%s' AND ts <= '%s' " +
             "INTERVAL(%d%s) FILL(NULL)",
-            aggregateFunc, TABLE_NAME, buildInClause(dataCodes), startTime, endTime,
+            aggregateFunc, TABLE_NAME, buildInClause(dataCodes), safeStartTime, safeEndTime,
             interval, intervalUnit
         );
     }
@@ -59,11 +68,13 @@ public class TaosSqlBuilder {
     public static String buildAggregateQuerySql(List<String> dataCodes, String startTime,
                                                   String endTime, String calcType) {
         String aggregateFunc = getAggregateFunction(calcType);
+        String safeStartTime = sanitizeTimestamp(startTime);
+        String safeEndTime = sanitizeTimestamp(endTime);
 
         return String.format(
             "SELECT devproperty as datacode, %s(itemvalue) as itemvalue FROM %s " +
             "WHERE devproperty IN (%s) AND ts >= '%s' AND ts <= '%s'",
-            aggregateFunc, TABLE_NAME, buildInClause(dataCodes), startTime, endTime
+            aggregateFunc, TABLE_NAME, buildInClause(dataCodes), safeStartTime, safeEndTime
         );
     }
 
@@ -107,10 +118,13 @@ public class TaosSqlBuilder {
      * @return SQL 语句
      */
     public static String buildRawDataQuerySql(List<String> dataCodes, String startTime, String endTime) {
+        String safeStartTime = sanitizeTimestamp(startTime);
+        String safeEndTime = sanitizeTimestamp(endTime);
+
         return String.format(
             "SELECT ts, devproperty as datacode, itemvalue FROM %s " +
             "WHERE devproperty IN (%s) AND ts >= '%s' AND ts <= '%s' ORDER BY ts",
-            TABLE_NAME, buildInClause(dataCodes), startTime, endTime
+            TABLE_NAME, buildInClause(dataCodes), safeStartTime, safeEndTime
         );
     }
 
@@ -129,12 +143,14 @@ public class TaosSqlBuilder {
                                                      String startTime, String endTime,
                                                      String calcType) {
         String aggregateFunc = getAggregateFunction(calcType);
+        String safeStartTime = sanitizeTimestamp(startTime);
+        String safeEndTime = sanitizeTimestamp(endTime);
 
         return String.format(
             "SELECT itemid as propcode, %s(itemvalue) as itemvalue FROM %s " +
             "WHERE devproperty = '%s' AND itemid IN (%s) AND ts >= '%s' AND ts <= '%s'",
             aggregateFunc, TABLE_NAME, escapeValue(dataCode),
-            buildInClause(propModelCodes), startTime, endTime
+            buildInClause(propModelCodes), safeStartTime, safeEndTime
         );
     }
 
@@ -155,6 +171,8 @@ public class TaosSqlBuilder {
                                                     int interval, String unit, String calcType) {
         String aggregateFunc = getAggregateFunction(calcType);
         String intervalUnit = convertIntervalUnit(unit);
+        String safeStartTime = sanitizeTimestamp(startTime);
+        String safeEndTime = sanitizeTimestamp(endTime);
 
         // TDengine 2.4 使用 _wstartts，LAST 类型不支持 INTERVAL
         if ("LAST".equals(aggregateFunc)) {
@@ -163,7 +181,7 @@ public class TaosSqlBuilder {
                 "WHERE devproperty = '%s' AND itemid IN (%s) AND ts >= '%s' AND ts <= '%s' " +
                 "ORDER BY ts DESC",
                 TABLE_NAME, escapeValue(dataCode),
-                buildInClause(propModelCodes), startTime, endTime
+                buildInClause(propModelCodes), safeStartTime, safeEndTime
             );
         }
 
@@ -172,7 +190,7 @@ public class TaosSqlBuilder {
             "WHERE devproperty = '%s' AND itemid IN (%s) AND ts >= '%s' AND ts <= '%s' " +
             "INTERVAL(%d%s) FILL(NULL)",
             aggregateFunc, TABLE_NAME, escapeValue(dataCode),
-            buildInClause(propModelCodes), startTime, endTime, interval, intervalUnit
+            buildInClause(propModelCodes), safeStartTime, safeEndTime, interval, intervalUnit
         );
     }
 
@@ -198,7 +216,18 @@ public class TaosSqlBuilder {
         if (value == null) {
             return "";
         }
-        return value.replace("'", "''");
+        return value.replace("'", "''")
+                .replace(";", "")
+                .replace("--", "")
+                .replaceAll("(?i)\\b(drop|delete|insert|update|alter|truncate|create|exec|execute|union)\\b", "");
+    }
+
+    private static String sanitizeTimestamp(String value) {
+        try {
+            return LocalDateTime.parse(value, TIMESTAMP_FORMATTER).format(TIMESTAMP_FORMATTER);
+        } catch (DateTimeParseException | NullPointerException e) {
+            throw new IllegalArgumentException("Invalid timestamp format, expected yyyy-MM-dd HH:mm:ss", e);
+        }
     }
 
     /**

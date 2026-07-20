@@ -61,6 +61,18 @@ class TaosSqlBuilderTest {
     }
 
     @Test
+    void rejectsSqlInjectionInTimeRange() {
+        List<String> dataCodes = Arrays.asList("code1");
+
+        assertThrows(IllegalArgumentException.class, () -> TaosSqlBuilder.buildAggregateQuerySql(
+                dataCodes,
+                "2024-01-01 00:00:00'; DROP TABLE datasource;--",
+                "2024-01-02 00:00:00",
+                "AVG"
+        ));
+    }
+
+    @Test
     void testGetAggregateFunction() {
         assertEquals("AVG", TaosSqlBuilder.getAggregateFunction("AVG"));
         assertEquals("MAX", TaosSqlBuilder.getAggregateFunction("MAX"));

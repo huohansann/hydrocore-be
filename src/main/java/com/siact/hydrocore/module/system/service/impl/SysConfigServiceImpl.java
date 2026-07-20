@@ -2,10 +2,9 @@ package com.siact.hydrocore.module.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.alibaba.fastjson2.TypeReference;
 import com.siact.hydrocore.common.exception.BizException;
 import com.siact.hydrocore.common.redis.RedisService;
-import com.siact.hydrocore.common.utils.JacksonUtils;
 import com.siact.hydrocore.module.system.command.SysConfigCreateCommand;
 import com.siact.hydrocore.module.system.command.SysConfigUpdateCommand;
 import com.siact.hydrocore.module.system.dto.SysConfigDTO;
@@ -48,13 +47,13 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         String cacheKey = CACHE_KEY_PREFIX + scCode;
 
         // 1. 查缓存
-        Object cached = redisService.getCacheObject(cacheKey);
-        if (cached instanceof String) {
-            try {
-                return JacksonUtils.fromJson((String) cached, SysConfigDTO.class);
-            } catch (Exception e) {
-                log.warn("解析配置缓存失败，回退数据库查询: {}", e.getMessage());
+        try {
+            SysConfigDTO cached = redisService.getJson(cacheKey, SysConfigDTO.class);
+            if (cached != null) {
+                return cached;
             }
+        } catch (Exception e) {
+            log.warn("Read config cache failed, fallback to database query: {}", e.getMessage());
         }
 
         // 2. 查数据库
@@ -174,13 +173,13 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         String cacheKey = CACHE_KEY_MODULE + module.name();
 
         // 1. 查缓存
-        Object cached = redisService.getCacheObject(cacheKey);
-        if (cached instanceof String) {
-            try {
-                return JacksonUtils.fromJson((String) cached, new TypeReference<List<SysConfigDTO>>() {});
-            } catch (Exception e) {
-                log.warn("解析模块配置缓存失败，回退数据库查询: {}", e.getMessage());
+        try {
+            List<SysConfigDTO> cached = redisService.getJson(cacheKey, new TypeReference<List<SysConfigDTO>>() {});
+            if (cached != null) {
+                return cached;
             }
+        } catch (Exception e) {
+            log.warn("Read module config cache failed, fallback to database query: {}", e.getMessage());
         }
 
         // 2. 查数据库
@@ -338,13 +337,13 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     }
 
     private void evictCache(String scCode, SysConfigModuleEnum module) {
-        redisService.deleteObject(CACHE_KEY_PREFIX + scCode);
-        redisService.deleteObject(CACHE_KEY_MODULE + module.name());
+        redisService.delete(CACHE_KEY_PREFIX + scCode);
+        redisService.delete(CACHE_KEY_MODULE + module.name());
     }
 
     private void writeCache(String key, Object value) {
         try {
-            redisService.setCacheObject(key, JacksonUtils.toJson(value), CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+            redisService.setJson(key, value, CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
         } catch (Exception e) {
             log.error("写入配置缓存失败: {}", e.getMessage());
         }

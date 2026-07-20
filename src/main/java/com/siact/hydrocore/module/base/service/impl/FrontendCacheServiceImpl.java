@@ -23,7 +23,7 @@ public class FrontendCacheServiceImpl implements FrontendCacheService {
         // 为每个人设置hash格式的 redis key为 userId, value 为 code - value
         HashMap<String, String> paramMap = new HashMap<>();
         paramMap.put(key, value);
-        redisService.setCacheMap(getFrontendCache(userId), paramMap);
+        redisService.putAllHashString(getFrontendCache(userId), paramMap);
         // redisService.expire(getFrontendCache(userId), frontendCacheExpire, TimeUnit.DAYS);
     }
 
@@ -34,7 +34,7 @@ public class FrontendCacheServiceImpl implements FrontendCacheService {
 
         String[] keyArr = keys.split(ConstantSymbol.COMMA);
         // 获取 key 对应的value
-        List<Object> cacheValueList = redisService.getMultiCacheMapValue(getFrontendCache(userId), Arrays.asList(keyArr));
+        List<String> cacheValueList = redisService.multiGetHashString(getFrontendCache(userId), Arrays.asList(keyArr));
         if (ObjectUtils.isEmpty(cacheValueList)) return Collections.emptyMap();
 
         // 刷新过期时间
@@ -43,7 +43,7 @@ public class FrontendCacheServiceImpl implements FrontendCacheService {
         // 转换为 json 字符串返回
         LinkedHashMap<String, String> resultMap = new LinkedHashMap<>();
         for (int i = 0; i < keyArr.length; i++) {
-            Object cacheVal = cacheValueList.get(i);
+            String cacheVal = cacheValueList.get(i);
             resultMap.put(keyArr[i], ObjectUtils.isEmpty(cacheVal) ? null : JSON.toJSONString(cacheVal));
         }
 
@@ -55,12 +55,12 @@ public class FrontendCacheServiceImpl implements FrontendCacheService {
         log.info("删除配置deleteConfig userId: {}, keys: {}", userId, keys);
         if (StringUtils.isBlank(keys)) {
             // 如果没有传入keys  删除整个hash
-            redisService.deleteObject(getFrontendCache(userId));
+            redisService.delete(getFrontendCache(userId));
         } else {
             // 传入keys 遍历删除对应的key
             String[] keyArr = keys.split(ConstantSymbol.COMMA);
             for (String key : keyArr) {
-                redisService.deleteCacheMapValue(getFrontendCache(userId), key);
+                redisService.deleteHash(getFrontendCache(userId), key);
             }
         }
 

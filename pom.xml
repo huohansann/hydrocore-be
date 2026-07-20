@@ -27,6 +27,7 @@
         <easypoi.version>4.4.0</easypoi.version>
         <mapstruct.version>1.5.3.Final</mapstruct.version>
         <maven-surefire-plugin>2.22.2</maven-surefire-plugin>
+        <skipTests>true</skipTests>
         <jep.version>3.4</jep.version>
         <siact-common-code.version>0.0.1-SNAPSHOT</siact-common-code.version>
     </properties>
@@ -353,7 +354,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin}</version>
                 <configuration>
-                    <skipTests>true</skipTests>
+                    <skipTests>${skipTests}</skipTests>
                 </configuration>
             </plugin>
         </plugins>

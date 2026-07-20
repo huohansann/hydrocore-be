@@ -51,10 +51,87 @@ class RuntimeContractStaticScanTest {
         assertThat(failures).isEmpty();
     }
 
+    @Test
+    void runtimeCodeDoesNotInjectRedisTemplatesOutsideRedisBoundary() throws IOException {
+        List<String> forbidden = Arrays.asList(
+                "org.springframework.data.redis.core.RedisTemplate",
+                "org.springframework.data.redis.core.StringRedisTemplate",
+                " RedisTemplate<",
+                " StringRedisTemplate "
+        );
+
+        List<String> failures = scanJavaFiles()
+                .filter(path -> !isRedisBoundary(path))
+                .flatMap(path -> matchingLines(path, forbidden).stream())
+                .collect(Collectors.toList());
+
+        assertThat(failures).isEmpty();
+    }
+
+    @Test
+    void redisCacheCodeDoesNotUseDynamicTypeMetadata() throws IOException {
+        List<String> forbidden = Arrays.asList(
+                "JSONWriter.Feature.WriteClassName",
+                "JSONReader.autoTypeFilter",
+                "AUTO_TYPE_FILTER",
+                "parseObject(json, Object.class",
+                "parseObject(str, Object.class",
+                "new FastJson2JsonRedisSerializer(Object.class)"
+        );
+
+        List<String> failures = scanJavaFiles()
+                .flatMap(path -> matchingLines(path, forbidden).stream())
+                .collect(Collectors.toList());
+
+        assertThat(failures).isEmpty();
+    }
+
+    @Test
+    void runtimeCodeDoesNotUseLegacyResultCodeContract() throws IOException {
+        List<String> forbidden = Arrays.asList(
+                "com.siact.hydrocore.common.result.ResultCode",
+                "com.siact.hydrocore.common.result.IErrorCode",
+                "ResultCode implements IErrorCode",
+                "interface IErrorCode"
+        );
+
+        List<String> failures = scanJavaFiles()
+                .flatMap(path -> matchingLines(path, forbidden).stream())
+                .collect(Collectors.toList());
+
+        assertThat(failures).isEmpty();
+    }
+
+    @Test
+    void businessRedisCallersUseExplicitStringOrTypedJsonMethods() throws IOException {
+        List<String> forbidden = Arrays.asList(
+                ".setCacheObject(",
+                ".getCacheObject(",
+                ".setCacheMapValue(",
+                ".getCacheMapValue(",
+                ".getMultiCacheMapValue(",
+                ".setCacheMap(",
+                ".deleteObject(",
+                ".deleteCacheMapValue("
+        );
+
+        List<String> failures = scanJavaFiles()
+                .filter(path -> !isRedisBoundary(path))
+                .flatMap(path -> matchingLines(path, forbidden).stream())
+                .collect(Collectors.toList());
+
+        assertThat(failures).isEmpty();
+    }
+
     private Stream<Path> scanJavaFiles() throws IOException {
         return Files.walk(MAIN_JAVA)
                 .filter(Files::isRegularFile)
                 .filter(path -> path.toString().endsWith(".java"));
+    }
+
+    private boolean isRedisBoundary(Path path) {
+        return path.endsWith(Paths.get("common", "redis", "RedisConfig.java"))
+                || path.endsWith(Paths.get("common", "redis", "RedisService.java"));
     }
 
     private List<String> matchingLines(Path path, List<String> forbidden) {

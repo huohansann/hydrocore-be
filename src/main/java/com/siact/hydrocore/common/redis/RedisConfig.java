@@ -17,16 +17,14 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class RedisConfig extends CachingConfigurerSupport {
 
     @Bean
-    @SuppressWarnings(value = { "unchecked", "rawtypes" })
-    public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<Object, Object> template = new RedisTemplate<>();
+    public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
-        FastJson2JsonRedisSerializer serializer = new FastJson2JsonRedisSerializer(Object.class);
-
-        template.setKeySerializer(new StringRedisSerializer());
+        StringRedisSerializer serializer = new StringRedisSerializer();
+        template.setKeySerializer(serializer);
         template.setValueSerializer(serializer);
-        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(serializer);
         template.setHashValueSerializer(serializer);
 
         template.afterPropertiesSet();

@@ -1,5 +1,6 @@
 package com.siact.hydrocore.common.utils;
 
+import com.siact.hydrocore.common.redis.RedisService;
 import com.siact.hydrocore.module.system.dto.LoginUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -7,7 +8,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -31,7 +31,7 @@ public class JwtUtil {
     private long staleTtl;
 
     @Autowired
-    private StringRedisTemplate redisTemplate;
+    private RedisService redisService;
 
     private static final String TOKEN_PREFIX = "token:";
     private static final String REFRESH_PREFIX = "token:refresh:";
@@ -54,14 +54,14 @@ public class JwtUtil {
                 .compact();
 
         // 存 token 本体: token:{tokenValue} → userId
-        redisTemplate.opsForValue().set(
+        redisService.setString(
                 TOKEN_PREFIX + token,
                 String.valueOf(loginUser.getId()),
                 expiration, TimeUnit.MILLISECONDS
         );
 
         // 存刷新窗口: token:refresh:{userId}:{sessionId} → tokenValue
-        redisTemplate.opsForValue().set(
+        redisService.setString(
                 REFRESH_PREFIX + loginUser.getId() + ":" + sessionId,
                 token,
                 refreshWindow, TimeUnit.MILLISECONDS
@@ -115,7 +115,7 @@ public class JwtUtil {
      * 检查 token 是否在 Redis 中有效（未过期/未被删除）
      */
     public boolean isTokenValid(String token) {
-        Boolean hasKey = redisTemplate.hasKey(TOKEN_PREFIX + token);
+        Boolean hasKey = redisService.hasKey(TOKEN_PREFIX + token);
         return Boolean.TRUE.equals(hasKey);
     }
 
@@ -124,7 +124,7 @@ public class JwtUtil {
      */
     public String refreshToken(String oldToken) {
         // 1. 检查 stale 缓存（并发场景：其他请求已完成刷新）
-        String staleNewToken = redisTemplate.opsForValue().get(STALE_PREFIX + oldToken);
+        String staleNewToken = redisService.getString(STALE_PREFIX + oldToken);
         if (staleNewToken != null) {
             return staleNewToken;
         }
@@ -147,32 +147,33 @@ public class JwtUtil {
 
         // 3. 检查刷新窗口是否存在
         String refreshKey = REFRESH_PREFIX + loginUser.getId() + ":" + oldSessionId;
-        Boolean refreshExists = redisTemplate.hasKey(refreshKey);
+        Boolean refreshExists = redisService.hasKey(refreshKey);
         if (!Boolean.TRUE.equals(refreshExists)) {
             return null;
         }
 
         // 4. SETNX 加锁，防止并发刷新
         String lockKey = LOCK_PREFIX + oldToken;
-        Boolean locked = redisTemplate.opsForValue().setIfAbsent(lockKey, "1", 10, TimeUnit.SECONDS);
+        String lockValue = UUID.randomUUID().toString().replaceAll("-", "");
+        Boolean locked = redisService.tryLock(lockKey, lockValue, 10);
         if (Boolean.TRUE.equals(locked)) {
             try {
                 // 5. 生成新 token
                 String newToken = generateToken(loginUser);
 
                 // 6. 旧 token 写入 stale 缓存（TTL 短窗口），供并发请求直接获取
-                redisTemplate.opsForValue().set(
+                redisService.setString(
                         STALE_PREFIX + oldToken,
                         newToken,
                         staleTtl, TimeUnit.MILLISECONDS
                 );
 
                 // 7. 删除旧刷新窗口（已消费）
-                redisTemplate.delete(refreshKey);
+                redisService.delete(refreshKey);
 
                 return newToken;
             } finally {
-                redisTemplate.delete(lockKey);
+                redisService.unlock(lockKey, lockValue);
             }
         }
 
@@ -184,7 +185,7 @@ public class JwtUtil {
                 Thread.currentThread().interrupt();
                 return null;
             }
-            String cachedNewToken = redisTemplate.opsForValue().get(STALE_PREFIX + oldToken);
+            String cachedNewToken = redisService.getString(STALE_PREFIX + oldToken);
             if (cachedNewToken != null) {
                 return cachedNewToken;
             }
@@ -197,16 +198,16 @@ public class JwtUtil {
      * 删除 token（登出时调用）
      */
     public void deleteToken(String token) {
-        redisTemplate.delete(TOKEN_PREFIX + token);
+        redisService.delete(TOKEN_PREFIX + token);
     }
 
     /**
      * 删除用户所有刷新窗口（登出/修改密码时调用）
      */
     public void deleteRefreshTokens(Long userId) {
-        Set<String> keys = redisTemplate.keys(REFRESH_PREFIX + userId + ":*");
+        Set<String> keys = redisService.keys(REFRESH_PREFIX + userId + ":*");
         if (keys != null && !keys.isEmpty()) {
-            redisTemplate.delete(keys);
+            redisService.deleteAll(keys);
         }
     }
 
@@ -216,7 +217,7 @@ public class JwtUtil {
     public String generateDownloadToken(LoginUser loginUser) {
         String token = UUID.randomUUID().toString().replaceAll("-", "");
         String value = loginUser.getId() + ":" + loginUser.getAccount() + ":" + loginUser.getUsername();
-        redisTemplate.opsForValue().set(DOWNLOAD_PREFIX + token, value, 30, TimeUnit.SECONDS);
+        redisService.setString(DOWNLOAD_PREFIX + token, value, 30, TimeUnit.SECONDS);
         return token;
     }
 
@@ -225,11 +226,11 @@ public class JwtUtil {
      */
     public LoginUser consumeDownloadToken(String token) {
         String key = DOWNLOAD_PREFIX + token;
-        String value = redisTemplate.opsForValue().get(key);
+        String value = redisService.getString(key);
         if (value == null) {
             return null;
         }
-        redisTemplate.delete(key);
+        redisService.delete(key);
         String[] parts = value.split(":", 3);
         LoginUser loginUser = new LoginUser();
         loginUser.setId(Long.parseLong(parts[0]));
