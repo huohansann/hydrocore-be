@@ -22,6 +22,8 @@ class RuntimeContractStaticScanTest {
         List<String> forbidden = Arrays.asList(
                 "com.siact.hydrocore.common.R",
                 "com.siact.hydrocore.common.result.R",
+                "com.siact.hydrocore.common.entity.ResponseEntity",
+                "com.siact.hydrocore.common.annotation.NoResponseAdvice",
                 "ResponseEntity<",
                 "ResponseEntity.",
                 "implements org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice"
@@ -31,6 +33,7 @@ class RuntimeContractStaticScanTest {
                 .filter(path -> !path.endsWith(Paths.get("common", "R.java")))
                 .filter(path -> !path.endsWith(Paths.get("common", "result", "R.java")))
                 .filter(path -> !path.endsWith(Paths.get("common", "entity", "ResponseEntity.java")))
+                .filter(path -> !path.endsWith(Paths.get("common", "annotation", "NoResponseAdvice.java")))
                 .flatMap(path -> matchingLines(path, forbidden).stream())
                 .collect(Collectors.toList());
 

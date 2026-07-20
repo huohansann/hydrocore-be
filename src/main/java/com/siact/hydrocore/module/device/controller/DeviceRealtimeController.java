@@ -1,6 +1,5 @@
 package com.siact.hydrocore.module.device.controller;
 
-import com.siact.hydrocore.common.annotation.NoResponseAdvice;
 import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.common.vo.PageVO;
 import com.siact.hydrocore.module.device.query.DeviceRealtimeQuery;
@@ -43,7 +42,6 @@ public class DeviceRealtimeController {
         return ApiResponse.success(service.query(query, page, pageSize));
     }
 
-    @NoResponseAdvice
     @ApiOperation("导出实时数据")
     @GetMapping("/export")
     public void export(DeviceRealtimeQuery query,

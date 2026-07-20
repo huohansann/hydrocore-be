@@ -2,7 +2,6 @@ package com.siact.hydrocore.sec.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
-import com.siact.hydrocore.common.annotation.NoResponseAdvice;
 import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.sec.dto.CommonChartResultDto;
 import com.siact.hydrocore.sec.dto.CumulativeDataDTO;
@@ -73,7 +72,6 @@ public class DataController {
             @ApiImplicitParam(name = "fileName", value = "文件名", paramType = "query", required = true, dataType =
                     "string")
     })
-    @NoResponseAdvice
     public void exportIntervalInstantData(HttpServletResponse response,
                                           @RequestBody @Validated ExportCommonChartParamsVO vo) {
         try {

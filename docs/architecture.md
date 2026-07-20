@@ -7,7 +7,7 @@ HydroCore backend is a generic Spring Boot foundation for later water-treatment 
 - Entry point: `com.siact.hydrocore.HydrocoreApplication`
 - Config: `bootstrap.yml` loads Nacos data IDs for application, Redis, MyBatis-Plus, PageHelper, constants, Knife4j, and extra properties.
 - Security: JWT filter, `LoginContext`, and Spring Security integration under `core.security`.
-- Response shape: REST APIs return `com.siact.hydrocore.common.result.R<T>`; paginated APIs use `PageVO<T>`.
+- Response shape: REST APIs return `com.siact.hydrocore.common.api.ApiResponse<T>`; paginated APIs use `PageVO<T>`.
 - WebSocket: STOMP over `/ws`; clients authenticate on CONNECT.
 - TDengine: JDBC access for generic time-series/data-code queries.
 

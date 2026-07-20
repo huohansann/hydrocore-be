@@ -1,6 +1,5 @@
 package com.siact.hydrocore.module.device.controller;
 
-import com.siact.hydrocore.common.annotation.NoResponseAdvice;
 import com.siact.hydrocore.common.api.ApiResponse;
 import com.siact.hydrocore.common.vo.PageVO;
 import com.siact.hydrocore.module.device.command.DeviceMappingCommand;
@@ -73,7 +72,6 @@ public class DeviceMappingController {
         return ApiResponse.success(service.importData(file));
     }
 
-    @NoResponseAdvice
     @ApiOperation("导出设备点位")
     @GetMapping("/export")
     public void exportData(DeviceMappingQuery query, @RequestParam(defaultValue = "excel") String format,
@@ -81,7 +79,6 @@ public class DeviceMappingController {
         service.exportData(query, format, response);
     }
 
-    @NoResponseAdvice
     @ApiOperation("下载导入模板")
     @GetMapping("/import-template")
     public void downloadImportTemplate(HttpServletResponse response) {
