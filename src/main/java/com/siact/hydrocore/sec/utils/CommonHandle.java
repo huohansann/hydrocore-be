@@ -70,8 +70,6 @@ public class CommonHandle {
                 // 返回数据封装
                 timeList.forEach(t -> {
                     if (itemDataMap.containsKey(t)) {
-//                        double val = itemDataMap.get(t).stream().filter(d -> ObjectUtils.isNotEmpty(d.getItemVal())).mapToDouble(d -> d.getItemVal().doubleValue()).sum();
-
                         List<IntervalDataDto> intervalDataDtos = itemDataMap.get(t);
                         BigDecimal val = intervalDataDtos.get(0).getItemVal();
                         resDataList.add(new Object[]{t, null == val ? val : UnitConversion.doublePreString(val.doubleValue(), ConstantNum.NUMBER_TWO)});

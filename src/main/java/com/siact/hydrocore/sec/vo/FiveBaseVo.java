@@ -6,7 +6,6 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
 
 /**
  * 查询的五个必须 变量
@@ -17,12 +16,10 @@ import javax.validation.constraints.Pattern;
 public class FiveBaseVo {
 
     @NotBlank(message = "开始时间不能为空")
-//    @Pattern(regexp = "(\\d{4}-\\d{2}-\\d{2})\\s([0-2][0-3]:[0-5][0-9]:[0-5][0-9])", message = "日期格式不正确，应该为 yyyy-MM-dd hh:mm:ss 格式!")
     @ApiModelProperty(value = "开始时间,格式：yyyy-MM-dd hh:mm:ss")
     private String startTime;
 
     @NotBlank(message = "结束时间不能为空")
-//    @Pattern(regexp = "(\\d{4}-\\d{2}-\\d{2})\\s([0-2][0-3]:[0-5][0-9]:[0-5][0-9])", message = "日期格式不正确，应该为 yyyy-MM-dd hh:mm:ss 格式!")
     @ApiModelProperty(value = "结束时间,格式：yyyy-MM-dd hh:mm:ss")
     private String endTime;
 
