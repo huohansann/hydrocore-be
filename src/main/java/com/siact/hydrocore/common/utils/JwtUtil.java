@@ -5,7 +5,7 @@ import com.siact.hydrocore.module.system.dto.LoginUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,6 +14,8 @@ import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class JwtUtil {
@@ -39,6 +41,10 @@ public class JwtUtil {
     private static final String LOCK_PREFIX = "token:lock:";
     private static final String DOWNLOAD_PREFIX = "download:";
 
+    private SecretKey signingKey() {
+        return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+    }
+
     /**
      * 生成 token 并存入 Redis
      */
@@ -50,7 +56,7 @@ public class JwtUtil {
                 .claim("sessionId", sessionId)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .signWith(signingKey())
                 .compact();
 
         // 存 token 本体: token:{tokenValue} → userId
@@ -75,7 +81,7 @@ public class JwtUtil {
      */
     public LoginUser parseToken(String token) {
         Claims claims = Jwts.parser()
-                .setSigningKey(secretKey)
+                .setSigningKey(signingKey())
                 .parseClaimsJws(token)
                 .getBody();
 
@@ -105,7 +111,7 @@ public class JwtUtil {
      */
     public String getSessionId(String token) {
         Claims claims = Jwts.parser()
-                .setSigningKey(secretKey)
+                .setSigningKey(signingKey())
                 .parseClaimsJws(token)
                 .getBody();
         return claims.get("sessionId", String.class);
@@ -133,7 +139,7 @@ public class JwtUtil {
         LoginUser loginUser;
         String oldSessionId;
         try {
-            Jwts.parser().setSigningKey(secretKey).parseClaimsJws(oldToken);
+            Jwts.parser().setSigningKey(signingKey()).parseClaimsJws(oldToken);
             return null; // 未过期，不应走到这里（由 isTokenValid 拦截）
         } catch (ExpiredJwtException e) {
             Claims claims = e.getClaims();

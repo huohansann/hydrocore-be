@@ -3,7 +3,7 @@ package com.siact.hydrocore.common.utils;
 import com.siact.hydrocore.common.redis.RedisService;
 import com.siact.hydrocore.module.system.dto.LoginUser;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -12,6 +12,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
+import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -20,7 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class JwtUtilTest {
-    private static final String SECRET = "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=";
+    private static final String SECRET = "HydroCoreLocalDevJwtSecret_2026_7f4c9a2e";
 
     private RedisService redisService;
     private JwtUtil jwtUtil;
@@ -114,7 +115,7 @@ class JwtUtilTest {
                 .claim("sessionId", sessionId)
                 .setIssuedAt(new Date(System.currentTimeMillis() - 120000L))
                 .setExpiration(new Date(System.currentTimeMillis() - 60000L))
-                .signWith(SignatureAlgorithm.HS256, SECRET)
+                .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
                 .compact();
     }
 }

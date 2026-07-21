@@ -88,11 +88,11 @@
         </dependency>
 
         <!--	数字孪生API-->
-        <dependency>
-            <groupId>com.siact</groupId>
-            <artifactId>siact-sec-api-feign</artifactId>
-            <version>1.0.9</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.siact</groupId>-->
+<!--            <artifactId>siact-sec-api-feign</artifactId>-->
+<!--            <version>1.0.9</version>-->
+<!--        </dependency>-->
 
         <!-- 结巴中文分词器 -->
         <dependency>
@@ -208,11 +208,11 @@
         </dependency>
 
         <!-- JEP - Java Expression Parser -->
-        <dependency>
-            <groupId>com.singularsys</groupId>
-            <artifactId>jep-java</artifactId>
-            <version>${jep.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.singularsys</groupId>-->
+<!--            <artifactId>jep-java</artifactId>-->
+<!--            <version>${jep.version}</version>-->
+<!--        </dependency>-->
 
         <!-- JSch SSH - 调用远程 Python 算法 -->
         <dependency>
@@ -287,28 +287,28 @@
         </dependencies>
     </dependencyManagement>
 
-    <repositories>
-        <repository>
-            <id>siact-nexus</id>
-            <name>siact-nexus</name>
-            <url>http://nexus.isiact.com/repository/siact-nexus/</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-    <distributionManagement>
-        <repository>
-            <id>siact-release</id>
-            <name>siact-release</name>
-            <url>http://nexus.isiact.com/repository/siact-release/</url>
-        </repository>
-        <snapshotRepository>
-            <id>siact-snapshots</id>
-            <name>siact-snapshots</name>
-            <url>http://nexus.isiact.com/repository/siact-snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
+<!--    <repositories>-->
+<!--        <repository>-->
+<!--            <id>siact-nexus</id>-->
+<!--            <name>siact-nexus</name>-->
+<!--            <url>http://nexus.isiact.com/repository/siact-nexus/</url>-->
+<!--            <snapshots>-->
+<!--                <enabled>true</enabled>-->
+<!--            </snapshots>-->
+<!--        </repository>-->
+<!--    </repositories>-->
+<!--    <distributionManagement>-->
+<!--        <repository>-->
+<!--            <id>siact-release</id>-->
+<!--            <name>siact-release</name>-->
+<!--            <url>http://nexus.isiact.com/repository/siact-release/</url>-->
+<!--        </repository>-->
+<!--        <snapshotRepository>-->
+<!--            <id>siact-snapshots</id>-->
+<!--            <name>siact-snapshots</name>-->
+<!--            <url>http://nexus.isiact.com/repository/siact-snapshots/</url>-->
+<!--        </snapshotRepository>-->
+<!--    </distributionManagement>-->
 
     <build>
         <plugins>

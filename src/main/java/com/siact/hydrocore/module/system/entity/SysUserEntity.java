@@ -20,6 +20,7 @@ public class SysUserEntity {
 
     private String email;
 
+    @TableField("mobile")
     private String phone;
 
     private String avatar;

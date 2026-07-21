@@ -1,6 +1,7 @@
 package com.siact.hydrocore.module.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.alibaba.fastjson2.TypeReference;
 import com.siact.hydrocore.common.exception.BizException;
@@ -247,10 +248,14 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
             throw new BizException("配置已被修改，请刷新后重试");
         }
 
-        entity.setScValue(value);
-        entity.setVersion(version + 1);
+        LambdaUpdateWrapper<SysConfigEntity> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.set(SysConfigEntity::getScValue, value)
+                .set(SysConfigEntity::getVersion, version + 1)
+                .eq(SysConfigEntity::getScCode, scCode)
+                .eq(SysConfigEntity::getScPath, scPath)
+                .eq(SysConfigEntity::getVersion, version);
 
-        int rows = baseMapper.updateById(entity);
+        int rows = baseMapper.update(null, updateWrapper);
 
         if (rows > 0) {
             evictCache(scCode, entity.getModule());

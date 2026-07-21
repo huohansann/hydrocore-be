@@ -60,8 +60,21 @@ class SysConfigServiceImplTest {
         verify(redisService).setJson(eq("sys:config:site"), any(SysConfigDTO.class), eq(24L), eq(java.util.concurrent.TimeUnit.HOURS));
     }
 
+    @Test
+    void updateItemUpdatesByCodePathAndCurrentVersion() {
+        when(mapper.selectOne(any(Wrapper.class))).thenReturn(entity("site"));
+        when(mapper.update(eq(null), any(Wrapper.class))).thenReturn(1);
+
+        Boolean updated = service.updateItem("site", "name", "updated", 1);
+
+        assertThat(updated).isTrue();
+        verify(redisService).delete("sys:config:site");
+        verify(redisService).delete("sys:config:module:SYSTEM");
+    }
+
     private SysConfigEntity entity(String scCode) {
         SysConfigEntity entity = new SysConfigEntity();
+        entity.setId(1L);
         entity.setScCode(scCode);
         entity.setModule(SysConfigModuleEnum.SYSTEM);
         entity.setScPath("name");
