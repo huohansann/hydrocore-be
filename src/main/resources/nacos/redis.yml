@@ -4,9 +4,9 @@
 
 spring:
   redis:
-    host: CHANGE_ME_REDIS_HOST
+    host: localhost
     port: 6379
-    password: CHANGE_ME_REDIS_PASSWORD
+    password: root123
     database: 0
     timeout: 5000ms
     lettuce:

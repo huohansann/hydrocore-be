@@ -8,9 +8,9 @@ spring:
       # Local default. Override server-addr and namespace per environment.
       server-addr: localhost:8848
       username: nacos
-      password: 123456
+      password: nacos
       # Nacos namespace ID. Create/use a HydroCore namespace for this baseline.
-      namespace: hydrocore
+      namespace: f4d183b1-6de7-4d57-8680-e4bda9437214
       discovery:
         namespace: ${spring.cloud.nacos.namespace}
         server-addr: ${spring.cloud.nacos.server-addr}
