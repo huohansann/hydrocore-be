@@ -16,7 +16,6 @@ public class RuntimeThreadPoolProperties {
             60,
             "hydro-cpu-");
     private Pool background = new Pool(2, 4, 10, 60, "hydro-background-");
-    private Pool event = new Pool(10, 50, 1000, 60, "event-handler-");
 
     @Data
     @NoArgsConstructor

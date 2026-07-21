@@ -29,10 +29,6 @@ spring:
     maximum-pool-size: 10
     connection-timeout: 5000
 
-  event:
-    enabled: true
-    defaultTimeout: 5000
-
 # JWT (required to start)
 jwt:
   secret: CHANGE_ME_USE_A_LONG_RANDOM_SECRET_BASE64_OR_STRING
@@ -84,17 +80,6 @@ hydrocore:
       wait-for-tasks-to-complete-on-shutdown: true
       await-termination-seconds: 60
       rejection-policy: caller-runs
-    event:
-      core-size: 10
-      max-size: 50
-      queue-capacity: 1000
-      keep-alive-seconds: 60
-      thread-name-prefix: event-handler-
-      allow-core-thread-timeout: false
-      wait-for-tasks-to-complete-on-shutdown: true
-      await-termination-seconds: 60
-      rejection-policy: caller-runs
-
 # Logging (optional overrides; logback-spring.xml is primary)
 logging:
   level:

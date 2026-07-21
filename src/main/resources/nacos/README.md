@@ -23,7 +23,7 @@ cd D:\project\HydroCore\hydrocore-be
 
 ## 线程池配置
 
-`hydrocore.thread-pools` 统一管理 IO、CPU、后台任务和事件处理线程池。每类线程池支持：
+`hydrocore.thread-pools` 统一管理 IO、CPU 和后台任务线程池。每类线程池支持：
 
 - `core-size` / `max-size` / `queue-capacity`
 - `keep-alive-seconds` / `thread-name-prefix`
