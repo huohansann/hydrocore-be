@@ -1,49 +1,45 @@
 package com.siact.hydrocore.core.common.config;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * 默认情况下，在创建了线程池后，线程池中的线程数为0，当有任务来之后，就会创建一个线程去执行任务，
- * 当线程池中的线程数目达到corePoolSize后，就会把到达的任务放到缓存队列当中；
- * 当队列满了，就继续创建线程，当线程数量大于等于maxPoolSize后，开始使用拒绝策略拒绝
+ * Default async executor reserved for future asynchronous work.
  */
 @Configuration
 @EnableAsync
-@RequiredArgsConstructor
-@EnableConfigurationProperties(RuntimeThreadPoolProperties.class)
-public class ThreadPoolConfig {
-    private final RuntimeThreadPoolProperties properties;
-    private final ThreadPoolTaskExecutorBuilder builder;
+public class ThreadPoolConfig implements AsyncConfigurer {
+    private static final int ASYNC_CORE_POOL_SIZE = 8;
+    private static final int ASYNC_MAX_POOL_SIZE = 32;
+    private static final int ASYNC_QUEUE_CAPACITY = 1000;
+    private static final int ASYNC_KEEP_ALIVE_SECONDS = 60;
+    private static final String ASYNC_THREAD_NAME_PREFIX = "hydro-async-";
+    private static final boolean ASYNC_WAIT_FOR_TASKS_ON_SHUTDOWN = true;
+    private static final int ASYNC_AWAIT_TERMINATION_SECONDS = 60;
 
-    public static final int BEYOND_TIME = 5;
-
-    /**
-     * IO 密集类型线程池 （corePoolSize 核心线程 和 maxPoolSize最大线程数比cpu核数翻4倍）
-     */
-    @Bean(name = "threadIoPoolTaskExecutor")
-    public Executor threadIoPoolTaskExecutor() {
-        return builder.build(properties.getIo());
+    @Override
+    public Executor getAsyncExecutor() {
+        return asyncTaskExecutor();
     }
 
-    /**
-     * cpu 密集类型线程池
-     *
-     */
-    @Bean(name = "threadCpuPoolTaskExecutor")
-    public Executor threadCpuPoolTaskExecutor() {
-        return builder.build(properties.getCpu());
-    }
-    /**
-     * 通用后台任务线程池
-     */
-    @Bean(name = "backgroundTaskExecutor")
-    public Executor backgroundTaskExecutor() {
-        return builder.build(properties.getBackground());
+    @Bean(name = "asyncTaskExecutor")
+    public ThreadPoolTaskExecutor asyncTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(ASYNC_CORE_POOL_SIZE);
+        executor.setMaxPoolSize(ASYNC_MAX_POOL_SIZE);
+        executor.setQueueCapacity(ASYNC_QUEUE_CAPACITY);
+        executor.setKeepAliveSeconds(ASYNC_KEEP_ALIVE_SECONDS);
+        executor.setThreadNamePrefix(ASYNC_THREAD_NAME_PREFIX);
+        executor.setWaitForTasksToCompleteOnShutdown(ASYNC_WAIT_FOR_TASKS_ON_SHUTDOWN);
+        executor.setAwaitTerminationSeconds(ASYNC_AWAIT_TERMINATION_SECONDS);
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
     }
 }

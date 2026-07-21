@@ -20,15 +20,3 @@ cd D:\project\HydroCore\hydrocore-be
 ```
 
 历史迁移脚本中可能仍会出现已移除的旧业务术语。当前 Nacos 模板不应默认启用这些能力。
-
-## 线程池配置
-
-`hydrocore.thread-pools` 统一管理 IO、CPU 和后台任务线程池。每类线程池支持：
-
-- `core-size` / `max-size` / `queue-capacity`
-- `keep-alive-seconds` / `thread-name-prefix`
-- `allow-core-thread-timeout`
-- `wait-for-tasks-to-complete-on-shutdown` / `await-termination-seconds`
-- `rejection-policy: caller-runs`
-
-当前拒绝策略固定为 `caller-runs`：队列满且线程达到上限时，由提交任务的线程执行任务，用调用方背压避免静默丢弃。
